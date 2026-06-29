@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=1100,initial-scale=1"/>
+  <title>NCBLAST Tournament Breakdown</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --g-bg:#0e1512;--g-surface:#141c19;--g-surface2:#1c2822;--g-border:#2a3d35;
+      --g-teal:#2ea89d;--g-teal-deep:#0f6b67;--g-accent:#f6d335;
+      --g-text:#d4e8e0;--g-muted:#7a9e92;--g-danger:#e05a46;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Barlow',sans-serif;background:var(--g-bg);color:var(--g-text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+    #generator{min-height:100vh;display:flex;flex-direction:column;}
+    .gen-header{display:flex;align-items:center;gap:20px;padding:20px 40px;border-bottom:1px solid var(--g-border);background:var(--g-surface);}
+    .gen-logo{width:44px;height:44px;background:var(--g-teal-deep);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:11px;color:var(--g-accent);letter-spacing:0.08em;border:2px solid var(--g-accent);flex-shrink:0;}
+    .gen-title-block h1{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;letter-spacing:0.04em;color:#fff;line-height:1;}
+    .gen-title-block p{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--g-muted);letter-spacing:0.14em;margin-top:3px;}
+    .gen-body{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 40px;}
+    .gen-card{width:100%;max-width:640px;}
+    .step-bar{display:flex;align-items:center;margin-bottom:36px;}
+    .step-col{display:flex;flex-direction:column;align-items:center;}
+    .step-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--g-border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--g-muted);flex-shrink:0;transition:all .2s;}
+    .step-dot.active{border-color:var(--g-accent);background:var(--g-accent);color:#0e1512;}
+    .step-dot.done{border-color:var(--g-teal);background:var(--g-teal);color:#fff;}
+    .step-line{flex:1;height:2px;background:var(--g-border);margin:0 4px;transition:background .2s;}
+    .step-line.done{background:var(--g-teal);}
+    .step-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--g-muted);margin-top:4px;white-space:nowrap;}
+    .step-label.active{color:var(--g-accent);}.step-label.done{color:var(--g-teal);}
+    .panel{background:var(--g-surface);border:1px solid var(--g-border);border-radius:10px;padding:32px;}
+    .panel-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;letter-spacing:0.04em;color:#fff;margin-bottom:6px;}
+    .panel-sub{font-size:13px;color:var(--g-muted);margin-bottom:28px;line-height:1.5;}
+    .drop-zone{border:2px dashed var(--g-border);border-radius:8px;padding:40px 24px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+    .drop-zone:hover,.drop-zone.drag-over{border-color:var(--g-teal);background:rgba(46,168,157,0.06);}
+    .drop-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+    .drop-icon{width:48px;height:48px;margin:0 auto 14px;background:var(--g-surface2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .drop-zone h3{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:0.04em;color:#fff;margin-bottom:6px;}
+    .drop-zone p{font-size:12px;color:var(--g-muted);font-family:'IBM Plex Mono',monospace;}
+    .select-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--g-muted);margin-bottom:10px;}
+    .option-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;margin-bottom:24px;}
+    .option-list::-webkit-scrollbar{width:4px;}.option-list::-webkit-scrollbar-track{background:transparent;}.option-list::-webkit-scrollbar-thumb{background:var(--g-border);border-radius:2px;}
+    .option-btn{background:var(--g-surface2);border:1px solid var(--g-border);border-radius:6px;padding:12px 16px;cursor:pointer;text-align:left;color:var(--g-text);font-family:'Barlow',sans-serif;font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:space-between;transition:all .15s;}
+    .option-btn:hover{border-color:var(--g-teal);background:rgba(46,168,157,0.08);color:#fff;}
+    .option-btn.selected{border-color:var(--g-accent);background:rgba(246,211,53,0.08);color:#fff;}
+    .option-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--g-muted);}.option-btn.selected .option-meta{color:var(--g-accent);}
+    .btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;}
+    .btn{padding:10px 22px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.08em;cursor:pointer;border:none;transition:all .15s;}
+    .btn-ghost{background:transparent;border:1px solid var(--g-border);color:var(--g-muted);}.btn-ghost:hover{border-color:var(--g-text);color:var(--g-text);}
+    .btn-primary{background:var(--g-accent);color:#0e1512;}.btn-primary:hover{background:#f8dc55;}.btn-primary:disabled{opacity:0.35;cursor:not-allowed;}
+    #report-output{display:none;}
+    .report-wrapper{background:#223834;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .report-pages{display:flex;flex-direction:column;gap:28px;padding:40px 0 80px;align-items:center;}
+    @media print{
+      #generator{display:none!important;}
+      #report-output{display:block!important;}
+      #toolbar{display:none!important;}
+      .report-wrapper{background:white;}
+      .report-pages{gap:0;padding:0;}
+      .report-pages>div{box-shadow:none!important;break-after:page;page-break-after:always;}
+      .report-pages>div:last-child{break-after:auto;page-break-after:auto;}
+    }
+    @page{size:letter;margin:0;}
+    #toolbar{position:fixed;bottom:24px;right:24px;z-index:9999;display:none;gap:10px;align-items:center;}
+    .toolbar-btn{padding:10px 20px;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.08em;cursor:pointer;border:none;box-shadow:0 4px 20px rgba(0,0,0,0.4);}
+    #png-status{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--g-muted);display:none;}
+  </style>
+</head>
+<body>
+
+<div id="generator">
+  <div class="gen-header">
+    <div class="gen-logo">NCBL</div>
+    <div class="gen-title-block">
+      <h1>NCBLAST TOURNAMENT BREAKDOWN</h1>
+      <p>NORCAL BEYBLADE LEAGUE · EVENT STATS GENERATOR</p>
+    </div>
+  </div>
+  <div class="gen-body">
+    <div class="gen-card">
+      <div class="step-bar" id="step-bar">
+        <div class="step-col"><div class="step-dot active" id="dot-1">1</div><div class="step-label active" id="lbl-1">IMPORT</div></div>
+        <div class="step-line" id="line-1"></div>
+        <div class="step-col"><div class="step-dot" id="dot-2">2</div><div class="step-label" id="lbl-2">TOURNAMENT</div></div>
+        <div class="step-line" id="line-2"></div>
+        <div class="step-col"><div class="step-dot" id="dot-3">3</div><div class="step-label" id="lbl-3">WINNER</div></div>
+        <div class="step-line" id="line-3"></div>
+        <div class="step-col"><div class="step-dot" id="dot-4">4</div><div class="step-label" id="lbl-4">GENERATE</div></div>
+      </div>
+      <div class="panel" id="step1">
+        <div class="panel-title">Import Match Data</div>
+        <div class="panel-sub">Drop a CSV exported from NCBLAST. The file can contain multiple tournaments — you'll select which one to break down.</div>
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="csv-input" accept=".csv,.tsv,.txt">
+          <div class="drop-icon">📂</div>
+          <h3>Drop CSV here, or click to browse</h3>
+          <p id="drop-hint">Accepts .csv files · Any size</p>
+        </div>
+      </div>
+      <div class="panel" id="step2" style="display:none">
+        <div class="panel-title">Select Tournament</div>
+        <div class="panel-sub">Choose which tournament to generate the breakdown for.</div>
+        <div class="select-label">TOURNAMENTS FOUND IN FILE</div>
+        <div class="option-list" id="tournament-list"></div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="goStep(1)">&#x2190; Back</button>
+          <button class="btn btn-primary" id="btn-step2-next" disabled onclick="goStep(3)">Next &#x2192;</button>
+        </div>
+      </div>
+      <div class="panel" id="step3" style="display:none">
+        <div class="panel-title">Select Winner</div>
+        <div class="panel-sub">Choose the tournament winner. Players are sorted by number of matches played, most to least.</div>
+        <div class="select-label">PLAYERS — SORTED BY MATCHES PLAYED</div>
+        <div class="option-list" id="winner-list"></div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="goStep(2)">&#x2190; Back</button>
+          <button class="btn btn-primary" id="btn-step3-next" disabled onclick="generateAndShow()">Generate Breakdown &#x2192;</button>
+        </div>
+      </div>
+      <div class="panel" id="step4" style="display:none">
+        <div class="panel-title">Generating&hellip;</div>
+        <div class="panel-sub">Computing event statistics.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="report-output">
+  <div class="report-wrapper">
+    <div class="report-pages" id="report-pages"></div>
+  </div>
+</div>
+
+<div id="toolbar">
+  <span id="png-status"></span>
+  <button class="toolbar-btn" style="background:#2a3d35;color:#d4e8e0;border:1px solid #4a6358;" onclick="backToGenerator()">&#x2190; New Breakdown</button>
+  <button class="toolbar-btn" style="background:#2ea89d;color:#fff;" onclick="downloadHTML()">Download HTML</button>
+  <button class="toolbar-btn" style="background:#1a5c52;color:#d4e8e0;border:1px solid #2ea89d;" onclick="downloadPNGs()">Download PNGs</button>
+  <button class="toolbar-btn" style="background:#f6d335;color:#0e1512;" onclick="window.print()">Print / Save PDF</button>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
+
+<script>
+// ── CSV PARSER ────────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  if (!lines.length) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,''));
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = [];
+    let cur = '', inQ = false;
+    for (let c = 0; c < line.length; c++) {
+      if (line[c] === '"') { inQ = !inQ; }
+      else if (line[c] === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += line[c];
+    }
+    vals.push(cur.trim());
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] !== undefined ? vals[idx].replace(/^"|"$/g,'') : ''; });
+    rows.push(row);
+  }
+  return rows;
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let ALL_ROWS = [];
+let SELECTED_TOURNAMENT = null;
+let SELECTED_WINNER = null;
+let reportRoot = null;
+
+// ── STEP NAV ──────────────────────────────────────────────────────────────────
+function goStep(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('step'+i).style.display = i===n ? '' : 'none';
+    const dot = document.getElementById('dot-'+i);
+    const lbl = document.getElementById('lbl-'+i);
+    if (i < n)  { dot.className='step-dot done'; lbl.className='step-label done'; }
+    if (i===n)  { dot.className='step-dot active'; lbl.className='step-label active'; }
+    if (i > n)  { dot.className='step-dot'; lbl.className='step-label'; }
+    if (i < 4) {
+      const line = document.getElementById('line-'+i);
+      if (line) line.className = i < n ? 'step-line done' : 'step-line';
+    }
+  });
+  if (n === 2) populateTournaments();
+  if (n === 3) populateWinnerList();
+}
+
+// ── FILE IMPORT ───────────────────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result);
+    if (!rows.length || !rows[0].hasOwnProperty('Tournament')) {
+      alert('Could not find expected columns. Make sure this is a standard NCBLAST CSV export.');
+      return;
+    }
+    ALL_ROWS = rows;
+    document.getElementById('drop-hint').textContent = '\u2713 ' + file.name + ' · ' + rows.length + ' rows loaded';
+    goStep(2);
+  };
+  reader.readAsText(file);
+}
+
+const dz = document.getElementById('drop-zone');
+const ci = document.getElementById('csv-input');
+ci.addEventListener('change', e => handleFile(e.target.files[0]));
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+
+// ── POPULATE TOURNAMENTS ──────────────────────────────────────────────────────
+function populateTournaments() {
+  const counts = {};
+  ALL_ROWS.forEach(r => { const t=(r.Tournament||'').trim(); if(t) counts[t]=(counts[t]||0)+1; });
+  const list = document.getElementById('tournament-list');
+  list.innerHTML = '';
+  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t, n]) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn' + (t === SELECTED_TOURNAMENT ? ' selected' : '');
+    btn.innerHTML = '<span>'+t+'</span><span class="option-meta">'+n+' rows</span>';
+    btn.onclick = () => {
+      document.querySelectorAll('#tournament-list .option-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      SELECTED_TOURNAMENT = t;
+      document.getElementById('btn-step2-next').disabled = false;
+    };
+    list.appendChild(btn);
+  });
+}
+
+// ── POPULATE WINNER LIST ──────────────────────────────────────────────────────
+function populateWinnerList() {
+  const tRows = ALL_ROWS.filter(r => (r.Tournament||'').trim() === SELECTED_TOURNAMENT);
+  const mkMap = buildMatchKeyMap(tRows);
+
+  // Count unique matches per player
+  const playerMatches = {};
+  tRows.forEach(r => {
+    const mk = getMatchKey(r, mkMap);
+    ['P1','P2'].forEach(field => {
+      const p = (r[field]||'').trim();
+      if (!p) return;
+      if (!playerMatches[p]) playerMatches[p] = new Set();
+      playerMatches[p].add(mk);
+    });
+  });
+
+  // Sort players by match count descending, then alphabetically
+  const sorted = Object.entries(playerMatches)
+    .map(([name, keys]) => ({ name, matchCount: keys.size }))
+    .sort((a, b) => b.matchCount - a.matchCount || a.name.localeCompare(b.name));
+
+  const list = document.getElementById('winner-list');
+  list.innerHTML = '';
+  SELECTED_WINNER = null;
+  document.getElementById('btn-step3-next').disabled = true;
+
+  sorted.forEach(({ name, matchCount }) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = '<span>' + name + '</span><span class="option-meta">' + matchCount + ' match' + (matchCount !== 1 ? 'es' : '') + '</span>';
+    btn.onclick = () => {
+      document.querySelectorAll('#winner-list .option-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      SELECTED_WINNER = name;
+      document.getElementById('btn-step3-next').disabled = false;
+    };
+    list.appendChild(btn);
+  });
+}
+
+// ── GENERATE ──────────────────────────────────────────────────────────────────
+function generateAndShow() {
+  goStep(4);
+  setTimeout(() => {
+    const data = computeTournamentStats(ALL_ROWS, SELECTED_TOURNAMENT, SELECTED_WINNER);
+    document.getElementById('generator').style.display = 'none';
+    document.getElementById('report-output').style.display = 'block';
+    document.getElementById('toolbar').style.display = 'flex';
+    const pagesEl = document.getElementById('report-pages');
+    if (!reportRoot) reportRoot = ReactDOM.createRoot(pagesEl);
+    reportRoot.render(React.createElement(TournamentBreakdown, { data }));
+  }, 50);
+}
+
+function backToGenerator() {
+  document.getElementById('generator').style.display = 'flex';
+  document.getElementById('report-output').style.display = 'none';
+  document.getElementById('toolbar').style.display = 'none';
+  document.getElementById('report-pages').innerHTML = '';
+  reportRoot = null;
+  goStep(2);
+}
+
+// ── HTML DOWNLOAD ─────────────────────────────────────────────────────────────
+function downloadHTML() {
+  const pagesEl = document.getElementById('report-pages');
+  const pagesHTML = pagesEl.innerHTML;
+  const tournamentPart = (SELECTED_TOURNAMENT||'breakdown').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-_]/g,'');
+  const filename = 'NCBLAST-Breakdown-' + tournamentPart + '.html';
+  const allStyles = Array.from(document.styleSheets).map(sheet => {
+    try { return Array.from(sheet.cssRules).map(r => r.cssText).join('\n'); } catch(e) { return ''; }
+  }).join('\n');
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"/><title>NCBLAST Breakdown — ${SELECTED_TOURNAMENT}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>${allStyles}
+body{background:#223834!important;}
+#generator,#toolbar{display:none!important;}
+#report-output{display:block!important;}
+@media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;}.report-pages>div{box-shadow:none!important;break-after:page;page-break-after:always;}.report-pages>div:last-child{break-after:auto;page-break-after:auto;}}
+@page{size:letter;margin:0;}
+</style></head><body>
+<div class="report-wrapper"><div class="report-pages">${pagesHTML}</div></div>
+</body></html>`;
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ── PNG DOWNLOAD ──────────────────────────────────────────────────────────────
+async function downloadPNGs() {
+  const pages = document.querySelectorAll('#report-pages > div');
+  if (!pages.length) return;
+  const status = document.getElementById('png-status');
+  const tournamentPart = (SELECTED_TOURNAMENT||'breakdown').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-_]/g,'');
+
+  status.style.display = 'inline';
+  status.textContent = 'Rendering pages...';
+
+  for (let i = 0; i < pages.length; i++) {
+    status.textContent = `Rendering page ${i+1} of ${pages.length}...`;
+    try {
+      const canvas = await html2canvas(pages[i], {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#fffdf7',
+        logging: false,
+        width: pages[i].offsetWidth,
+        height: pages[i].offsetHeight,
+      });
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `NCBLAST-Breakdown-${tournamentPart}-page${i+1}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Small delay between downloads so browser doesn't block them
+      await new Promise(res => setTimeout(res, 300));
+    } catch(err) {
+      console.error('PNG render error on page', i+1, err);
+    }
+  }
+
+  status.textContent = 'Done!';
+  setTimeout(() => { status.style.display = 'none'; }, 2500);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function round1(n){return Math.round(n*10)/10;}
+function round2(n){return Math.round(n*100)/100;}
+function finishPts(ft){
+  if(ft==='Xtreme Finish') return 3;
+  if(ft==='Over Finish')   return 2;
+  if(ft==='Burst Finish')  return 2;
+  if(ft==='Own Finish')    return 2;
+  if(ft==='Spin Finish')   return 1;
+  return 1;
+}
+
+// ── MATCH KEY RESOLVER ───────────────────────────────────────────────────────
+function buildMatchKeyMap(tRows) {
+  const byName = {};
+  tRows.forEach(r => {
+    const m = (r.Match||'').trim();
+    if(!byName[m]) byName[m] = [];
+    byName[m].push(r);
+  });
+  const keyMap = new Map();
+  const GAP_MS = 30 * 60 * 1000;
+  Object.entries(byName).forEach(([mname, mrows]) => {
+    const sorted = mrows.slice().sort((a,b) => new Date(a.Timestamp||0) - new Date(b.Timestamp||0));
+    let occurrence = 0, prevTs = null;
+    sorted.forEach(r => {
+      const ts = new Date(r.Timestamp||0).getTime();
+      if (prevTs !== null && (ts - prevTs) > GAP_MS) occurrence++;
+      prevTs = ts;
+      const uniqueKey = occurrence === 0 ? mname : mname + '\xb6' + occurrence;
+      keyMap.set(r.Timestamp + '||' + mname, uniqueKey);
+    });
+  });
+  return keyMap;
+}
+function getMatchKey(r, keyMap) {
+  const mname = (r.Match||'').trim();
+  return keyMap.get((r.Timestamp||'') + '||' + mname) || mname;
+}
+
+// ── TOURNAMENT STAT ENGINE ────────────────────────────────────────────────────
+function computeTournamentStats(allRows, tournament, winnerName) {
+  const tRows = allRows.filter(r => (r.Tournament||'').trim() === tournament);
+  const mkMap = buildMatchKeyMap(tRows);
+
+  function isValidBattle(r) {
+    const ft = (r.FinishType||'').trim();
+    const pts = parseInt(r.Points||'0', 10);
+    if ((ft==='LER Strike'||ft==='Launch Error') && pts===0) return false;
+    return true;
+  }
+  const battleRows = tRows.filter(isValidBattle);
+
+  const playerSet = new Set();
+  tRows.forEach(r => {
+    if ((r.P1||'').trim()) playerSet.add(r.P1.trim());
+    if ((r.P2||'').trim()) playerSet.add(r.P2.trim());
+  });
+  const allPlayers = [...playerSet];
+
+  function playerStats(player) {
+    const pl = player.toLowerCase();
+    function isP1(r){ return (r.P1||'').trim().toLowerCase()===pl; }
+    function iWon(r){ const w=(r.Winner||'').toLowerCase(); return w===pl||w.includes(pl); }
+    const pRows = battleRows.filter(r =>
+      (r.P1||'').trim().toLowerCase()===pl || (r.P2||'').trim().toLowerCase()===pl
+    );
+    if (!pRows.length) return null;
+    let tw=0,tl=0,ptsS=0,ptsA=0;
+    pRows.forEach(r=>{
+      const pts=finishPts((r.FinishType||'').trim());
+      if(iWon(r)){tw++;ptsS+=pts;}else{tl++;ptsA+=pts;}
+    });
+    const total=tw+tl;
+    const winPct=total>0?round1(tw/total*100):0;
+    const ppb=total>0?round2((ptsS-ptsA)/total):0;
+    const matchKeys = new Set();
+    pRows.forEach(r => matchKeys.add(getMatchKey(r, mkMap)));
+    const matchCount = matchKeys.size;
+    return { player, winPct, ppb, matchCount };
+  }
+
+  const allPlayerStats = allPlayers.map(playerStats).filter(Boolean);
+
+  // Winner is manually selected — just look up their stats
+  const winnerStats = winnerName
+    ? allPlayerStats.find(s => s.player.toLowerCase() === winnerName.toLowerCase()) || null
+    : null;
+  const winner = winnerStats
+    ? { player: winnerStats.player, winPct: winnerStats.winPct, ppb: winnerStats.ppb }
+    : null;
+
+  const totalBattles = battleRows.length;
+  const totalSets = (() => {
+    const setKeys = new Set();
+    battleRows.forEach(r => setKeys.add(getMatchKey(r,mkMap)+'|||'+(r.Set||'0')));
+    return setKeys.size;
+  })();
+  const uniqueCombosSet = new Set();
+  battleRows.forEach(r => {
+    if(r.P1Combo) uniqueCombosSet.add(r.P1Combo.trim());
+    if(r.P2Combo) uniqueCombosSet.add(r.P2Combo.trim());
+  });
+
+  const finishCounts = {};
+  battleRows.forEach(r => {
+    const ft = (r.FinishType||'').trim();
+    if (!ft) return;
+    finishCounts[ft] = (finishCounts[ft]||0) + 1;
+  });
+  const finishOrder = ['Xtreme Finish','Burst Finish','Over Finish','Spin Finish','Own Finish'];
+  const finishData = finishOrder.map(ft => ({
+    type: ft.replace(' Finish',''),
+    count: finishCounts[ft]||0,
+    pts: finishPts(ft),
+    color: ft==='Xtreme Finish'?'#0f6b67':ft==='Burst Finish'?'#2ea89d':ft==='Over Finish'?'#6b9e8a':ft==='Spin Finish'?'#a2b0ab':'#e05a46',
+    label: ft==='Xtreme Finish'?'X':ft==='Burst Finish'?'B':ft==='Over Finish'?'O':ft==='Spin Finish'?'S':'OO',
+  })).filter(f=>f.count>0);
+  const finishTotal = finishData.reduce((s,f)=>s+f.count, 0);
+  const xtremeCount = finishCounts['Xtreme Finish']||0;
+  const burstCount  = finishCounts['Burst Finish']||0;
+  const hardFinishPct = finishTotal>0 ? ((xtremeCount+burstCount)/finishTotal*100) : 0;
+  const metaTag = hardFinishPct >= 55 ? 'AGGRESSIVE META' : hardFinishPct <= 35 ? 'DEFENSIVE META' : 'BALANCED META';
+
+  const sideStats = {B:{battles:0,wins:0,ptsS:0,ptsA:0,sets:0,setWins:0}, X:{battles:0,wins:0,ptsS:0,ptsA:0,sets:0,setWins:0}};
+  const setMap = {};
+  battleRows.forEach(r => {
+    const mk = getMatchKey(r, mkMap);
+    const setKey = mk+'|||'+(r.Set||'0');
+    if (!setMap[setKey]) setMap[setKey] = {p1score:0,p2score:0,p1side:'',p2side:''};
+    const sm = setMap[setKey];
+    const p1s=parseInt(r.P1Score||'0',10), p2s=parseInt(r.P2Score||'0',10);
+    if((p1s+p2s) > (sm.p1score+sm.p2score)){ sm.p1score=p1s; sm.p2score=p2s; }
+    if(!sm.p1side && r.P1Side) sm.p1side=r.P1Side;
+    if(!sm.p2side && r.P2Side) sm.p2side=r.P2Side;
+  });
+  Object.values(setMap).forEach(sm => {
+    const p1won = sm.p1score >= 4;
+    const p2won = sm.p2score >= 4;
+    if (!p1won && !p2won) return;
+    ['B','X'].forEach(side => {
+      const p1played = sm.p1side===side, p2played = sm.p2side===side;
+      if (p1played) { sideStats[side].sets++; if(p1won) sideStats[side].setWins++; }
+      if (p2played) { sideStats[side].sets++; if(p2won) sideStats[side].setWins++; }
+    });
+  });
+  battleRows.forEach(r => {
+    const p1side = (r.P1Side||'').trim();
+    const p2side = (r.P2Side||'').trim();
+    const p1won  = (r.Winner||'').trim().toLowerCase() === (r.P1||'').trim().toLowerCase();
+    const pts    = finishPts((r.FinishType||'').trim());
+    ['B','X'].forEach(side => {
+      if (p1side===side) {
+        sideStats[side].battles++;
+        if(p1won){sideStats[side].wins++;sideStats[side].ptsS+=pts;}else sideStats[side].ptsA+=pts;
+      }
+      if (p2side===side) {
+        sideStats[side].battles++;
+        if(!p1won){sideStats[side].wins++;sideStats[side].ptsS+=pts;}else sideStats[side].ptsA+=pts;
+      }
+    });
+  });
+  const sides = ['B','X'].map(side => {
+    const s = sideStats[side];
+    return {
+      side,
+      battles: s.battles,
+      battleWinPct: s.battles>0 ? round1(s.wins/s.battles*100) : 0,
+      ppb: s.battles>0 ? round2((s.ptsS-s.ptsA)/s.battles) : 0,
+      sets: s.sets,
+      setWinPct: s.sets>0 ? round1(s.setWins/s.sets*100) : 0,
+    };
+  });
+
+  const comboMap = {};
+  battleRows.forEach(r => {
+    ['P1Combo','P2Combo'].forEach((field,idx) => {
+      const combo = (r[field]||'').trim();
+      const player = idx===0?(r.P1||'').trim():(r.P2||'').trim();
+      const won = idx===0
+        ? (r.Winner||'').toLowerCase()===(r.P1||'').toLowerCase()
+        : (r.Winner||'').toLowerCase()===(r.P2||'').toLowerCase();
+      const pts = finishPts((r.FinishType||'').trim());
+      if (!combo || !player) return;
+      if (!comboMap[combo]) comboMap[combo] = {battles:0,wins:0,ptsS:0,ptsA:0,players:{}};
+      comboMap[combo].battles++;
+      if(won){comboMap[combo].wins++;comboMap[combo].ptsS+=pts;}else comboMap[combo].ptsA+=pts;
+      if (!comboMap[combo].players[player]) comboMap[combo].players[player]={battles:0,wins:0,ptsS:0,ptsA:0};
+      comboMap[combo].players[player].battles++;
+      if(won){comboMap[combo].players[player].wins++;comboMap[combo].players[player].ptsS+=pts;}
+      else comboMap[combo].players[player].ptsA+=pts;
+    });
+  });
+
+  const combos = Object.entries(comboMap).map(([name,s]) => {
+    const users = Object.keys(s.players).length;
+    const winPct = s.battles>0 ? round1(s.wins/s.battles*100) : 0;
+    const ppb    = s.battles>0 ? round2((s.ptsS-s.ptsA)/s.battles) : 0;
+    const pilots = Object.entries(s.players)
+      .filter(([,ps]) => ps.battles >= 10)
+      .map(([player,ps]) => ({
+        player,
+        battles: ps.battles,
+        winPct: ps.battles>0 ? round1(ps.wins/ps.battles*100) : 0,
+        ppb:    ps.battles>0 ? round2((ps.ptsS-ps.ptsA)/ps.battles) : 0,
+      }))
+      .sort((a,b) => b.ppb - a.ppb)
+      .slice(0,2);
+    return { name, battles: s.battles, wins: s.wins, users, winPct, ppb, pilots };
+  }).sort((a,b) => b.battles - a.battles);
+
+  const comboTableRows = combos.filter(c => c.battles >= 10);
+
+  const playerBattleCounts = allPlayerStats.map(s => {
+    const pl = s.player.toLowerCase();
+    return battleRows.filter(r =>
+      (r.P1||'').trim().toLowerCase()===pl || (r.P2||'').trim().toLowerCase()===pl
+    ).length;
+  });
+  const avgBattles = playerBattleCounts.length > 0
+    ? round1(playerBattleCounts.reduce((a,b)=>a+b,0)/playerBattleCounts.length) : 0;
+  const minBattles = playerBattleCounts.length ? Math.min(...playerBattleCounts) : 0;
+  const maxBattles = playerBattleCounts.length ? Math.max(...playerBattleCounts) : 0;
+  const allWinPcts = allPlayerStats.map(s=>s.winPct).sort((a,b)=>a-b);
+  const medWinPct  = allWinPcts.length ? allWinPcts[Math.floor(allWinPcts.length/2)] : 0;
+  const allPPBs    = allPlayerStats.map(s=>s.ppb).sort((a,b)=>a-b);
+  const medPPB     = allPPBs.length ? allPPBs[Math.floor(allPPBs.length/2)] : 0;
+
+  return {
+    tournament, winner,
+    players: allPlayers.length,
+    totalBattles, totalSets,
+    uniqueCombos: uniqueCombosSet.size,
+    avgBattles, minBattles, maxBattles,
+    medWinPct, medPPB,
+    finishData, finishTotal, metaTag,
+    sides,
+    combos,
+    comboTableRows,
+  };
+}
+</script>
+
+<script type="text/babel">
+// ── SHARED COMPONENTS ─────────────────────────────────────────────────────────
+
+function Page({children}) {
+  return (
+    <div style={{
+      width:816, minHeight:1056, background:'#fffdf7', color:'#14241f',
+      position:'relative', display:'flex', flexDirection:'column',
+      fontFamily:"'Barlow',sans-serif", boxShadow:'0 8px 40px rgba(0,0,0,0.4)',
+    }}>
+      <div style={{position:'absolute',top:0,left:0,right:0,height:6,background:'#0f6b67'}}/>
+      <div style={{position:'absolute',top:6,left:0,width:220,height:3,background:'#f6d335'}}/>
+      {children}
+    </div>
+  );
+}
+
+function PageHeader({title, subtitle, pageNum}) {
+  return (
+    <div style={{padding:'28px 40px 20px',borderBottom:'1px solid #c8d5d0',display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <div style={{width:34,height:34,borderRadius:'50%',background:'#0f6b67',border:'2px solid #f6d335',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:9,color:'#f6d335',letterSpacing:'0.06em',flexShrink:0}}>NCBL</div>
+        <div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,letterSpacing:'0.04em',color:'#14241f',lineHeight:1}}>{title}</div>
+          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'#6b7d78',letterSpacing:'0.14em',marginTop:3}}>{subtitle}</div>
+        </div>
+      </div>
+      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'#a2b0ab',letterSpacing:'0.1em'}}>{pageNum}</div>
+    </div>
+  );
+}
+
+function PageFooter({pageNum, total}) {
+  return (
+    <div style={{padding:'12px 40px',borderTop:'1px solid #e4ebe7',display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:'auto'}}>
+      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.12em',color:'#a2b0ab'}}>NCBLAST · NORCAL BEYBLADE LEAGUE · TOURNAMENT BREAKDOWN</div>
+      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#c8d5d0'}}>PAGE {pageNum} OF {total}</div>
+    </div>
+  );
+}
+
+function SectionHead({num, title, sub}) {
+  return (
+    <div style={{marginBottom:12}}>
+      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.2em',color:'#2ea89d',fontWeight:600,marginBottom:3}}>{num}</div>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:17,letterSpacing:'0.03em',color:'#14241f',lineHeight:1.1}}>{title}</div>
+      {sub && <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#6b7d78',letterSpacing:'0.1em',marginTop:2}}>{sub}</div>}
+    </div>
+  );
+}
+
+function Rule() {
+  return <div style={{height:1,background:'#c8d5d0'}}/>;
+}
+
+// Stat tile used on page 1 — stronger text colours for cream background
+function Tile({label, val, sub, teal}) {
+  return (
+    <div style={{background:'#f3efde',border:'1px solid #c8d5d0',borderRadius:5,padding:'11px 13px'}}>
+      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.14em',color:'#3c4f4a',marginBottom:4}}>{label}</div>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:26,color:teal?'#0f6b67':'#14241f',lineHeight:1}}>{val}</div>
+      {sub && <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,color:'#3c4f4a',marginTop:3}}>{sub}</div>}
+    </div>
+  );
+}
+
+// ── PAGE 1: COVER ─────────────────────────────────────────────────────────────
+function CoverPage({data}) {
+  const {tournament, winner, players, totalBattles, totalSets, uniqueCombos,
+         avgBattles, minBattles, maxBattles, medWinPct, medPPB,
+         finishData, finishTotal, metaTag, sides} = data;
+
+  const sideB = sides.find(s=>s.side==='B')||{battleWinPct:0,ppb:0,setWinPct:0,battles:0};
+  const sideX = sides.find(s=>s.side==='X')||{battleWinPct:0,ppb:0,setWinPct:0,battles:0};
+
+  return (
+    <Page>
+      {/* DARK HERO */}
+      <div style={{background:'#14241f',padding:'36px 40px 32px',color:'#d4e8e0',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:-40,right:-40,width:220,height:220,borderRadius:'50%',background:'rgba(46,168,157,0.07)'}}/>
+        <div style={{position:'absolute',bottom:-20,left:-10,width:130,height:130,borderRadius:'50%',background:'rgba(246,211,53,0.05)'}}/>
+        <div style={{position:'relative',zIndex:1}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+            <div style={{width:34,height:34,borderRadius:'50%',background:'#0f6b67',border:'2px solid #f6d335',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:9,color:'#f6d335',letterSpacing:'0.06em'}}>NCBL</div>
+            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.16em',color:'#7a9e92'}}>NORCAL BEYBLADE LEAGUE</span>
+          </div>
+          <div style={{display:'inline-flex',alignItems:'center',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.2em',color:'#f6d335',background:'rgba(246,211,53,0.1)',border:'1px solid rgba(246,211,53,0.25)',padding:'3px 9px',borderRadius:3,marginBottom:12}}>TOURNAMENT BREAKDOWN</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:44,letterSpacing:'0.02em',color:'#fff',lineHeight:1,marginBottom:20}}>{tournament}</div>
+          <div style={{height:1,background:'rgba(255,255,255,0.08)',marginBottom:20}}/>
+          {/* Hero stat bubbles */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14}}>
+            {[
+              {label:'ATTENDEES',     val:players,       sub:'players'},
+              {label:'TOTAL BATTLES', val:totalBattles,  sub:'across all sets'},
+              {label:'TOTAL SETS',    val:totalSets,     sub:'first-to-4 format'},
+              {label:'UNIQUE COMBOS', val:uniqueCombos,  sub:'played this event'},
+            ].map((s,i) => (
+              <div key={i} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:5,padding:'11px 13px'}}>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.16em',color:'#7a9e92',marginBottom:5}}>{s.label}</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:26,color:'#fff',lineHeight:1}}>{s.val}</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,color:'#3a6058',marginTop:3}}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+          {/* Winner band */}
+          {winner && (
+            <div style={{marginTop:16,display:'flex',alignItems:'center',gap:16,background:'rgba(246,211,53,0.08)',border:'1px solid rgba(246,211,53,0.2)',borderRadius:5,padding:'12px 16px'}}>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.2em',color:'#f6d335',marginBottom:3}}>TOURNAMENT WINNER</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:24,color:'#fff',letterSpacing:'0.04em',lineHeight:1}}>{winner.player}</div>
+              </div>
+              <div style={{display:'flex',gap:20}}>
+                <div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.14em',color:'#7a9e92',marginBottom:2}}>WIN%</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:600,color:'#f6d335'}}>{winner.winPct.toFixed(1)}%</div>
+                </div>
+                <div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.14em',color:'#7a9e92',marginBottom:2}}>PPB</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:600,color:'#f6d335'}}>{winner.ppb>=0?'+':''}{winner.ppb.toFixed(2)}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* BODY */}
+      <div style={{flex:1,padding:'26px 40px 28px',display:'flex',flexDirection:'column',gap:22}}>
+
+        {/* §01 Participation Snapshot */}
+        <div>
+          <SectionHead num="§01" title="Participation Snapshot" sub="EVENT-WIDE AVERAGES · ALL PLAYERS"/>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:12}}>
+            <Tile label="AVG BATTLES / PLAYER" val={avgBattles.toFixed(1)}/>
+            <Tile label="UNIQUE COMBOS"        val={uniqueCombos} sub="used this event"/>
+          </div>
+        </div>
+
+        <Rule/>
+
+        {/* §02 Finish Type Distribution */}
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:10}}>
+            <SectionHead num="§02" title="Finish Type Distribution" sub={`ALL ${finishTotal} BATTLES · EVENT-WIDE`}/>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#2ea89d',letterSpacing:'0.1em',fontWeight:600,marginBottom:1}}>{metaTag}</div>
+          </div>
+          <div style={{height:20,borderRadius:3,overflow:'hidden',display:'flex',marginBottom:8}}>
+            {finishData.map((f,i) => {
+              const pct = finishTotal>0 ? f.count/finishTotal*100 : 0;
+              return (
+                <div key={i} style={{width:pct+'%',height:'100%',background:f.color,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:600,color:'#fff',overflow:'hidden',whiteSpace:'nowrap'}}>
+                  {pct>6 ? `${f.label} ${Math.round(pct)}%` : ''}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{display:'flex',gap:14,flexWrap:'wrap'}}>
+            {finishData.map((f,i) => (
+              <div key={i} style={{display:'flex',alignItems:'center',gap:5,fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#3c4f4a'}}>
+                <div style={{width:8,height:8,borderRadius:2,background:f.color,flexShrink:0}}/>
+                {f.type} ({f.pts}pt) · {f.count}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Rule/>
+
+        {/* §03 Stadium Side Performance */}
+        <div>
+          <SectionHead num="§03" title="Stadium Side Performance" sub="B-SIDE VS X-SIDE · EVENT-WIDE ACROSS ALL SETS"/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+            {/* B-SIDE — light card */}
+            <div style={{borderRadius:6,padding:'16px 18px',background:'#f3efde',border:'1.5px solid #c8d5d0',position:'relative',overflow:'hidden'}}>
+              <div style={{position:'absolute',right:-8,top:-14,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:88,lineHeight:1,color:'rgba(0,0,0,0.05)',pointerEvents:'none',userSelect:'none'}}>B</div>
+              <div style={{position:'relative'}}>
+                <div style={{display:'inline-block',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.16em',fontWeight:600,padding:'2px 7px',borderRadius:3,marginBottom:10,background:'rgba(15,107,103,0.15)',color:'#0a4a46',border:'1px solid rgba(15,107,103,0.25)'}}>B-SIDE</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:42,lineHeight:1,marginBottom:2,color:'#0f6b67'}}>{sideB.battleWinPct.toFixed(1)}%</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#3c4f4a',marginBottom:12}}>battle win rate</div>
+                <div style={{height:1,background:'#c8d5d0',marginBottom:10}}/>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+                  {[
+                    {l:'PPB',      v:(sideB.ppb>=0?'+':'')+sideB.ppb.toFixed(2)},
+                    {l:'SET WIN%', v:sideB.setWinPct.toFixed(1)+'%'},
+                    {l:'BATTLES',  v:sideB.battles},
+                  ].map((s,i)=>(
+                    <div key={i}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.12em',color:'#3c4f4a',marginBottom:3}}>{s.l}</div>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:600,color:'#0f6b67'}}>{s.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* X-SIDE — dark card */}
+            <div style={{borderRadius:6,padding:'16px 18px',background:'#14241f',border:'1.5px solid #2a3d35',position:'relative',overflow:'hidden'}}>
+              <div style={{position:'absolute',right:-8,top:-14,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:88,lineHeight:1,color:'rgba(255,255,255,0.05)',pointerEvents:'none',userSelect:'none'}}>X</div>
+              <div style={{position:'relative'}}>
+                <div style={{display:'inline-block',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.16em',fontWeight:600,padding:'2px 7px',borderRadius:3,marginBottom:10,background:'rgba(246,211,53,0.12)',color:'#f6d335',border:'1px solid rgba(246,211,53,0.2)'}}>X-SIDE</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:42,lineHeight:1,marginBottom:2,color:'#f6d335'}}>{sideX.battleWinPct.toFixed(1)}%</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#5a7a72',marginBottom:12}}>battle win rate</div>
+                <div style={{height:1,background:'rgba(255,255,255,0.08)',marginBottom:10}}/>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+                  {[
+                    {l:'PPB',      v:(sideX.ppb>=0?'+':'')+sideX.ppb.toFixed(2), neg:sideX.ppb<0},
+                    {l:'SET WIN%', v:sideX.setWinPct.toFixed(1)+'%'},
+                    {l:'BATTLES',  v:sideX.battles},
+                  ].map((s,i)=>(
+                    <div key={i}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.12em',color:'#4a6a62',marginBottom:3}}>{s.l}</div>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:600,color:s.neg?'#e05a46':'#d4e8e0'}}>{s.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <PageFooter pageNum={1} total={3}/>
+    </Page>
+  );
+}
+
+// ── PAGE 2: COMBO CARDS ───────────────────────────────────────────────────────
+function ComboCardsPage({data}) {
+  const {tournament, combos} = data;
+  const topCombos = combos.slice(0,6);
+
+  function cardAccent(rank, winPct) {
+    if (rank===0) return '#f6d335';
+    if (winPct >= 55) return '#0f6b67';
+    if (winPct >= 48) return '#2ea89d';
+    return '#a2b0ab';
+  }
+  function winBarColor(winPct) {
+    if (winPct >= 55) return '#0f6b67';
+    if (winPct >= 48) return '#2ea89d';
+    if (winPct >= 42) return '#a2b0ab';
+    return '#c23a2a';
+  }
+
+  return (
+    <Page>
+      <PageHeader
+        title={`${tournament} — META BREAKDOWN`}
+        subtitle="NORCAL BEYBLADE LEAGUE"
+        pageNum="PAGE 2 OF 3"
+      />
+      <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:16}}>
+        <SectionHead num="§04" title="Most-Used Combos — Event Meta" sub="RANKED BY USAGE · FIELD STATS ACROSS ALL PLAYERS · TOP PILOTS (10 BATTLES MIN)"/>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:11}}>
+          {topCombos.map((c,i) => (
+            <ComboCard key={i} combo={c} rank={i} accent={cardAccent(i,c.winPct)} barColor={winBarColor(c.winPct)}/>
+          ))}
+          {topCombos.length === 0 && (
+            <div style={{gridColumn:'1/-1',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:'#a2b0ab',padding:'20px 0'}}>No combo data found for this tournament.</div>
+          )}
+        </div>
+      </div>
+      <PageFooter pageNum={2} total={3}/>
+    </Page>
+  );
+}
+
+// ── PAGE 3: FULL TABLE ────────────────────────────────────────────────────────
+function ComboTablePage({data}) {
+  const {tournament, combos, comboTableRows} = data;
+
+  return (
+    <Page>
+      <PageHeader
+        title={`${tournament} — COMBO USAGE`}
+        subtitle="NORCAL BEYBLADE LEAGUE"
+        pageNum="PAGE 3 OF 3"
+      />
+      <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:16}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
+          <SectionHead num="§05" title="Full Combo Usage Table" sub={'COMBOS WITH ≥10 BATTLES EVENT-WIDE · RANKED BY USAGE'}/>
+          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#6b7d78',letterSpacing:'0.08em',marginBottom:1}}>PPB = NET PTS ÷ BATTLES</div>
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse'}}>
+          <thead>
+            <tr style={{borderBottom:'1px solid #c8d5d0'}}>
+              {['#','Combo','Users','Battles','Win%','PPB'].map((h,i)=>(
+                <th key={i} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.1em',color:'#3c4f4a',padding:'5px 7px',textAlign:i<2?'left':'right',fontWeight:600}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {comboTableRows.map((c,i) => (
+              <tr key={i} style={{borderBottom:'1px solid #e4ebe7'}}>
+                <td style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'#2ea89d',fontWeight:600,padding:'5px 7px',textAlign:'left'}}>{String(i+1).padStart(2,'0')}</td>
+                <td style={{fontFamily:"'Barlow',sans-serif",fontSize:10.5,fontWeight:600,color:'#14241f',padding:'5px 7px',textAlign:'left'}}>{c.name}</td>
+                <td style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,color:'#3c4f4a',padding:'5px 7px',textAlign:'right'}}>{c.users}</td>
+                <td style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,color:'#3c4f4a',padding:'5px 7px',textAlign:'right'}}>{c.battles}</td>
+                <td style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,padding:'5px 7px',textAlign:'right',
+                  color:c.winPct>=55?'#0f6b67':c.winPct<45?'#c23a2a':'#3c4f4a',
+                  fontWeight:c.winPct>=55||c.winPct<45?700:400}}>
+                  {c.winPct.toFixed(1)}%
+                </td>
+                <td style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,padding:'5px 7px',textAlign:'right',
+                  color:c.ppb>=0.2?'#0f6b67':c.ppb<0?'#c23a2a':'#3c4f4a',
+                  fontWeight:c.ppb>=0.2||c.ppb<0?700:400}}>
+                  {c.ppb>=0?'+':''}{c.ppb.toFixed(2)}
+                </td>
+              </tr>
+            ))}
+            {comboTableRows.length === 0 && (
+              <tr><td colSpan={6} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'#a2b0ab',padding:'14px 7px',fontStyle:'italic'}}>No combos with 10+ battles found.</td></tr>
+            )}
+            {combos.length > comboTableRows.length && (
+              <tr>
+                <td style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'#a2b0ab',padding:'5px 7px'}}>—</td>
+                <td colSpan={5} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'#a2b0ab',padding:'5px 7px',fontStyle:'italic'}}>
+                  {combos.length - comboTableRows.length} more combo{combos.length-comboTableRows.length!==1?'s':''} below 10-battle threshold
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <PageFooter pageNum={3} total={3}/>
+    </Page>
+  );
+}
+
+// ── COMBO CARD ────────────────────────────────────────────────────────────────
+function ComboCard({combo, rank, accent, barColor}) {
+  const {name, battles, users, winPct, ppb, pilots} = combo;
+  return (
+    <div style={{border:'1.5px solid #c8d5d0',borderRadius:6,padding:13,background:'#f3efde',position:'relative',overflow:'hidden'}}>
+      <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:accent}}/>
+      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.16em',color:'#2ea89d',fontWeight:600,marginBottom:5}}>
+        #{rank+1} MOST USED · {battles} BATTLES · {users} USER{users!==1?'S':''}
+      </div>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13.5,color:'#14241f',lineHeight:1.2,marginBottom:9,minHeight:30}}>{name}</div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:5,marginBottom:8}}>
+        {[
+          {l:'FIELD WIN%', v:winPct.toFixed(1)+'%', pos:winPct>=55, neg:winPct<45},
+          {l:'FIELD PPB',  v:(ppb>=0?'+':'')+ppb.toFixed(2), pos:ppb>=0.2, neg:ppb<0},
+          {l:'TOTAL BTL',  v:battles, pos:false, neg:false},
+        ].map((s,i)=>(
+          <div key={i} style={{textAlign:'center'}}>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,letterSpacing:'0.12em',color:'#14241f',marginBottom:2}}>{s.l}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:17,lineHeight:1,color:s.pos?'#0f6b67':s.neg?'#c23a2a':'#14241f'}}>{s.v}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{height:3,background:'#c8d5d0',borderRadius:2,overflow:'hidden',marginBottom:8}}>
+        <div style={{height:'100%',width:Math.min(100,winPct)+'%',background:barColor,borderRadius:2}}/>
+      </div>
+      <div style={{borderTop:'1px solid #c8d5d0',paddingTop:7}}>
+        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,letterSpacing:'0.14em',color:'#14241f',marginBottom:5}}>TOP PILOTS ON THIS COMBO (10 BATTLES MIN)</div>
+        {pilots.length > 0 ? (
+          <>
+            <div style={{display:'grid',gridTemplateColumns:'1fr auto auto auto',gap:4,marginBottom:3}}>
+              {['PLAYER','WIN%','PPB','BTL'].map((h,i)=>(
+                <div key={i} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:6.5,letterSpacing:'0.1em',color:'#14241f',textAlign:i===0?'left':'right'}}>{h}</div>
+              ))}
+            </div>
+            {pilots.map((p,i)=>(
+              <div key={i} style={{display:'grid',gridTemplateColumns:'1fr auto auto auto',gap:4,alignItems:'center',marginBottom:3}}>
+                <div style={{fontFamily:"'Barlow',sans-serif",fontSize:9.5,fontWeight:600,color:'#14241f',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.player}</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,textAlign:'right',color:'#14241f'}}>{p.winPct.toFixed(1)}%</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,textAlign:'right',fontWeight:600,color:p.ppb>=0?'#0f6b67':'#c23a2a'}}>{p.ppb>=0?'+':''}{p.ppb.toFixed(2)}</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,textAlign:'right',color:'#14241f'}}>{p.battles}</div>
+              </div>
+            ))}
+            {pilots.length < 2 && (
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#14241f',fontStyle:'italic',marginTop:2}}>No 2nd pilot meets threshold</div>
+            )}
+          </>
+        ) : (
+          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#14241f',fontStyle:'italic',marginTop:4}}>No pilots meet the 10-battle threshold</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ROOT ──────────────────────────────────────────────────────────────────────
+function TournamentBreakdown({data}) {
+  return (
+    <>
+      <CoverPage data={data}/>
+      <ComboCardsPage data={data}/>
+      <ComboTablePage data={data}/>
+    </>
+  );
+}
+</script>
+
+</body>
+</html>

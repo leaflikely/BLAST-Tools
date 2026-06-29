@@ -1,0 +1,1607 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1100,initial-scale=1" />
+  <title>NCBLAST — Combo Stats Reader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:       #0a0f0d;
+      --surface:  #111816;
+      --surface2: #182320;
+      --surface3: #1f2d29;
+      --border:   #243530;
+      --border2:  #2e4440;
+      --teal:     #2ea89d;
+      --teal-deep:#0f6b67;
+      --teal-soft:#a8d9d2;
+      --accent:   #f6d335;
+      --text:     #d0e8e0;
+      --muted:    #6b8e84;
+      --faint:    #3a5550;
+      --danger:   #e05a46;
+      --success:  #4ec98a;
+      --win-col:  #2ea89d;
+      --loss-col: #c23a2a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── LAYOUT ──────────────────────────────────────────────────────── */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 16px 32px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .logo {
+      width: 38px; height: 38px;
+      background: var(--teal-deep);
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900; font-size: 10px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      flex-shrink: 0;
+    }
+
+    .header-titles h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 20px;
+      letter-spacing: 0.05em; color: #fff; line-height: 1;
+    }
+
+    .header-titles p {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px; letter-spacing: 0.16em;
+      color: var(--muted); margin-top: 2px;
+    }
+
+    .header-spacer { flex: 1; }
+
+    .header-file-status {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px; letter-spacing: 0.1em;
+      color: var(--muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .file-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--faint);
+    }
+    .file-dot.loaded { background: var(--success); }
+
+    .body { display: flex; flex: 1; }
+
+    /* ── SIDEBAR ─────────────────────────────────────────────────────── */
+    .sidebar {
+      width: 320px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 55px);
+      position: sticky; top: 55px;
+      overflow: hidden;
+    }
+
+    .sidebar-inner {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .sidebar-inner::-webkit-scrollbar { width: 3px; }
+    .sidebar-inner::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .sidebar-section { margin-bottom: 24px; }
+
+    .sidebar-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px; letter-spacing: 0.18em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* ── DROP ZONE ───────────────────────────────────────────────────── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 22px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--teal);
+      background: rgba(46,168,157,0.05);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .drop-zone-icon { font-size: 22px; margin-bottom: 8px; }
+
+    .drop-zone h3 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 14px;
+      letter-spacing: 0.04em; color: #fff; margin-bottom: 4px;
+    }
+
+    .drop-zone p {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px; color: var(--muted); letter-spacing: 0.08em;
+    }
+
+    /* ── COMBO BUILDER ───────────────────────────────────────────────── */
+    .combo-builder {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .part-row { display: flex; flex-direction: column; gap: 4px; }
+
+    .part-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px; letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+
+    .part-select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color .15s;
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b8e84'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+
+    .part-select:focus {
+      outline: none;
+      border-color: var(--teal);
+    }
+
+    .part-select option { background: #182320; }
+
+    .combo-preview {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--teal-soft);
+      line-height: 1.5;
+      min-height: 36px;
+    }
+
+    .combo-preview.placeholder { color: var(--faint); font-style: italic; }
+
+    .run-btn {
+      width: 100%;
+      padding: 11px;
+      background: var(--accent);
+      color: #0a0f0d;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 15px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: background .15s;
+      margin-top: 4px;
+    }
+
+    .run-btn:hover { background: #f8dc55; }
+    .run-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── TOURNAMENT FILTER ───────────────────────────────────────────── */
+    .tourn-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .tourn-list::-webkit-scrollbar { width: 3px; }
+    .tourn-list::-webkit-scrollbar-thumb { background: var(--border2); }
+
+    .tourn-check {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: border-color .12s;
+      user-select: none;
+    }
+
+    .tourn-check:hover { border-color: var(--teal); }
+    .tourn-check.checked { border-color: var(--accent); }
+
+    .tourn-chk-box {
+      width: 15px; height: 15px;
+      border-radius: 3px;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; transition: all .12s;
+    }
+
+    .tourn-check.checked .tourn-chk-box {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a0f0d;
+    }
+
+    .tourn-name {
+      font-family: 'Barlow', sans-serif;
+      font-size: 12px; font-weight: 500;
+      color: var(--text); flex: 1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .tourn-battles {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px; color: var(--muted);
+    }
+
+    .tourn-select-all {
+      background: none; border: none;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px; letter-spacing: 0.1em;
+      color: var(--teal); cursor: pointer;
+    }
+
+    /* ── MAIN CONTENT ────────────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 32px;
+      overflow: auto;
+    }
+
+    /* ── EMPTY STATE ─────────────────────────────────────────────────── */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      color: var(--faint);
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      opacity: 0.4;
+    }
+
+    .empty-state h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px; font-weight: 700;
+      letter-spacing: 0.04em; color: var(--faint);
+    }
+
+    .empty-state p {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px; letter-spacing: 0.08em;
+      color: var(--faint); text-align: center;
+      max-width: 320px; line-height: 1.7;
+    }
+
+    /* ── RESULTS HEADER ──────────────────────────────────────────────── */
+    .results-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .results-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 26px;
+      letter-spacing: -0.01em; color: #fff;
+      line-height: 1;
+    }
+
+    .results-combo {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px; letter-spacing: 0.08em;
+      color: var(--teal-soft); margin-top: 5px;
+    }
+
+    .results-meta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px; letter-spacing: 0.08em;
+      color: var(--muted); margin-top: 4px;
+    }
+
+    /* ── SUMMARY STAT CHIPS ──────────────────────────────────────────── */
+    .stat-chips {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .stat-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      display: flex; flex-direction: column; gap: 3px;
+      flex: 1; min-width: 110px;
+    }
+
+    .stat-chip-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8.5px; letter-spacing: 0.16em;
+      color: var(--muted); text-transform: uppercase;
+    }
+
+    .stat-chip-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 28px;
+      letter-spacing: -0.01em; color: #fff;
+      line-height: 1;
+    }
+
+    .stat-chip-val.teal { color: var(--teal); }
+    .stat-chip-val.accent { color: var(--accent); }
+    .stat-chip-val.danger { color: var(--danger); }
+
+    .stat-chip-sub {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px; letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    /* ── SORT CONTROLS ───────────────────────────────────────────────── */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .sort-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px; letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+
+    .sort-btn {
+      padding: 6px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px; letter-spacing: 0.1em;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .12s;
+    }
+
+    .sort-btn:hover { border-color: var(--teal); color: var(--teal); }
+    .sort-btn.active {
+      background: rgba(46,168,157,0.12);
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    .results-count {
+      margin-left: auto;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px; letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .results-count span { color: var(--accent); }
+
+    /* ── MATCHUP TABLE ───────────────────────────────────────────────── */
+    .matchup-table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    table.matchup-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+    }
+
+    table.matchup-table thead {
+      background: var(--surface2);
+      position: sticky; top: 0; z-index: 10;
+    }
+
+    table.matchup-table th {
+      padding: 10px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8.5px; letter-spacing: 0.16em;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      transition: color .12s;
+    }
+
+    table.matchup-table th:hover { color: var(--text); }
+    table.matchup-table th.sorted { color: var(--accent); }
+
+    table.matchup-table th .sort-arrow {
+      display: inline-block;
+      margin-left: 4px;
+      opacity: 0.5;
+      font-size: 9px;
+    }
+    table.matchup-table th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
+
+    table.matchup-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid rgba(36,53,48,0.6);
+      vertical-align: middle;
+      font-variant-numeric: tabular-nums;
+    }
+
+    table.matchup-table tr:last-child td { border-bottom: none; }
+
+    table.matchup-table tr:hover td {
+      background: rgba(46,168,157,0.04);
+    }
+
+    table.matchup-table tr.expanded td {
+      background: rgba(46,168,157,0.07);
+      border-bottom-color: var(--border);
+    }
+
+    .combo-cell {
+      font-family: 'Barlow', sans-serif;
+      font-weight: 600; color: #fff;
+      max-width: 260px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .num-cell {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .win-pct {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px; font-weight: 600;
+      text-align: right;
+    }
+
+    .ppb-cell {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px; font-weight: 700;
+      text-align: right;
+    }
+
+    .wl-cell {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px; text-align: right;
+      color: var(--muted);
+    }
+
+    /* Win rate bar */
+    .winbar-wrap {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+    }
+
+    .winbar {
+      flex: 1; height: 5px;
+      background: var(--surface3);
+      border-radius: 3px;
+      overflow: hidden; position: relative;
+    }
+
+    .winbar-fill {
+      position: absolute; inset: 0 auto 0 0;
+      border-radius: 3px;
+    }
+
+    /* finish pill badges */
+    .finish-pills {
+      display: flex; gap: 4px; flex-wrap: wrap; align-items: center;
+    }
+
+    .fpill {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    .fpill-x  { background: rgba(246,211,53,0.13);  color: #f6d335; border: 1px solid rgba(246,211,53,0.2); }
+    .fpill-o  { background: rgba(46,168,157,0.13);  color: var(--teal); border: 1px solid rgba(46,168,157,0.2); }
+    .fpill-b  { background: rgba(78,201,138,0.13);  color: var(--success); border: 1px solid rgba(78,201,138,0.2); }
+    .fpill-s  { background: rgba(162,176,171,0.12); color: #a2b0ab; border: 1px solid rgba(162,176,171,0.15); }
+    .fpill-ox { background: rgba(224,90,70,0.12);  color: var(--danger); border: 1px solid rgba(224,90,70,0.2); }
+    .fpill-oo { background: rgba(180,70,50,0.12);  color: #d46855; border: 1px solid rgba(180,70,50,0.2); }
+    .fpill-ob { background: rgba(200,100,80,0.11); color: #c08070; border: 1px solid rgba(200,100,80,0.15); }
+    .fpill-os { background: rgba(162,176,171,0.08); color: #8a9e97; border: 1px solid rgba(162,176,171,0.12); }
+
+    .expand-btn {
+      background: none; border: none;
+      color: var(--faint); cursor: pointer;
+      font-size: 12px; padding: 2px 4px;
+      transition: color .12s; line-height: 1;
+    }
+    .expand-btn:hover { color: var(--teal); }
+    .expand-btn.open { color: var(--teal); }
+
+    /* expanded detail row */
+    .detail-row td {
+      padding: 0 !important;
+      border-bottom: 1px solid var(--border) !important;
+    }
+
+    .detail-inner {
+      padding: 14px 20px 16px 48px;
+      background: rgba(15,107,103,0.06);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .detail-block {}
+
+    .detail-block-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8.5px; letter-spacing: 0.14em;
+      color: var(--muted); margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .finish-split-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .finish-split-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px; color: var(--text);
+      width: 28px; flex-shrink: 0;
+    }
+
+    .finish-split-bar {
+      flex: 1; height: 6px;
+      background: var(--surface3);
+      border-radius: 3px; overflow: hidden;
+    }
+
+    .finish-split-fill { height: 100%; border-radius: 3px; }
+
+    .finish-split-count {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px; color: var(--muted);
+      width: 22px; text-align: right; flex-shrink: 0;
+    }
+
+    /* no results */
+    .no-results {
+      padding: 48px;
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px; letter-spacing: 0.1em;
+      color: var(--faint);
+    }
+
+    /* divider rule between winning and losing finish sections */
+    .finish-section-head {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8px; letter-spacing: 0.16em;
+      color: var(--muted); text-transform: uppercase;
+      padding: 4px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">NCBL</div>
+    <div class="header-titles">
+      <h1>COMBO STATS READER</h1>
+      <p>NORCAL BEYBLADE LEAGUE · MATCHUP ANALYSIS</p>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-file-status">
+      <div class="file-dot" id="file-dot"></div>
+      <span id="file-label">No file loaded</span>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-inner">
+
+        <!-- File Import -->
+        <div class="sidebar-section">
+          <div class="sidebar-label">DATA SOURCE</div>
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" id="csv-input" accept=".csv,.tsv,.txt">
+            <div class="drop-zone-icon">📂</div>
+            <h3>Drop file here</h3>
+            <p id="drop-hint">CSV or TSV · NCBLAST export · any size</p>
+          </div>
+        </div>
+
+        <!-- Combo Builder -->
+        <div class="sidebar-section" id="combo-section">
+          <div class="sidebar-label">FILTER BY PARTS</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.6;color:var(--muted);margin-bottom:12px;letter-spacing:0.04em;">
+            Select any combination of parts. Blank fields act as wildcards — e.g. just a Blade shows that blade's overall stats across all ratchets and bits.
+          </div>
+          <div class="combo-builder" id="combo-builder">
+            <div class="part-row">
+              <div class="part-label">BLADE <span style="color:var(--faint);font-size:8px;letter-spacing:0.06em">OPTIONAL</span></div>
+              <select class="part-select" id="sel-blade" onchange="updateComboPreview()">
+                <option value="">Any Blade</option>
+              </select>
+            </div>
+            <div class="part-row">
+              <div class="part-label">RATCHET <span style="color:var(--faint);font-size:8px;letter-spacing:0.06em">OPTIONAL</span></div>
+              <select class="part-select" id="sel-ratchet" onchange="updateComboPreview()">
+                <option value="">Any Ratchet</option>
+              </select>
+            </div>
+            <div class="part-row">
+              <div class="part-label">BIT <span style="color:var(--faint);font-size:8px;letter-spacing:0.06em">OPTIONAL</span></div>
+              <select class="part-select" id="sel-bit" onchange="updateComboPreview()">
+                <option value="">Any Bit</option>
+              </select>
+            </div>
+            <div class="combo-preview placeholder" id="combo-preview">Load a file to begin…</div>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <button class="run-btn" id="run-btn" disabled onclick="runSearch()" style="flex:1;margin-top:0">SEARCH MATCHUPS</button>
+              <button id="clear-btn" onclick="clearSelection()" title="Clear all part selections" style="
+                padding:0 12px;
+                background:transparent;
+                border:1px solid var(--border);
+                border-radius:6px;
+                color:var(--muted);
+                font-family:'IBM Plex Mono',monospace;
+                font-size:11px;
+                letter-spacing:0.1em;
+                cursor:pointer;
+                transition:all .15s;
+                white-space:nowrap;
+              " onmouseover="this.style.borderColor='var(--danger)';this.style.color='var(--danger)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✕ CLEAR</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tournament Filter -->
+        <div class="sidebar-section" id="tourn-section" style="display:none">
+          <div class="sidebar-label">
+            TOURNAMENTS
+            <button class="tourn-select-all" id="tourn-all-btn" onclick="toggleAllTournaments()">DESELECT ALL</button>
+          </div>
+          <div class="tourn-list" id="tourn-list"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main" id="main">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">⚙️</div>
+        <h2>NO FILTER APPLIED</h2>
+        <p>Import a CSV or TSV file, then select one or more parts on the left. Leave any field blank to treat it as a wildcard — search just a blade, a bit, a ratchet+bit combo, or a full exact combo.</p>
+      </div>
+      <div id="results-area" style="display:none"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════
+//  FORMAT DETECTION + PARSING
+//
+//  Two supported formats:
+//
+//  FORMAT A — CSV with header row (SweetScale style):
+//    Timestamp,Judge,Tournament,Match,P1,P1Side,P2,P2Side,P1Score,P2Score,
+//    Shuffle,Round,Winner,P1Combo,P2Combo,FinishType,Points
+//    (both combos present; points column present)
+//
+//  FORMAT B — TSV with NO header row (OTBB style, 14 cols):
+//    Timestamp  Judge  Tournament  Match  P1  P1Side  P2  P2Side
+//    P1Score  P2Score  Round  Winner  Combo  FinishType
+//    (only winner's combo; no points column)
+//
+//  Both are normalised to internal schema:
+//    { tournament, match, p1, p2, p1side, p2side, p1score, p2score,
+//      round, winner, p1combo, p2combo, winnerCombo, finishType, points,
+//      formatB }
+// ══════════════════════════════════════════════════════════════════════════
+
+function detectAndParse(text) {
+  const raw = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim();
+  const lines = raw.split('\n').filter(l => l.trim());
+  if (!lines.length) return [];
+
+  // Sniff delimiter: if first line has tabs, it's TSV; else CSV
+  const firstLine = lines[0];
+  const tabCount   = (firstLine.match(/\t/g)||[]).length;
+  const commaCount = (firstLine.match(/,/g)||[]).length;
+  const isTSV = tabCount > commaCount;
+
+  if (isTSV) {
+    return parseFormatB(lines);
+  } else {
+    // Check if first line looks like a header (contains recognisable column names)
+    const lower = firstLine.toLowerCase();
+    if (lower.includes('tournament') || lower.includes('p1combo') || lower.includes('finishtype')) {
+      return parseFormatA(lines);
+    }
+    // No header detected — try as headerless TSV anyway
+    return parseFormatB(lines);
+  }
+}
+
+function splitLine(line, delim) {
+  if (delim === '\t') return line.split('\t').map(v => v.trim().replace(/^"|"$/g,''));
+  // CSV with quote handling
+  const vals = [];
+  let cur = '', inQ = false;
+  for (let c = 0; c < line.length; c++) {
+    const ch = line[c];
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { vals.push(cur.trim().replace(/^"|"$/g,'')); cur = ''; }
+    else cur += ch;
+  }
+  vals.push(cur.trim().replace(/^"|"$/g,''));
+  return vals;
+}
+
+// Format A: CSV with header
+function parseFormatA(lines) {
+  const headers = splitLine(lines[0], ',').map(h => h.trim());
+  const col = name => headers.indexOf(name);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const v = splitLine(lines[i], ',');
+    const get = (name, fallback='') => { const idx = col(name); return idx>=0 && v[idx]!==undefined ? v[idx] : fallback; };
+    const winner = get('Winner');
+    const p1combo = get('P1Combo');
+    const p2combo = get('P2Combo');
+    const p1 = get('P1');
+    const p2 = get('P2');
+    const winnerIsP1 = winner.toLowerCase() === p1.toLowerCase();
+    const ft = get('FinishType');
+    // Derive per-battle point value from the finish type — the Points column
+    // is the winner's cumulative running score, NOT the value of this single finish.
+    const pts = ft === 'Xtreme Finish' ? 3
+              : ft === 'Over Finish'   ? 2
+              : ft === 'Burst Finish'  ? 2
+              : ft === 'Own Finish'    ? 2
+              : ft === 'Spin Finish'   ? 1
+              : 0;
+    rows.push({
+      tournament:  get('Tournament'),
+      match:       get('Match'),
+      p1, p2,
+      p1side:      get('P1Side'),
+      p2side:      get('P2Side'),
+      p1score:     parseInt(get('P1Score','0'),10),
+      p2score:     parseInt(get('P2Score','0'),10),
+      round:       parseInt(get('Round','0'),10),
+      winner,
+      p1combo,
+      p2combo,
+      winnerCombo: winnerIsP1 ? p1combo : p2combo,
+      loserCombo:  winnerIsP1 ? p2combo : p1combo,
+      finishType:  ft,
+      points:      pts,
+      formatB:     false,
+    });
+  }
+  return rows;
+}
+
+// Format B: TSV, no header, 14 columns
+// Col:  0=Timestamp 1=Judge 2=Tournament 3=Match 4=P1 5=P1Side 6=P2 7=P2Side
+//       8=P1Score 9=P2Score 10=Round 11=Winner 12=Combo(winner) 13=FinishType
+function parseFormatB(lines) {
+  const rows = [];
+  for (const line of lines) {
+    const v = splitLine(line, '\t');
+    if (v.length < 13) continue;
+    const winner     = (v[11]||'').trim();
+    const winnerCombo= (v[12]||'').trim();
+    const p1         = (v[4]||'').trim();
+    const p2         = (v[6]||'').trim();
+    const winnerIsP1 = winner.toLowerCase() === p1.toLowerCase();
+    // Derive point value from finish type
+    const ft = (v[13]||'').trim();
+    const pts = ft === 'Xtreme Finish' ? 3 : ft === 'Over Finish' ? 2 : ft === 'Burst Finish' ? 2 : ft === 'Own Finish' ? 2 : ft === 'Spin Finish' ? 1 : 0;
+    rows.push({
+      tournament:  (v[2]||'').trim(),
+      match:       (v[3]||'').trim(),
+      p1, p2,
+      p1side:      (v[5]||'').trim(),
+      p2side:      (v[7]||'').trim(),
+      p1score:     parseInt(v[8]||'0',10),
+      p2score:     parseInt(v[9]||'0',10),
+      round:       parseInt(v[10]||'0',10),
+      winner,
+      p1combo:     winnerIsP1 ? winnerCombo : '',
+      p2combo:     winnerIsP1 ? '' : winnerCombo,
+      winnerCombo,
+      loserCombo:  '', // not recorded in format B
+      finishType:  ft,
+      points:      pts,
+      formatB:     true,
+    });
+  }
+  return rows;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  PART SPLITTER — "Wizard Rod 1-60 Hexa" → { blade, ratchet, bit }
+//  Ratchet token: digits-digits, e.g. 1-60, 9-60, 3-80
+// ══════════════════════════════════════════════════════════════════════════
+function splitCombo(combo) {
+  if (!combo) return { blade:'', ratchet:'', bit:'' };
+  const tokens = combo.trim().split(/\s+/);
+  const rIdx = tokens.findIndex(t => /^\d+-\d+$/.test(t));
+  if (rIdx === -1) return { blade: combo.trim(), ratchet: '', bit: '' };
+  return {
+    blade:   tokens.slice(0, rIdx).join(' '),
+    ratchet: tokens[rIdx],
+    bit:     tokens.slice(rIdx + 1).join(' '),
+  };
+}
+
+function comboMatchesParts(combo, blade, ratchet, bit) {
+  // All blank → match everything
+  if (!blade && !ratchet && !bit) return true;
+  const p = splitCombo(combo);
+  if (blade   && p.blade   !== blade)   return false;
+  if (ratchet && p.ratchet !== ratchet) return false;
+  if (bit     && p.bit     !== bit)     return false;
+  return true;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  GLOBAL STATE
+// ══════════════════════════════════════════════════════════════════════════
+let ALL_ROWS = [];
+let FILE_HAS_BOTH_COMBOS = false; // true if Format A (P1Combo + P2Combo known)
+let SELECTED_TOURNAMENTS = new Set();
+let ALL_TOURNAMENTS = [];
+let ALL_COMBO_INDEX = []; // [{ blade, ratchet, bit, full }] — built by buildPartIndex()
+let CURRENT_SORT = 'samples';
+let SORT_DIR = 'desc'; // 'desc' = high-to-low, 'asc' = low-to-high
+let EXPANDED_ROWS = new Set();
+let LAST_RESULTS = [];
+let LAST_BLADE = '', LAST_RATCHET = '', LAST_BIT = '';
+
+// ══════════════════════════════════════════════════════════════════════════
+//  FILE HANDLING
+// ══════════════════════════════════════════════════════════════════════════
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = detectAndParse(e.target.result);
+    if (!rows.length) { alert('Could not parse this file. Make sure it is a standard NCBLAST CSV or TSV export.'); return; }
+
+    ALL_ROWS = rows;
+    FILE_HAS_BOTH_COMBOS = !rows[0].formatB;
+
+    const rowCount = rows.length;
+    const fmt = FILE_HAS_BOTH_COMBOS ? 'CSV' : 'TSV';
+    document.getElementById('file-dot').classList.add('loaded');
+    document.getElementById('file-label').textContent = `${file.name} · ${rowCount} rows · ${fmt}`;
+    document.getElementById('drop-hint').textContent  = `✓ ${rowCount} rows loaded (${fmt})`;
+
+    buildPartIndex();
+    buildTournamentList();
+    refreshDropdowns('', '', '');  // populate all three selects — nothing selected yet
+
+    document.getElementById('run-btn').disabled = false;
+
+    // Set initial preview text without triggering a full onChange cycle
+    const preview = document.getElementById('combo-preview');
+    preview.innerHTML = '<span style="color:var(--accent)">ALL COMBOS</span> — global field stats';
+    preview.className = 'combo-preview';
+
+    runSearch();
+  };
+  reader.readAsText(file);
+}
+
+const dz = document.getElementById('drop-zone');
+const ci = document.getElementById('csv-input');
+ci.addEventListener('change', e => handleFile(e.target.files[0]));
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  handleFile(e.dataTransfer.files[0]);
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+//  PART INDEX
+//  Built once on file load. A flat array of every unique combo seen in the
+//  data, pre-split into { blade, ratchet, bit, full }.
+// ══════════════════════════════════════════════════════════════════════════
+
+function buildPartIndex() {
+  const seen = {};
+  ALL_ROWS.forEach(r => {
+    [r.winnerCombo, r.p1combo, r.p2combo, r.loserCombo].forEach(combo => {
+      if (!combo || !combo.trim() || seen[combo]) return;
+      const p = splitCombo(combo);
+      seen[combo] = { blade: p.blade, ratchet: p.ratchet, bit: p.bit, full: combo };
+    });
+  });
+  ALL_COMBO_INDEX = Object.values(seen);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  CONTEXTUAL DROPDOWN REFRESH
+//
+//  Called any time a selection changes. Receives the three current values
+//  as explicit arguments — never reads from the DOM, which avoids the
+//  race where innerHTML replacement clobbers the selection mid-event.
+//
+//  For each dimension (blade / ratchet / bit):
+//    Valid options = parts that co-occur with the OTHER two selected values
+//    in at least one combo in ALL_COMBO_INDEX, AND that combo has at least
+//    one battle row in the currently-selected tournaments.
+//    Sample count = total in-scope battle rows for all matching combos.
+//    Sorted: descending count, then alpha.
+// ══════════════════════════════════════════════════════════════════════════
+
+function refreshDropdowns(blade, ratchet, bit) {
+  // Step 1 — count in-scope battle rows per full combo string
+  const comboCount = {};
+  ALL_ROWS.forEach(r => {
+    if (!SELECTED_TOURNAMENTS.has((r.tournament || '').trim())) return;
+    const ft = r.finishType;
+    if ((ft === 'LER Strike' || ft === 'Launch Error') && r.points === 0) return;
+    [r.winnerCombo, r.p1combo, r.p2combo, r.loserCombo].forEach(c => {
+      if (c && c.trim()) comboCount[c] = (comboCount[c] || 0) + 1;
+    });
+  });
+
+  // Step 2 — for each dimension build a tally of valid options
+  // A combo contributes to dimension D's tally if it:
+  //   a) has a non-empty value for D
+  //   b) matches the OTHER two selected values (blanks are wildcards)
+  //   c) has at least one in-scope battle row
+
+  function tallyFor(dim, lockA, lockADim, lockB, lockBDim) {
+    const tally = {}; // part-value → count
+    ALL_COMBO_INDEX.forEach(c => {
+      if (!c[dim]) return;                           // no value for this dimension
+      if (lockA && c[lockADim] !== lockA) return;   // doesn't match fixed part A
+      if (lockB && c[lockBDim] !== lockB) return;   // doesn't match fixed part B
+      const n = comboCount[c.full] || 0;
+      if (n === 0) return;                           // no in-scope battles
+      tally[c[dim]] = (tally[c[dim]] || 0) + n;
+    });
+    return Object.entries(tally).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }
+
+  const bladeOpts   = tallyFor('blade',   ratchet, 'ratchet', bit,     'bit');
+  const ratchetOpts = tallyFor('ratchet', blade,   'blade',   bit,     'bit');
+  const bitOpts     = tallyFor('bit',     blade,   'blade',   ratchet, 'ratchet');
+
+  // Step 3 — write to DOM (safe now — we already have our values from arguments)
+  writeSelect('sel-blade',   blade,   bladeOpts,   'Any Blade');
+  writeSelect('sel-ratchet', ratchet, ratchetOpts, 'Any Ratchet');
+  writeSelect('sel-bit',     bit,     bitOpts,     'Any Bit');
+}
+
+function writeSelect(id, selectedVal, opts, placeholder) {
+  const sel = document.getElementById(id);
+  sel.innerHTML =
+    `<option value="">${placeholder}</option>` +
+    opts.map(([val, n]) =>
+      `<option value="${escAttr(val)}"${val === selectedVal ? ' selected' : ''}>${escHTML(val)} (${n})</option>`
+    ).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  COMBO PREVIEW + ENTRY POINT
+//  Called by onchange on each select. Reads the three values ONCE, passes
+//  them everywhere as arguments so no function needs to re-read the DOM.
+// ══════════════════════════════════════════════════════════════════════════
+
+function clearSelection() {
+  document.getElementById('sel-blade').value   = '';
+  document.getElementById('sel-ratchet').value = '';
+  document.getElementById('sel-bit').value     = '';
+  updateComboPreview();
+}
+
+function updateComboPreview() {
+  if (!ALL_ROWS.length) return;
+
+  // Read values exactly once, right here, before anything else runs
+  const blade   = document.getElementById('sel-blade').value;
+  const ratchet = document.getElementById('sel-ratchet').value;
+  const bit     = document.getElementById('sel-bit').value;
+
+  // Update the other two dropdowns based on this selection
+  refreshDropdowns(blade, ratchet, bit);
+
+  // Update preview text
+  const preview = document.getElementById('combo-preview');
+  if (!blade && !ratchet && !bit) {
+    preview.innerHTML = '<span style="color:var(--accent)">ALL COMBOS</span> — global field stats';
+  } else {
+    const parts = [
+      blade   || '<span style="color:var(--faint);font-style:italic">any blade</span>',
+      ratchet || '<span style="color:var(--faint);font-style:italic">any ratchet</span>',
+      bit     || '<span style="color:var(--faint);font-style:italic">any bit</span>',
+    ];
+    preview.innerHTML = parts.join(' · ');
+  }
+  preview.className = 'combo-preview';
+
+  runSearch();
+}
+function buildTournamentList() {
+  const counts = {};
+  ALL_ROWS.forEach(r => {
+    const t = (r.tournament||'').trim();
+    if (t) counts[t] = (counts[t]||0) + 1;
+  });
+
+  ALL_TOURNAMENTS = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([t,n])=>({name:t,battles:n}));
+  SELECTED_TOURNAMENTS = new Set(ALL_TOURNAMENTS.map(t=>t.name));
+
+  const list = document.getElementById('tourn-list');
+  list.innerHTML = '';
+  ALL_TOURNAMENTS.forEach(({name, battles}) => {
+    const item = document.createElement('div');
+    item.className = 'tourn-check checked';
+    item.dataset.tourn = name;
+    item.innerHTML = `
+      <div class="tourn-chk-box">✓</div>
+      <span class="tourn-name" title="${escAttr(name)}">${name}</span>
+      <span class="tourn-battles">${battles}</span>`;
+    item.onclick = () => toggleTournament(name, item);
+    list.appendChild(item);
+  });
+
+  document.getElementById('tourn-section').style.display = '';
+  updateTournAllBtn();
+}
+
+function toggleTournament(name, el) {
+  if (SELECTED_TOURNAMENTS.has(name)) {
+    SELECTED_TOURNAMENTS.delete(name);
+    el.classList.remove('checked');
+    el.querySelector('.tourn-chk-box').textContent = '';
+  } else {
+    SELECTED_TOURNAMENTS.add(name);
+    el.classList.add('checked');
+    el.querySelector('.tourn-chk-box').textContent = '✓';
+  }
+  updateTournAllBtn();
+  const blade   = document.getElementById('sel-blade').value;
+  const ratchet = document.getElementById('sel-ratchet').value;
+  const bit     = document.getElementById('sel-bit').value;
+  refreshDropdowns(blade, ratchet, bit);
+  if (ALL_ROWS.length) runSearch();
+}
+
+function toggleAllTournaments() {
+  const allSelected = SELECTED_TOURNAMENTS.size === ALL_TOURNAMENTS.length;
+  document.querySelectorAll('.tourn-check').forEach(el => {
+    const name = el.dataset.tourn;
+    if (allSelected) {
+      SELECTED_TOURNAMENTS.delete(name);
+      el.classList.remove('checked');
+      el.querySelector('.tourn-chk-box').textContent = '';
+    } else {
+      SELECTED_TOURNAMENTS.add(name);
+      el.classList.add('checked');
+      el.querySelector('.tourn-chk-box').textContent = '✓';
+    }
+  });
+  updateTournAllBtn();
+  const blade   = document.getElementById('sel-blade').value;
+  const ratchet = document.getElementById('sel-ratchet').value;
+  const bit     = document.getElementById('sel-bit').value;
+  refreshDropdowns(blade, ratchet, bit);
+  if (ALL_ROWS.length) runSearch();
+}
+
+function updateTournAllBtn() {
+  document.getElementById('tourn-all-btn').textContent =
+    SELECTED_TOURNAMENTS.size === ALL_TOURNAMENTS.length ? 'DESELECT ALL' : 'SELECT ALL';
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  CORE SEARCH ENGINE
+// ══════════════════════════════════════════════════════════════════════════
+function runSearch() {
+  if (!ALL_ROWS.length) return;
+  EXPANDED_ROWS.clear();
+
+  const blade   = document.getElementById('sel-blade').value.trim();
+  const ratchet = document.getElementById('sel-ratchet').value.trim();
+  const bit     = document.getElementById('sel-bit').value.trim();
+
+  LAST_BLADE   = blade;
+  LAST_RATCHET = ratchet;
+  LAST_BIT     = bit;
+
+  // Filter to selected tournaments; skip LER/Launch Error non-scoring rows
+  const battleRows = ALL_ROWS.filter(r => {
+    if (!SELECTED_TOURNAMENTS.has((r.tournament||'').trim())) return false;
+    const ft = r.finishType;
+    if ((ft === 'LER Strike' || ft === 'Launch Error') && r.points === 0) return false;
+    return true;
+  });
+
+  // ── BUILD MATCHUP MAP ─────────────────────────────────────────────────
+  // Key: the opponent combo string. For Format B (winner-only), opponent combo is unknown
+  // so we use a special sentinel.
+  const matchups = {};
+
+  battleRows.forEach(r => {
+    if (FILE_HAS_BOTH_COMBOS) {
+      // Format A: both combos known
+      const p1c = r.p1combo, p2c = r.p2combo;
+      const p1matches = comboMatchesParts(p1c, blade, ratchet, bit);
+      const p2matches = comboMatchesParts(p2c, blade, ratchet, bit);
+      if (!p1matches && !p2matches) return;
+
+      // If both match (mirror), count once from P1's perspective
+      const sides = [];
+      if (p1matches) sides.push({ myCombo: p1c, oppCombo: p2c, iAmP1: true });
+      if (p2matches && !(p1matches)) sides.push({ myCombo: p2c, oppCombo: p1c, iAmP1: false });
+
+      sides.forEach(({ myCombo, oppCombo, iAmP1 }) => {
+        const winnerIsP1 = r.winner.toLowerCase() === r.p1.toLowerCase();
+        const iWon = iAmP1 ? winnerIsP1 : !winnerIsP1;
+        const ft   = r.finishType;
+        const pts  = r.points;
+
+        // Opponent combo key — group by exact opponent build
+        const key = oppCombo || '(unknown)';
+        if (!matchups[key]) matchups[key] = mkMatchup(key);
+        tally(matchups[key], iWon, ft, pts, r.p1combo, r.p2combo, iAmP1);
+      });
+
+    } else {
+      // Format B: only winner's combo is known
+      const wc = r.winnerCombo;
+      const matches = comboMatchesParts(wc, blade, ratchet, bit);
+      // In format B we can only track when the target combo WON.
+      // We also need to track losses — but we don't know what combo was used when losing.
+      // Strategy: scan every row. If the winning combo matches → it's a win for us.
+      // If the winning combo does NOT match, we need to check if the loser could have used our target.
+      // Since we don't know the loser's combo, we can't attribute losses per opponent.
+      // → We track wins directly, and also count rows where our combo did NOT win
+      //   (i.e. this is a battle we played in and lost) only if we can identify ourselves.
+      // For combo stats in format B: track won rows where winnerCombo matches.
+      if (!matches) return;
+
+      const key = '(field)'; // all losses are vs "the field" — no opponent combo breakdown
+      if (!matchups[key]) matchups[key] = mkMatchup(key);
+      // This row = a win for this combo
+      const ft  = r.finishType;
+      const pts = r.points;
+      tallySingle(matchups[key], true, ft, pts);
+    }
+  });
+
+  // For Format B: also count losses by finding rounds where a matching combo was NOT the winner.
+  // We do this by looking at all battle rows — if the winner didn't use our combo but
+  // the match involved ANY player, there's no way to know. So for Format B we supplement
+  // with an approximation: battles where the loser used the target combo can't be determined
+  // from the data. We note this in the UI.
+  // (Format A is fine — both sides are tracked above.)
+
+  // ── COMPUTE DERIVED STATS ─────────────────────────────────────────────
+  LAST_RESULTS = Object.values(matchups).map(m => {
+    const battles = m.w + m.l;
+    return {
+      ...m, battles,
+      winPct: battles > 0 ? m.w / battles * 100 : 100, // if no losses tracked, show wins only
+      ppb:    battles > 0 ? (m.ptsScored - m.ptsAllowed) / battles : 0,
+    };
+  }).filter(m => m.battles > 0);
+
+  const comboLabel = [blade, ratchet, bit].filter(Boolean).join(' · ') || 'All Combos';
+  renderResults(comboLabel, blade, ratchet, bit);
+}
+
+function mkMatchup(oppCombo) {
+  return { oppCombo, w:0, l:0, ptsScored:0, ptsAllowed:0,
+    finishes: { X:0, O:0, B:0, S:0, OX:0, OO:0, OB:0, OS:0, OX_won:0, OO_won:0 } };
+}
+
+function tally(m, iWon, ft, pts, p1combo, p2combo, iAmP1) {
+  if (ft === 'Own Finish') {
+    if (iWon) {
+      // Opponent self-KO'd — I benefited
+      const k = pts === 3 ? 'OX_won' : 'OO_won';
+      m.finishes[k] = (m.finishes[k]||0) + 1;
+      m.w++; m.ptsScored += pts;
+    } else {
+      // I self-KO'd
+      const k = pts === 3 ? 'OX' : 'OO';
+      m.finishes[k] = (m.finishes[k]||0) + 1;
+      m.l++; m.ptsAllowed += pts;
+    }
+    return;
+  }
+  const wonMap  = { 'Xtreme Finish':'X', 'Over Finish':'O', 'Burst Finish':'B', 'Spin Finish':'S' };
+  const lostMap = { 'Xtreme Finish':'OX','Over Finish':'OO','Burst Finish':'OB','Spin Finish':'OS' };
+  if (iWon) {
+    m.w++; m.ptsScored += pts;
+    const k = wonMap[ft]; if (k) m.finishes[k]++;
+  } else {
+    m.l++; m.ptsAllowed += pts;
+    const k = lostMap[ft]; if (k) m.finishes[k]++;
+  }
+}
+
+function tallySingle(m, iWon, ft, pts) {
+  tally(m, iWon, ft, pts, '', '', true);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  RENDER RESULTS
+// ══════════════════════════════════════════════════════════════════════════
+function getSorted(data, sortKey) {
+  const dir = SORT_DIR === 'asc' ? 1 : -1;
+  return [...data].sort((a, b) => {
+    if (sortKey === 'winpct') return dir * (b.winPct - a.winPct) || b.battles - a.battles;
+    if (sortKey === 'ppb')    return dir * (b.ppb    - a.ppb)    || b.battles - a.battles;
+    // samples: always use battles as primary, winPct as tiebreak — both respect dir
+    return dir * (b.battles - a.battles) || dir * (b.winPct - a.winPct);
+  });
+}
+
+function renderResults(comboLabel, blade, ratchet, bit) {
+  document.getElementById('empty-state').style.display = 'none';
+  const area = document.getElementById('results-area');
+  area.style.display = '';
+
+  const data = LAST_RESULTS;
+
+  // Build qualifier tag description
+  const activeParts = [];
+  if (blade)   activeParts.push(`Blade: <strong>${escHTML(blade)}</strong>`);
+  if (ratchet) activeParts.push(`Ratchet: <strong>${escHTML(ratchet)}</strong>`);
+  if (bit)     activeParts.push(`Bit: <strong>${escHTML(bit)}</strong>`);
+  const filterDesc = activeParts.length
+    ? activeParts.join(' · ')
+    : '<strong>All Combos</strong> — no filter applied';
+
+  const wildCount = [!blade, !ratchet, !bit].filter(Boolean).length;
+  const wildcardNote = wildCount > 0 && activeParts.length > 0
+    ? ` <span style="color:var(--muted);font-size:9px">(${wildCount} wildcard${wildCount>1?'s':''})</span>`
+    : '';
+
+  if (!data.length) {
+    area.innerHTML = `
+      <div class="results-header">
+        <div>
+          <div class="results-title">No Matchups Found</div>
+          <div class="results-combo">${filterDesc}${wildcardNote}</div>
+          <div class="results-meta">No battles matched this filter in the selected tournaments.</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const totals = data.reduce((acc,m) => ({
+    battles:    acc.battles    + m.battles,
+    w:          acc.w          + m.w,
+    l:          acc.l          + m.l,
+    ptsScored:  acc.ptsScored  + m.ptsScored,
+    ptsAllowed: acc.ptsAllowed + m.ptsAllowed,
+  }), {battles:0,w:0,l:0,ptsScored:0,ptsAllowed:0});
+
+  const totalWinPct = totals.battles > 0 ? totals.w / totals.battles * 100 : 0;
+  const totalPPB    = totals.battles > 0 ? (totals.ptsScored - totals.ptsAllowed) / totals.battles : 0;
+
+  const tournsLabel = SELECTED_TOURNAMENTS.size === ALL_TOURNAMENTS.length
+    ? 'all tournaments'
+    : `${SELECTED_TOURNAMENTS.size} tournament${SELECTED_TOURNAMENTS.size===1?'':'s'}`;
+
+  const formatBNote = !FILE_HAS_BOTH_COMBOS
+    ? `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;letter-spacing:0.04em;">
+        ⚠ TSV format — only winning combos are recorded. Loss attribution by opponent combo is not available. Showing win counts only.
+       </div>`
+    : '';
+
+  const sorted = getSorted(data, CURRENT_SORT);
+  const oppColLabel = FILE_HAS_BOTH_COMBOS ? 'OPPONENT COMBO' : 'SCOPE';
+
+  area.innerHTML = `
+    <div class="results-header">
+      <div>
+        <div class="results-title">${escHTML(comboLabel) || 'All Combos'}</div>
+        <div class="results-combo" style="margin-top:5px">${filterDesc}${wildcardNote}</div>
+        <div class="results-meta">${data.length} opponent combo${data.length===1?'':'s'} · ${tournsLabel}</div>
+        ${formatBNote}
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="stat-chip">
+        <div class="stat-chip-label">TOTAL BATTLES</div>
+        <div class="stat-chip-val">${totals.battles}</div>
+        <div class="stat-chip-sub">${totals.w}W · ${totals.l}L</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-chip-label">OVERALL WIN %</div>
+        <div class="stat-chip-val ${totalWinPct>=50?'teal':'danger'}">${totalWinPct.toFixed(1)}%</div>
+        <div class="stat-chip-sub">across ${data.length} matchups</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-chip-label">OVERALL PPB</div>
+        <div class="stat-chip-val ${totalPPB>=0?'teal':'danger'}">${totalPPB>=0?'+':''}${totalPPB.toFixed(2)}</div>
+        <div class="stat-chip-sub">net pts ÷ battles</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-chip-label">PTS SCORED</div>
+        <div class="stat-chip-val accent">${totals.ptsScored}</div>
+        <div class="stat-chip-sub">${totals.ptsAllowed} allowed · net ${totals.ptsScored-totals.ptsAllowed>=0?'+':''}${totals.ptsScored-totals.ptsAllowed}</div>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <span class="sort-label">SORT BY</span>
+      <button class="sort-btn ${CURRENT_SORT==='samples'?'active':''}" onclick="setSort('samples')">MOST SAMPLES</button>
+      <button class="sort-btn ${CURRENT_SORT==='winpct'?'active':''}"  onclick="setSort('winpct')">HIGHEST WIN %</button>
+      <button class="sort-btn ${CURRENT_SORT==='ppb'?'active':''}"     onclick="setSort('ppb')">HIGHEST PPB</button>
+      <button class="sort-btn" id="dir-btn" onclick="toggleSortDir()" style="margin-left:4px;min-width:52px">${SORT_DIR==='desc'?'↓ HI–LO':'↑ LO–HI'}</button>
+      <span class="results-count"><span>${data.length}</span> matchup${data.length===1?'':'s'}</span>
+    </div>
+
+    <div class="matchup-table-wrap">
+      ${renderTable(sorted, oppColLabel)}
+    </div>`;
+}
+
+function renderTable(rows, oppColLabel) {
+  if (!rows.length) return '<div class="no-results">No matchups to display.</div>';
+  const maxBattles = Math.max(...rows.map(r => r.battles));
+
+  const headerCols = [
+    { key:'',        label:'',              align:'left',  sortable:false },
+    { key:'oppCombo',label: oppColLabel||'OPPONENT COMBO', align:'left', sortable:false },
+    { key:'battles', label:'BATTLES',       align:'right', sortable:true },
+    { key:'wl',      label:'W – L',         align:'right', sortable:false },
+    { key:'winpct',  label:'WIN %',         align:'right', sortable:true },
+    { key:'ppb',     label:'PPB',           align:'right', sortable:true },
+    { key:'finishes',label:'FINISHES',      align:'left',  sortable:false },
+  ];
+
+  const headerHTML = headerCols.map(c => {
+    if (!c.sortable) return `<th style="text-align:${c.align}">${c.label}</th>`;
+    const active = (c.key==='battles'&&CURRENT_SORT==='samples')||(c.key==='winpct'&&CURRENT_SORT==='winpct')||(c.key==='ppb'&&CURRENT_SORT==='ppb');
+    const sortKey = c.key==='battles'?'samples':c.key;
+    return `<th class="${active?'sorted':''}" style="text-align:${c.align}" onclick="setSort('${sortKey}')">
+      ${c.label}<span class="sort-arrow">${active?'↓':'↕'}</span></th>`;
+  }).join('');
+
+  const rowsHTML = rows.map((m, idx) => {
+    const barPct   = maxBattles > 0 ? (m.battles / maxBattles * 100) : 0;
+    const winColor = m.winPct >= 60 ? 'var(--win-col)' : m.winPct >= 40 ? 'var(--accent)' : 'var(--loss-col)';
+    const ppbColor = m.ppb > 0 ? 'var(--win-col)' : m.ppb < 0 ? 'var(--loss-col)' : 'var(--muted)';
+    const ppbStr   = (m.ppb > 0 ? '+' : '') + m.ppb.toFixed(2);
+    const isExp    = EXPANDED_ROWS.has(idx);
+
+    return `
+      <tr class="${isExp?'expanded':''}" id="mrow-${idx}">
+        <td style="width:28px;padding-right:4px">
+          <button class="expand-btn ${isExp?'open':''}" onclick="toggleRow(${idx})">${isExp?'▾':'▸'}</button>
+        </td>
+        <td class="combo-cell" title="${escAttr(m.oppCombo)}">${escHTML(m.oppCombo)}</td>
+        <td class="num-cell" style="width:90px">
+          <div class="winbar-wrap">
+            <div class="winbar"><div class="winbar-fill" style="width:${barPct.toFixed(1)}%;background:var(--border2)"></div></div>
+            <span>${m.battles}</span>
+          </div>
+        </td>
+        <td class="wl-cell" style="width:70px">${m.w}–${m.l}</td>
+        <td class="win-pct" style="width:72px;color:${winColor}">
+          ${m.winPct.toFixed(1)}%
+          <div class="winbar" style="height:3px;margin-top:3px">
+            <div class="winbar-fill" style="width:${m.winPct.toFixed(1)}%;background:${winColor}"></div>
+          </div>
+        </td>
+        <td class="ppb-cell" style="width:64px;color:${ppbColor}">${ppbStr}</td>
+        <td>${buildFinishPills(m.finishes)}</td>
+      </tr>
+      ${isExp ? buildDetailRow(idx, m) : ''}`;
+  }).join('');
+
+  return `<table class="matchup-table">
+    <thead><tr>${headerHTML}</tr></thead>
+    <tbody>${rowsHTML}</tbody>
+  </table>`;
+}
+
+function buildFinishPills(f) {
+  const defs = [
+    { key:'X',      cls:'fpill-x',  label:'X',   title:'Xtreme (scored)' },
+    { key:'O',      cls:'fpill-o',  label:'O',   title:'Over (scored)' },
+    { key:'B',      cls:'fpill-b',  label:'B',   title:'Burst (scored)' },
+    { key:'S',      cls:'fpill-s',  label:'S',   title:'Spin (scored)' },
+    { key:'OO_won', cls:'fpill-o',  label:'OO→', title:'Opp Own Over (benefited)' },
+    { key:'OX_won', cls:'fpill-x',  label:'OX→', title:'Opp Own Xtreme (benefited)' },
+    { key:'OX',     cls:'fpill-ox', label:'OX',  title:'Opp Xtreme (allowed)' },
+    { key:'OO',     cls:'fpill-oo', label:'OO',  title:'Opp Over (allowed)' },
+    { key:'OB',     cls:'fpill-ob', label:'OB',  title:'Opp Burst (allowed)' },
+    { key:'OS',     cls:'fpill-os', label:'OS',  title:'Opp Spin (allowed)' },
+  ];
+  const pills = defs.filter(d=>(f[d.key]||0)>0)
+    .map(d=>`<span class="fpill ${d.cls}" title="${d.title}">${d.label} ×${f[d.key]}</span>`);
+  return `<div class="finish-pills">${pills.join('')}</div>`;
+}
+
+function buildDetailRow(idx, m) {
+  const maxF = Math.max(1, ...Object.values(m.finishes));
+  const wonDefs = [
+    {key:'X',cls:'#f6d335',      label:'X'},
+    {key:'O',cls:'var(--teal)',  label:'O'},
+    {key:'B',cls:'var(--success)',label:'B'},
+    {key:'S',cls:'#a2b0ab',      label:'S'},
+    {key:'OX_won',cls:'var(--teal-soft)',label:'OX→'},
+    {key:'OO_won',cls:'var(--teal-soft)',label:'OO→'},
+  ].filter(d=>(m.finishes[d.key]||0)>0);
+
+  const lostDefs = [
+    {key:'OX',cls:'var(--danger)', label:'OX'},
+    {key:'OO',cls:'#d46855',       label:'OO'},
+    {key:'OB',cls:'#c08070',       label:'OB'},
+    {key:'OS',cls:'#8a9e97',       label:'OS'},
+  ].filter(d=>(m.finishes[d.key]||0)>0);
+
+  const bar = d => {
+    const n = m.finishes[d.key]||0;
+    const pct = (n/maxF*100).toFixed(1);
+    return `<div class="finish-split-row">
+      <span class="finish-split-label">${d.label}</span>
+      <div class="finish-split-bar"><div class="finish-split-fill" style="width:${pct}%;background:${d.cls}"></div></div>
+      <span class="finish-split-count">×${n}</span>
+    </div>`;
+  };
+
+  const netPts = m.ptsScored - m.ptsAllowed;
+  const netCol = netPts>0?'var(--teal)':netPts<0?'var(--danger)':'var(--muted)';
+
+  return `<tr class="detail-row" id="drow-${idx}"><td colspan="7">
+    <div class="detail-inner">
+      <div class="detail-block">
+        <div class="detail-block-label">FINISHES SCORED</div>
+        ${wonDefs.length ? wonDefs.map(bar).join('') : '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--faint)">none</div>'}
+      </div>
+      <div class="detail-block">
+        <div class="detail-block-label">FINISHES ALLOWED</div>
+        ${lostDefs.length ? lostDefs.map(bar).join('') : '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--faint)">none</div>'}
+      </div>
+      <div class="detail-block">
+        <div class="detail-block-label">POINTS</div>
+        <div class="finish-split-row"><span class="finish-split-label" style="width:52px">SCORED</span><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--teal);font-weight:600">${m.ptsScored}</span></div>
+        <div class="finish-split-row"><span class="finish-split-label" style="width:52px">ALLOWED</span><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--danger);font-weight:600">${m.ptsAllowed}</span></div>
+        <div class="finish-split-row" style="border-top:1px solid var(--border);padding-top:4px;margin-top:2px">
+          <span class="finish-split-label" style="width:52px">NET</span>
+          <span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:${netCol}">${netPts>0?'+':''}${netPts}</span>
+        </div>
+      </div>
+    </div>
+  </td></tr>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  INTERACTIONS
+// ══════════════════════════════════════════════════════════════════════════
+function setSort(key) {
+  CURRENT_SORT = key;
+  const sorted = getSorted(LAST_RESULTS, key);
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  const map = {samples:0,winpct:1,ppb:2};
+  document.querySelectorAll('.sort-btn')[map[key]]?.classList.add('active');
+  // Keep direction button un-highlighted but update its label
+  const dirBtn = document.getElementById('dir-btn');
+  if (dirBtn) dirBtn.textContent = SORT_DIR === 'desc' ? '↓ HI–LO' : '↑ LO–HI';
+  const wrap = document.querySelector('.matchup-table-wrap');
+  const oppColLabel = FILE_HAS_BOTH_COMBOS ? 'OPPONENT COMBO' : 'SCOPE';
+  if (wrap) wrap.innerHTML = renderTable(sorted, oppColLabel);
+}
+
+function toggleSortDir() {
+  SORT_DIR = SORT_DIR === 'desc' ? 'asc' : 'desc';
+  setSort(CURRENT_SORT);
+}
+
+function toggleRow(idx) {
+  if (EXPANDED_ROWS.has(idx)) EXPANDED_ROWS.delete(idx);
+  else EXPANDED_ROWS.add(idx);
+  setSort(CURRENT_SORT);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════════════════════════
+function escHTML(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s) { return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+</script>
+</body>
+</html>
