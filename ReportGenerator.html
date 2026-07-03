@@ -839,6 +839,33 @@ function computeStats(allRows, tournament, player, placements, swissRounds) {
   });
   const finishes=[...Object.values(scoredFinishes),...Object.values(allowedFinishes)].filter(f=>f.count>0);
 
+  // Per-combo finish type breakdown (same categorization as the overall finishes above),
+  // scoped to battles played with each of the player's top-3 deck combos.
+  const comboFinishStats={};
+  deckCombos.forEach(c=>{comboFinishStats[c]={scored:{},allowed:{}};});
+  battleRows.forEach(r=>{
+    const combo=isP1(r)?r.P1Combo:r.P2Combo;
+    if(!combo||!deckCombos.includes(combo)) return;
+    const bucket=comboFinishStats[combo];
+    const ft=(r.FinishType||'').trim();const pts=finishPts(ft);const won=iWon(r);
+    if(ft==='Own Finish'){
+      if(!won){if(!bucket.allowed['Own'])bucket.allowed['Own']={type:'Own (self-KO)',count:0,pts,label:'OO',negative:true};bucket.allowed['Own'].count++;}
+      else{if(!bucket.scored['Own_opp'])bucket.scored['Own_opp']={type:'Own (opp KO)',count:0,pts,label:'O'};bucket.scored['Own_opp'].count++;}
+      return;
+    }
+    const fm=finishMap[ft];if(!fm)return;
+    if(won){if(!bucket.scored[ft])bucket.scored[ft]={type:fm.type,count:0,pts:fm.pts,label:fm.label};bucket.scored[ft].count++;}
+    else{if(!bucket.allowed[ft])bucket.allowed[ft]={type:'Opp '+fm.type,count:0,pts:fm.pts,label:'O'+fm.label,negative:true};bucket.allowed[ft].count++;}
+  });
+  const comboFinishes=deckCombos.map((name,idx)=>{
+    const bucket=comboFinishStats[name]||{scored:{},allowed:{}};
+    return{
+      slot:idx+1,name,
+      scored:Object.values(bucket.scored).filter(f=>f.count>0),
+      allowed:Object.values(bucket.allowed).filter(f=>f.count>0),
+    };
+  });
+
   // Sides
   const sideB={setsPlayed:0,setsWon:0,battles:0,wins:0,ptsS:0,ptsA:0};
   const sideX={setsPlayed:0,setsWon:0,battles:0,wins:0,ptsS:0,ptsA:0};
@@ -1087,7 +1114,7 @@ function computeStats(allRows, tournament, player, placements, swissRounds) {
     player:{name:player,handle:''},
     event:{name:tournament,date:eventDate||tournament,format:'3v3 \u00b7 First-to-4 \u00b7 Best-of-3',location:'NorCal'},
     summary:{swissRecord:{wins:matchW,losses:matchL},setRecord:{wins:setW,losses:setL},placement:placements[playerLower]||'\u2014',overallWinPct,overallPPB,totalBattles,totalSets,ppw,fieldPPW},
-    deck,allComboDeck,finishes,recurringMatchups,shuffleInitial,shufflePost,sides,pointsDetail,peerComparison,
+    deck,allComboDeck,finishes,comboFinishes,recurringMatchups,shuffleInitial,shufflePost,sides,pointsDetail,peerComparison,
     comboSidePPB,
     setDynamics:{closeoutRate,leadConvRate,comebackRate,closedOut,closeoutTotal,comebackWins,comebackTotal,shutOutRate,shutOutWins,shutOutTotal},
     quarters,matchRecap,highlights,highlight,matchResultStrip,
@@ -1699,6 +1726,75 @@ function ComboPage({data,accent}){
         <thead><tr style={{borderBottom:'1px solid var(--rule)'}}><th style={thS('auto','left')}>Your Combo</th><th style={thS('auto','left')}>Opponent Combo</th><th style={thS(44)}>Faced</th><th style={thS(50)}>W&ndash;L</th><th style={thS(54)}>Win%</th><th style={thS(50)}>PPB</th><th style={thS(44)}>Net</th></tr></thead>
         <tbody>{recurringMatchups.map((m,i)=><tr key={i} style={{borderBottom:'1px solid var(--rule-soft)'}}><td style={{...tdS,textAlign:'left',fontWeight:700,color:'var(--teal-deep)',fontFamily:"'Space Grotesk',system-ui",fontSize:10.5}}>{m.yourComboName.split('\u00b7')[0].trim()}</td><td style={{...tdS,textAlign:'left',fontWeight:500,fontFamily:"'Space Grotesk',system-ui",fontSize:10.5,color:'var(--ink)'}}>{m.oppCombo}</td><td style={{...tdS,fontSize:10}}>{m.times}</td><td style={{...tdS,fontSize:10}}>{m.w}&ndash;{m.l}</td><td style={{...tdS,fontWeight:600,color:m.winPct>=50?'var(--ink)':'var(--danger)',fontSize:10}}>{m.winPct.toFixed(1)}%</td><td style={{...tdS,fontWeight:700,color:m.ppb>=0?'var(--teal-deep)':'var(--danger)',fontSize:10}}>{m.ppb>0?'+':''}{m.ppb.toFixed(2)}</td><td style={{...tdS,fontWeight:700,color:m.net>=0?'var(--teal-deep)':'var(--danger)',fontSize:10}}>{m.net>0?'+':''}{m.net}</td></tr>)}</tbody>
       </table>}
+    </div>
+  </Page>);
+}
+
+// §03a COMBO FINISH BREAKDOWN — one donut+table pair per top-3 deck combo
+function ComboFinishPage({data,accent,pageNum}){
+  const{comboFinishes}=data;
+  if(!comboFinishes||comboFinishes.length===0) return null;
+  const palette=['#0f6b67','#2ea89d','#a8d9d2','#f6d335','#6b7d78','#c27a2a'];
+
+  function MiniPie({rows,size=64}){
+    const total=rows.reduce((s,f)=>s+f.count*f.pts,0);
+    if(total===0||rows.length===0) return <div style={{width:size,height:size,borderRadius:'50%',background:'var(--rule-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:'var(--ink-faint)',flexShrink:0}}>N/A</div>;
+    let angle=-Math.PI/2;
+    const cx=size/2,cy=size/2,r=size/2-1.5;
+    const slices=rows.map((f,i)=>{
+      const frac=(f.count*f.pts)/total;
+      const sweep=frac*2*Math.PI;
+      const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+      angle+=sweep;
+      const x2=cx+r*Math.cos(angle),y2=cy+r*Math.sin(angle);
+      const large=sweep>Math.PI?1:0;
+      return{path:`M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z`,color:palette[i%palette.length]};
+    });
+    return(<svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{flexShrink:0}}>
+      {slices.map((s,i)=><path key={i} d={s.path} fill={s.color} stroke="var(--paper)" strokeWidth={1}/>)}
+      <circle cx={cx} cy={cy} r={r*0.4} fill="var(--paper)"/>
+    </svg>);
+  }
+
+  function MiniFT({rows,title,tone}){
+    const ac=tone==='danger'?'var(--danger)':'var(--teal-deep)';
+    const gTotal=rows.reduce((s,f)=>s+f.count*f.pts,0);
+    return(<div>
+      <div style={{display:'flex',alignItems:'baseline',gap:6,marginBottom:5,paddingBottom:4,borderBottom:'1px solid var(--rule-soft)'}}>
+        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.14em',color:ac,fontWeight:700}}>{title}</div>
+        <div style={{marginLeft:'auto',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'var(--ink-faint)'}}>{rows.reduce((s,r)=>s+r.count,0)}</div>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+        <MiniPie rows={rows}/>
+        <div style={{flex:1,display:'flex',flexDirection:'column',gap:2,minWidth:0}}>
+          {rows.length===0&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,color:'var(--ink-faint)'}}>None</div>}
+          {rows.map((f,i)=>{
+            const t=f.count*f.pts;const pct=gTotal>0?(t/gTotal*100).toFixed(0):'0';
+            return(<div key={i} style={{display:'flex',alignItems:'center',gap:4}}>
+              <div style={{width:6,height:6,borderRadius:2,background:palette[i%palette.length],flexShrink:0}}/>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,color:'var(--ink-dim)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.type}</div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,fontWeight:600,color:'var(--ink)'}}>{f.count} &middot; {pct}%</div>
+            </div>);
+          })}
+        </div>
+      </div>
+    </div>);
+  }
+
+  return(<Page num={pageNum} total={TOTAL_PAGES} label="Combo Finishes">
+    <ST num="03" title="Combo Finish Breakdown" sub="Top 3 combos \u00b7 Finish types"/>
+    <p style={{margin:'0 0 16px',fontSize:10.5,color:'var(--ink-dim)',fontFamily:"'Barlow',system-ui",lineHeight:1.5}}>How each of your most-played combos wins and loses battles, broken down by finish type.</p>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16}}>
+      {comboFinishes.map((c,i)=>(
+        <div key={i} style={{border:'2px solid var(--ink)',borderRadius:6,padding:12,background:'var(--paper-soft)',position:'relative',overflow:'hidden',boxShadow:'3px 3px 0 var(--teal-deep)'}}>
+          <div style={{position:'absolute',left:0,top:0,right:0,height:4,background:i===0?accent:'var(--teal-deep)'}}/>
+          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.14em',color:'var(--teal-deep)',fontWeight:700,marginTop:4,marginBottom:2}}>COMBO 0{c.slot}</div>
+          <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:10.5,fontWeight:700,lineHeight:1.3,marginBottom:10,minHeight:26}}>{c.name}</div>
+          <MiniFT rows={c.scored} title="SCORED" />
+          <div style={{height:8}}/>
+          <MiniFT rows={c.allowed} title="ALLOWED" tone="danger"/>
+        </div>
+      ))}
     </div>
   </Page>);
 }
@@ -2560,8 +2656,10 @@ function buildReportFragment(reportData, accent, key) {
   const recapCount = matchRecapPageCount(reportData);
   const hasPeers = reportData.peerComparison && reportData.peerComparison.length > 0;
   const hasProfile = reportData.profile != null;
-  // Page numbering: 1 Cover, 2 Overview, 3 Combos, 4 Peer(if any), 5 Profile(if any), 6 Battle Dynamics, PP Pressure Profile, 7+ Match Recap
+  // Page numbering: 1 Cover, 2 Overview, 3 Combos, 3a Combo Finishes, 4 Peer(if any), 5 Profile(if any), 6 Battle Dynamics, PP Pressure Profile, 7+ Match Recap
+  const hasComboFinishes = reportData.comboFinishes && reportData.comboFinishes.length > 0;
   let p = 3;
+  const comboFinishPageNum = hasComboFinishes ? ++p : null;
   const peerPageNum = hasPeers ? ++p : null;
   const profilePageNum = hasProfile ? ++p : null;
   p++; // battle dynamics
@@ -2576,6 +2674,7 @@ function buildReportFragment(reportData, accent, key) {
     React.createElement(OverviewPage,       {data:reportData, accent}),
     React.createElement(ComboPage,          {data:reportData, accent}),
   ];
+  if (hasComboFinishes) children.push(React.createElement(ComboFinishPage, {data:reportData, accent, pageNum:comboFinishPageNum}));
   if (hasPeers) children.push(React.createElement(PeerComparisonPage, {data:reportData, accent, pageNum:peerPageNum}));
   if (hasProfile) children.push(React.createElement(PlayerProfilePage, {data:reportData, accent, pageNum:profilePageNum}));
   children.push(React.createElement(BattleDynamicsPage, {data:reportData, accent}));
