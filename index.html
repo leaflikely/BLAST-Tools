@@ -1310,6 +1310,10 @@ margin-bottom: 6px }
 color: var(--g-muted);
 margin-bottom: 28px;
 line-height: 1.5 }
+#tool-recapper .shared-csv-warning { font-size: 12px;
+color: var(--g-danger);
+margin-bottom: 16px;
+line-height: 1.5 }
 #tool-recapper .drop-zone { border: 2px dashed var(--g-border);
 border-radius: 8px;
 padding: 40px 24px;
@@ -1449,6 +1453,580 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 font-size: 11px;
 color: var(--g-muted);
 display: none }
+
+    /* ═══ PLAYER REPORT GENERATOR TOOL (scoped) ═══ */
+#tool-reportgen { --g-bg: #0e1512;
+--g-surface: #141c19;
+--g-surface2: #1c2822;
+--g-border: #2a3d35;
+--g-teal: #2ea89d;
+--g-teal-deep: #0f6b67;
+--g-accent: #f6d335;
+--g-text: #d4e8e0;
+--g-muted: #7a9e92;
+--g-danger: #e05a46;
+--g-success: #4ec98a }
+#tool-reportgen * { box-sizing: border-box;
+margin: 0;
+padding: 0 }
+#tool-reportgen { font-family: "Barlow", sans-serif;
+background: var(--g-bg);
+color: var(--g-text);
+min-height: 100vh;
+-webkit-font-smoothing: antialiased }
+@media print {
+  #tool-reportgen #rg-generator { display: none !important }
+  #tool-reportgen #rg-report-output { display: block !important }
+}
+#tool-reportgen #rg-generator { min-height: 100vh;
+display: flex;
+flex-direction: column }
+#tool-reportgen .gen-header { display: flex;
+align-items: center;
+gap: 20px;
+padding: 20px 40px;
+border-bottom: 1px solid var(--g-border);
+background: var(--g-surface) }
+#tool-reportgen .gen-logo { width: 44px;
+height: 44px;
+background: var(--g-teal-deep);
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: "Barlow Condensed", sans-serif;
+font-weight: 900;
+font-size: 11px;
+color: var(--g-accent);
+letter-spacing: 0.08em;
+border: 2px solid var(--g-accent);
+flex-shrink: 0 }
+#tool-reportgen .gen-title-block h1 { font-family: "Barlow Condensed", sans-serif;
+font-weight: 800;
+font-size: 22px;
+letter-spacing: 0.04em;
+color: #fff;
+line-height: 1 }
+#tool-reportgen .gen-title-block p { font-family: "IBM Plex Mono", monospace;
+font-size: 10px;
+color: var(--g-muted);
+letter-spacing: 0.14em;
+margin-top: 3px }
+#tool-reportgen .gen-body { flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 48px 40px }
+#tool-reportgen .gen-card { width: 100%;
+max-width: 640px }
+#tool-reportgen .step-bar { display: flex;
+align-items: center;
+gap: 0;
+margin-bottom: 36px }
+#tool-reportgen .step-item { display: flex;
+align-items: center;
+gap: 10px;
+flex: 1 }
+#tool-reportgen .step-item:last-child { flex: 0 }
+#tool-reportgen .step-dot { width: 28px;
+height: 28px;
+border-radius: 50%;
+border: 2px solid var(--g-border);
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: "IBM Plex Mono", monospace;
+font-size: 11px;
+font-weight: 600;
+color: var(--g-muted);
+flex-shrink: 0;
+transition: all 0.2s }
+#tool-reportgen .step-dot.active { border-color: var(--g-accent);
+background: var(--g-accent);
+color: #0e1512 }
+#tool-reportgen .step-dot.done { border-color: var(--g-teal);
+background: var(--g-teal);
+color: #fff }
+#tool-reportgen .step-line { flex: 1;
+height: 2px;
+background: var(--g-border);
+margin: 0 4px;
+transition: background 0.2s }
+#tool-reportgen .step-line.done { background: var(--g-teal) }
+#tool-reportgen .step-label { font-family: "IBM Plex Mono", monospace;
+font-size: 9px;
+letter-spacing: 0.1em;
+color: var(--g-muted);
+margin-top: 4px;
+white-space: nowrap }
+#tool-reportgen .step-label.active { color: var(--g-accent) }
+#tool-reportgen .step-label.done { color: var(--g-teal) }
+#tool-reportgen .step-col { display: flex;
+flex-direction: column;
+align-items: center }
+#tool-reportgen .panel { background: var(--g-surface);
+border: 1px solid var(--g-border);
+border-radius: 10px;
+padding: 32px }
+#tool-reportgen .panel-title { font-family: "Barlow Condensed", sans-serif;
+font-weight: 700;
+font-size: 20px;
+letter-spacing: 0.04em;
+color: #fff;
+margin-bottom: 6px }
+#tool-reportgen .panel-sub { font-size: 13px;
+color: var(--g-muted);
+margin-bottom: 28px;
+line-height: 1.5 }
+#tool-reportgen .shared-csv-warning { font-size: 12px;
+color: var(--g-danger);
+margin-bottom: 16px;
+line-height: 1.5 }
+#tool-reportgen .drop-zone { border: 2px dashed var(--g-border);
+border-radius: 8px;
+padding: 40px 24px;
+text-align: center;
+cursor: pointer;
+transition: all 0.2s;
+position: relative }
+#tool-reportgen .drop-zone:hover, #tool-reportgen .drop-zone.drag-over { border-color: var(--g-teal);
+background: rgba(46, 168, 157, 0.06) }
+#tool-reportgen .drop-zone input[type="file"] { position: absolute;
+inset: 0;
+opacity: 0;
+cursor: pointer;
+width: 100%;
+height: 100% }
+#tool-reportgen .drop-icon { width: 48px;
+height: 48px;
+margin: 0 auto 14px;
+background: var(--g-surface2);
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 20px }
+#tool-reportgen .drop-zone h3 { font-family: "Barlow Condensed", sans-serif;
+font-weight: 700;
+font-size: 16px;
+letter-spacing: 0.04em;
+color: #fff;
+margin-bottom: 6px }
+#tool-reportgen .drop-zone p { font-size: 12px;
+color: var(--g-muted);
+font-family: "IBM Plex Mono", monospace }
+#tool-reportgen .select-label { font-family: "IBM Plex Mono", monospace;
+font-size: 10px;
+letter-spacing: 0.14em;
+color: var(--g-muted);
+margin-bottom: 10px }
+#tool-reportgen .option-list { display: flex;
+flex-direction: column;
+gap: 6px;
+max-height: 300px;
+overflow-y: auto;
+margin-bottom: 24px }
+#tool-reportgen .option-list::-webkit-scrollbar { width: 4px }
+#tool-reportgen .option-list::-webkit-scrollbar-track { background: transparent }
+#tool-reportgen .option-list::-webkit-scrollbar-thumb { background: var(--g-border);
+border-radius: 2px }
+#tool-reportgen .option-btn { background: var(--g-surface2);
+border: 1px solid var(--g-border);
+border-radius: 6px;
+padding: 12px 16px;
+cursor: pointer;
+text-align: left;
+color: var(--g-text);
+font-family: "Barlow", sans-serif;
+font-size: 14px;
+font-weight: 500;
+display: flex;
+align-items: center;
+justify-content: space-between;
+transition: all 0.15s }
+#tool-reportgen .option-btn:hover { border-color: var(--g-teal);
+background: rgba(46, 168, 157, 0.08);
+color: #fff }
+#tool-reportgen .option-btn.selected { border-color: var(--g-accent);
+background: rgba(246, 211, 53, 0.08);
+color: #fff }
+#tool-reportgen .option-meta { font-family: "IBM Plex Mono", monospace;
+font-size: 10px;
+color: var(--g-muted) }
+#tool-reportgen .option-btn.selected .option-meta { color: var(--g-accent) }
+#tool-reportgen .btn-row { display: flex;
+gap: 10px;
+justify-content: flex-end;
+margin-top: 24px }
+#tool-reportgen .btn { padding: 10px 22px;
+border-radius: 6px;
+font-family: "Barlow Condensed", sans-serif;
+font-weight: 700;
+font-size: 14px;
+letter-spacing: 0.08em;
+cursor: pointer;
+border: none;
+transition: all 0.15s }
+#tool-reportgen .btn-ghost { background: transparent;
+border: 1px solid var(--g-border);
+color: var(--g-muted) }
+#tool-reportgen .btn-ghost:hover { border-color: var(--g-text);
+color: var(--g-text) }
+#tool-reportgen .btn-primary { background: var(--g-accent);
+color: #0e1512 }
+#tool-reportgen .btn-primary:hover { background: #f8dc55 }
+#tool-reportgen .btn-primary:disabled { opacity: 0.35;
+cursor: not-allowed }
+#tool-reportgen .btn-teal { background: var(--g-teal);
+color: #fff }
+#tool-reportgen .btn-teal:hover { background: #38c4b9 }
+#tool-reportgen .check-item { background: var(--g-surface2);
+border: 1px solid var(--g-border);
+border-radius: 6px;
+padding: 11px 14px;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 12px;
+transition: all 0.15s;
+user-select: none }
+#tool-reportgen .check-item:hover { border-color: var(--g-teal);
+background: rgba(46, 168, 157, 0.06) }
+#tool-reportgen .check-item.checked { border-color: var(--g-accent);
+background: rgba(246, 211, 53, 0.07) }
+#tool-reportgen .check-box { width: 18px;
+height: 18px;
+border-radius: 4px;
+border: 2px solid var(--g-border);
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.15s;
+font-size: 11px }
+#tool-reportgen .check-item.checked .check-box { background: var(--g-accent);
+border-color: var(--g-accent);
+color: #0e1512 }
+#tool-reportgen .check-item-label { font-family: "Barlow", sans-serif;
+font-size: 14px;
+font-weight: 500;
+color: var(--g-text);
+flex: 1 }
+#tool-reportgen .check-item.checked .check-item-label { color: #fff }
+#tool-reportgen .select-all-row { display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 10px }
+#tool-reportgen .select-all-btn { background: none;
+border: none;
+font-family: "IBM Plex Mono", monospace;
+font-size: 10px;
+letter-spacing: 0.12em;
+color: var(--g-teal);
+cursor: pointer;
+padding: 0 }
+#tool-reportgen .select-all-btn:hover { color: #38c4b9 }
+#tool-reportgen .selection-count { font-family: "IBM Plex Mono", monospace;
+font-size: 10px;
+letter-spacing: 0.1em;
+color: var(--g-muted) }
+#tool-reportgen .selection-count span { color: var(--g-accent) }
+#tool-reportgen #rg-placement-modal { display: none;
+position: fixed;
+inset: 0;
+z-index: 9500;
+background: rgba(0, 0, 0, 0.8);
+align-items: center;
+justify-content: center }
+#tool-reportgen #rg-placement-modal.open { display: flex }
+#tool-reportgen .pl-modal-box { background: var(--g-surface);
+border: 1px solid var(--g-border);
+border-radius: 12px;
+padding: 32px;
+width: 100%;
+max-width: 480px;
+max-height: 80vh;
+overflow-y: auto;
+box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6) }
+#tool-reportgen .pl-modal-title { font-family: "Barlow Condensed", sans-serif;
+font-weight: 700;
+font-size: 20px;
+letter-spacing: 0.04em;
+color: #fff;
+margin-bottom: 6px }
+#tool-reportgen .pl-modal-sub { font-size: 12px;
+color: var(--g-muted);
+margin-bottom: 24px;
+line-height: 1.5;
+font-family: "IBM Plex Mono", monospace }
+#tool-reportgen .pl-row { display: flex;
+align-items: center;
+gap: 12px;
+margin-bottom: 10px }
+#tool-reportgen .pl-row-name { flex: 1;
+font-family: "Barlow", sans-serif;
+font-size: 14px;
+font-weight: 500;
+color: var(--g-text);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis }
+#tool-reportgen .pl-row-input { width: 80px;
+background: var(--g-surface2);
+border: 1px solid var(--g-border);
+border-radius: 6px;
+padding: 7px 10px;
+font-family: "IBM Plex Mono", monospace;
+font-size: 12px;
+color: var(--g-text);
+outline: none;
+text-align: center;
+transition: border-color 0.15s;
+flex-shrink: 0 }
+#tool-reportgen .pl-row-input:focus { border-color: var(--g-teal) }
+#tool-reportgen .pl-row-input::placeholder { color: var(--g-muted) }
+#tool-reportgen .pl-modal-btn-row { display: flex;
+gap: 10px;
+justify-content: flex-end;
+margin-top: 24px;
+border-top: 1px solid var(--g-border);
+padding-top: 20px }
+#tool-reportgen .player-cards-grid { display: grid;
+grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+gap: 8px;
+margin-bottom: 20px }
+#tool-reportgen .player-card { background: var(--g-surface2);
+border: 1px solid var(--g-border);
+border-radius: 8px;
+padding: 14px;
+cursor: pointer;
+transition: all 0.15s }
+#tool-reportgen .player-card:hover { border-color: var(--g-teal);
+transform: translatey(-1px) }
+#tool-reportgen .player-card.active { border-color: var(--g-accent);
+background: rgba(246, 211, 53, 0.07) }
+#tool-reportgen .player-card-name { font-family: "Barlow Condensed", sans-serif;
+font-weight: 700;
+font-size: 15px;
+letter-spacing: 0.03em;
+color: #fff;
+margin-bottom: 8px;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis }
+#tool-reportgen .player-card-stats { display: flex;
+flex-direction: column;
+gap: 3px }
+#tool-reportgen .player-card-stat { display: flex;
+justify-content: space-between;
+align-items: center }
+#tool-reportgen .player-card-stat-label { font-family: "IBM Plex Mono", monospace;
+font-size: 8.5px;
+letter-spacing: 0.1em;
+color: var(--g-muted) }
+#tool-reportgen .player-card-stat-val { font-family: "IBM Plex Mono", monospace;
+font-size: 10px;
+font-weight: 600;
+color: var(--g-text) }
+#tool-reportgen .player-card-stat-val.pos { color: var(--g-teal) }
+#tool-reportgen .player-card-stat-val.acc { color: var(--g-accent) }
+#tool-reportgen .player-card-view-btn { margin-top: 10px;
+width: 100%;
+padding: 6px 0;
+background: rgba(46, 168, 157, 0.12);
+border: 1px solid rgba(46, 168, 157, 0.25);
+border-radius: 4px;
+font-family: "IBM Plex Mono", monospace;
+font-size: 9px;
+letter-spacing: 0.12em;
+color: var(--g-teal);
+cursor: pointer;
+transition: all 0.15s }
+#tool-reportgen .player-card-view-btn:hover { background: rgba(46, 168, 157, 0.22);
+color: #38c4b9 }
+#tool-reportgen #rg-inline-preview-wrap { display: none;
+margin-bottom: 20px }
+#tool-reportgen .preview-header { display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 10px 14px;
+background: var(--g-surface2);
+border: 1px solid var(--g-border);
+border-bottom: none;
+border-radius: 8px 8px 0 0 }
+#tool-reportgen .preview-header-name { font-family: "Barlow Condensed", sans-serif;
+font-weight: 700;
+font-size: 15px;
+color: #fff;
+letter-spacing: 0.04em }
+#tool-reportgen .preview-header-btns { display: flex;
+align-items: center;
+gap: 8px }
+#tool-reportgen .preview-close-btn { background: none;
+border: none;
+color: var(--g-muted);
+font-size: 18px;
+cursor: pointer;
+line-height: 1;
+padding: 0 2px }
+#tool-reportgen .preview-close-btn:hover { color: var(--g-text) }
+#tool-reportgen .preview-fullscreen-btn { background: var(--g-surface);
+border: 1px solid var(--g-border);
+border-radius: 4px;
+color: var(--g-muted);
+font-size: 11px;
+cursor: pointer;
+padding: 3px 8px;
+font-family: "IBM Plex Mono", monospace;
+letter-spacing: 0.08em;
+transition: all 0.15s }
+#tool-reportgen .preview-fullscreen-btn:hover { border-color: var(--g-teal);
+color: var(--g-text) }
+#tool-reportgen .preview-scroll-box { border: 1px solid var(--g-border);
+border-radius: 0 0 8px 8px;
+overflow: auto;
+max-height: 520px;
+background: #223834 }
+#tool-reportgen .preview-scaler { transform-origin: top left }
+#tool-reportgen #rg-preview-modal { display: none;
+position: fixed;
+inset: 0;
+z-index: 9000;
+background: rgba(0, 0, 0, 0.88);
+flex-direction: column }
+#tool-reportgen #rg-preview-modal.open { display: flex }
+#tool-reportgen .modal-bar { display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 12px 20px;
+background: var(--g-surface);
+border-bottom: 1px solid var(--g-border);
+flex-shrink: 0 }
+#tool-reportgen .modal-bar-name { font-family: "Barlow Condensed", sans-serif;
+font-weight: 700;
+font-size: 16px;
+color: #fff;
+letter-spacing: 0.04em }
+#tool-reportgen .modal-bar-close { background: none;
+border: 1px solid var(--g-border);
+border-radius: 4px;
+color: var(--g-muted);
+font-size: 13px;
+cursor: pointer;
+padding: 4px 12px;
+font-family: "IBM Plex Mono", monospace;
+letter-spacing: 0.1em;
+transition: all 0.15s }
+#tool-reportgen .modal-bar-close:hover { border-color: var(--g-danger);
+color: var(--g-danger) }
+#tool-reportgen .modal-scroll { flex: 1;
+overflow: auto;
+padding: 28px 0;
+background: #223834 }
+#tool-reportgen .modal-inner { display: flex;
+flex-direction: column;
+gap: 28px;
+align-items: center;
+--accent: #f6d335;
+--teal-deep: #0f6b67;
+--teal: #2ea89d;
+--teal-soft: #a8d9d2;
+--paper: #fffdf7;
+--paper-soft: #f3efde;
+--ink: #14241f;
+--ink-soft: #3c4f4a;
+--ink-dim: #14241f;
+--ink-faint: #14241f;
+--ink-faintest: #14241f;
+--rule: #c8d5d0;
+--rule-soft: #e4ebe7;
+--danger: #c23a2a;
+--danger-soft: #e89a90;
+-webkit-print-color-adjust: exact;
+print-color-adjust: exact }
+#tool-reportgen .swiss-toggle-row { display: flex;
+align-items: center;
+gap: 10px;
+margin-top: 14px;
+padding: 10px 14px;
+background: var(--g-surface2);
+border: 1px solid var(--g-border);
+border-radius: 6px }
+#tool-reportgen .swiss-toggle-label { font-family: "IBM Plex Mono", monospace;
+font-size: 10px;
+letter-spacing: 0.12em;
+color: var(--g-muted);
+flex: 1 }
+#tool-reportgen .swiss-toggle-check { width: 16px;
+height: 16px;
+border-radius: 3px;
+border: 2px solid var(--g-border);
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.15s;
+font-size: 10px }
+#tool-reportgen .swiss-toggle-check.on { background: var(--g-accent);
+border-color: var(--g-accent);
+color: #0e1512 }
+#tool-reportgen #rg-report-output { display: none }
+#tool-reportgen .report-wrapper { --accent: #f6d335;
+--teal-deep: #0f6b67;
+--teal: #2ea89d;
+--teal-soft: #a8d9d2;
+--paper: #fffdf7;
+--paper-soft: #f3efde;
+--ink: #14241f;
+--ink-soft: #3c4f4a;
+--ink-dim: #14241f;
+--ink-faint: #14241f;
+--ink-faintest: #14241f;
+--rule: #c8d5d0;
+--rule-soft: #e4ebe7;
+--danger: #c23a2a;
+--danger-soft: #e89a90;
+font-family: "Barlow", system-ui, sans-serif;
+-webkit-print-color-adjust: exact;
+print-color-adjust: exact;
+background: #223834 }
+#tool-reportgen .report-pages { display: flex;
+flex-direction: column;
+gap: 28px;
+padding: 40px 0 80px;
+align-items: center }
+@media print {
+  #tool-reportgen .report-wrapper { background: white }
+  #tool-reportgen .report-pages { gap: 0;
+padding: 0 }
+  #tool-reportgen .report-pages > div { box-shadow: none !important;
+margin: 0 !important;
+break-after: page;
+page-break-after: always }
+  #tool-reportgen .report-pages > div:last-child { break-after: auto;
+page-break-after: auto }
+}
+@page { size: letter;
+margin: 0 }
+#tool-reportgen #rg-toolbar { position: fixed;
+bottom: 24px;
+right: 24px;
+z-index: 9999;
+display: none;
+gap: 10px }
+#tool-reportgen .toolbar-btn { padding: 10px 20px;
+border-radius: 8px;
+font-family: "Barlow Condensed", sans-serif;
+font-weight: 700;
+font-size: 14px;
+letter-spacing: 0.08em;
+cursor: pointer;
+border: none;
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
+@media print {
+  #tool-reportgen #rg-toolbar { display: none !important }
+}
 </style>
 </head>
 <body>
@@ -1495,27 +2073,16 @@ display: none }
   <div class="gen-body">
     <div class="gen-card">
       <div class="step-bar" id="rg-step-bar">
-        <div class="step-col"><div class="step-dot active" id="rg-dot-1">1</div><div class="step-label active" id="rg-lbl-1">IMPORT</div></div>
+        <div class="step-col"><div class="step-dot active" id="rg-dot-1">1</div><div class="step-label active" id="rg-lbl-1">TOURNAMENT</div></div>
         <div class="step-line" id="rg-line-1"></div>
-        <div class="step-col"><div class="step-dot" id="rg-dot-2">2</div><div class="step-label" id="rg-lbl-2">TOURNAMENT</div></div>
+        <div class="step-col"><div class="step-dot" id="rg-dot-2">2</div><div class="step-label" id="rg-lbl-2">PLAYER</div></div>
         <div class="step-line" id="rg-line-2"></div>
-        <div class="step-col"><div class="step-dot" id="rg-dot-3">3</div><div class="step-label" id="rg-lbl-3">PLAYER</div></div>
-        <div class="step-line" id="rg-line-3"></div>
-        <div class="step-col"><div class="step-dot" id="rg-dot-4">4</div><div class="step-label" id="rg-lbl-4">GENERATE</div></div>
+        <div class="step-col"><div class="step-dot" id="rg-dot-3">3</div><div class="step-label" id="rg-lbl-3">GENERATE</div></div>
       </div>
+
+      <p id="rg-drop-hint" class="shared-csv-warning" style="display:none"></p>
 
       <div class="panel" id="rg-step1">
-        <div class="panel-title">Import Match Data</div>
-        <div class="panel-sub">Drop a CSV exported from NCBLAST — either a single-tournament file or a full master database. The file just needs the standard column headers.</div>
-        <div class="drop-zone" id="rg-drop-zone">
-          <input type="file" id="rg-csv-input" accept=".csv,.tsv,.txt">
-          <div class="drop-icon">📂</div>
-          <h3>Drop CSV here, or click to browse</h3>
-          <p id="rg-drop-hint">Accepts .csv files · Any size</p>
-        </div>
-      </div>
-
-      <div class="panel" id="rg-step2" style="display:none">
         <div class="panel-title">Select Tournament</div>
         <div class="panel-sub">Choose which tournament to generate the report for.</div>
         <div class="select-label">TOURNAMENTS FOUND IN FILE</div>
@@ -1525,12 +2092,11 @@ display: none }
           <div class="swiss-toggle-check" id="rg-swiss-6-toggle" onclick="rg_toggleSwissRounds()"></div>
         </div>
         <div class="btn-row">
-          <button class="btn btn-ghost" onclick="rg_goStep(1)">&#x2190; Back</button>
-          <button class="btn btn-primary" id="rg-btn-step2-next" disabled onclick="rg_goStep(3)">Next &#x2192;</button>
+          <button class="btn btn-primary" id="rg-btn-step2-next" disabled onclick="rg_goStep(2)" style="margin-left:auto">Next &#x2192;</button>
         </div>
       </div>
 
-      <div class="panel" id="rg-step3" style="display:none">
+      <div class="panel" id="rg-step2" style="display:none">
         <div class="panel-title">Select Players</div>
         <div class="panel-sub">Choose one or more players to generate reports for. You can preview each report before exporting.</div>
         <div class="select-all-row">
@@ -1542,12 +2108,12 @@ display: none }
         </div>
         <div class="option-list" id="rg-player-list"></div>
         <div class="btn-row">
-          <button class="btn btn-ghost" onclick="rg_goStep(2)">← Back</button>
+          <button class="btn btn-ghost" onclick="rg_goStep(1)">← Back</button>
           <button class="btn btn-primary" id="rg-btn-step3-next" disabled onclick="rg_openPlacementModal()">View Reports →</button>
         </div>
       </div>
 
-      <div class="panel" id="rg-step4" style="display:none">
+      <div class="panel" id="rg-step3" style="display:none">
         <div class="panel-title">Review & Export</div>
         <div class="panel-sub" id="rg-step4-sub"></div>
         <div id="rg-inline-preview-wrap">
@@ -1566,7 +2132,7 @@ display: none }
         </div>
         <div class="player-cards-grid" id="rg-player-cards-grid"></div>
         <div class="btn-row">
-          <button class="btn btn-ghost" onclick="rg_goStep(3)">← Back</button>
+          <button class="btn btn-ghost" onclick="rg_goStep(2)">← Back</button>
           <button class="btn btn-teal" id="rg-btn-export-all" onclick="rg_exportAllReports()">Export All Reports →</button>
         </div>
       </div>
@@ -1623,45 +2189,33 @@ display: none }
   <div class="gen-body">
     <div class="gen-card">
       <div class="step-bar" id="tr-step-bar">
-        <div class="step-col"><div class="step-dot active" id="tr-dot-1">1</div><div class="step-label active" id="tr-lbl-1">IMPORT</div></div>
+        <div class="step-col"><div class="step-dot active" id="tr-dot-1">1</div><div class="step-label active" id="tr-lbl-1">TOURNAMENT</div></div>
         <div class="step-line" id="tr-line-1"></div>
-        <div class="step-col"><div class="step-dot" id="tr-dot-2">2</div><div class="step-label" id="tr-lbl-2">TOURNAMENT</div></div>
+        <div class="step-col"><div class="step-dot" id="tr-dot-2">2</div><div class="step-label" id="tr-lbl-2">WINNER</div></div>
         <div class="step-line" id="tr-line-2"></div>
-        <div class="step-col"><div class="step-dot" id="tr-dot-3">3</div><div class="step-label" id="tr-lbl-3">WINNER</div></div>
-        <div class="step-line" id="tr-line-3"></div>
-        <div class="step-col"><div class="step-dot" id="tr-dot-4">4</div><div class="step-label" id="tr-lbl-4">GENERATE</div></div>
+        <div class="step-col"><div class="step-dot" id="tr-dot-3">3</div><div class="step-label" id="tr-lbl-3">GENERATE</div></div>
       </div>
+      <p id="tr-drop-hint" class="shared-csv-warning" style="display:none"></p>
       <div class="panel" id="tr-step1">
-        <div class="panel-title">Import Match Data</div>
-        <div class="panel-sub">Drop a CSV exported from NCBLAST. The file can contain multiple tournaments — you'll select which one to break down.</div>
-        <div class="drop-zone" id="tr-drop-zone">
-          <input type="file" id="tr-csv-input" accept=".csv,.tsv,.txt">
-          <div class="drop-icon">📂</div>
-          <h3>Drop CSV here, or click to browse</h3>
-          <p id="tr-drop-hint">Accepts .csv files · Any size</p>
-        </div>
-      </div>
-      <div class="panel" id="tr-step2" style="display:none">
         <div class="panel-title">Select Tournament</div>
         <div class="panel-sub">Choose which tournament to generate the breakdown for.</div>
         <div class="select-label">TOURNAMENTS FOUND IN FILE</div>
         <div class="option-list" id="tr-tournament-list"></div>
         <div class="btn-row">
-          <button class="btn btn-ghost" onclick="tr_goStep(1)">&#x2190; Back</button>
-          <button class="btn btn-primary" id="tr-btn-step2-next" disabled onclick="tr_goStep(3)">Next &#x2192;</button>
+          <button class="btn btn-primary" id="tr-btn-step2-next" disabled onclick="tr_goStep(2)" style="margin-left:auto">Next &#x2192;</button>
         </div>
       </div>
-      <div class="panel" id="tr-step3" style="display:none">
+      <div class="panel" id="tr-step2" style="display:none">
         <div class="panel-title">Select Winner</div>
         <div class="panel-sub">Choose the tournament winner. Players are sorted by number of matches played, most to least.</div>
         <div class="select-label">PLAYERS — SORTED BY MATCHES PLAYED</div>
         <div class="option-list" id="tr-winner-list"></div>
         <div class="btn-row">
-          <button class="btn btn-ghost" onclick="tr_goStep(2)">&#x2190; Back</button>
+          <button class="btn btn-ghost" onclick="tr_goStep(1)">&#x2190; Back</button>
           <button class="btn btn-primary" id="tr-btn-step3-next" disabled onclick="tr_generateAndShow()">Generate Breakdown &#x2192;</button>
         </div>
       </div>
-      <div class="panel" id="tr-step4" style="display:none">
+      <div class="panel" id="tr-step3" style="display:none">
         <div class="panel-title">Generating&hellip;</div>
         <div class="panel-sub">Computing event statistics.</div>
       </div>
@@ -3906,59 +4460,35 @@ let tr_reportRoot = null;
 
 // ── STEP NAV ──────────────────────────────────────────────────────────────────
 function tr_goStep(n) {
-  [1,2,3,4].forEach(i => {
-    document.getElementById('step'+i).style.display = i===n ? '' : 'none';
-    const dot = document.getElementById('dot-'+i);
-    const lbl = document.getElementById('lbl-'+i);
+  [1,2,3].forEach(i => {
+    document.getElementById('tr-step'+i).style.display = i===n ? '' : 'none';
+    const dot = document.getElementById('tr-dot-'+i);
+    const lbl = document.getElementById('tr-lbl-'+i);
     if (i < n)  { dot.className='step-dot done'; lbl.className='step-label done'; }
     if (i===n)  { dot.className='step-dot active'; lbl.className='step-label active'; }
     if (i > n)  { dot.className='step-dot'; lbl.className='step-label'; }
-    if (i < 4) {
-      const line = document.getElementById('line-'+i);
+    if (i < 3) {
+      const line = document.getElementById('tr-line-'+i);
       if (line) line.className = i < n ? 'step-line done' : 'step-line';
     }
   });
-  if (n === 2) tr_populateTournaments();
-  if (n === 3) tr_populateWinnerList();
+  if (n === 1) tr_populateTournaments();
+  if (n === 2) tr_populateWinnerList();
 }
-
-// ── FILE IMPORT ───────────────────────────────────────────────────────────────
-function tr_handleFile(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const rows = tr_parseCSV(e.target.result);
-    if (!rows.length || !rows[0].hasOwnProperty('Tournament')) {
-      alert('Could not find expected columns. Make sure this is a standard NCBLAST CSV export.');
-      return;
-    }
-    tr_ALL_ROWS = rows;
-    document.getElementById('tr-drop-hint').textContent = '\u2713 ' + file.name + ' · ' + rows.length + ' rows loaded';
-    tr_goStep(2);
-  };
-  reader.readAsText(file);
-}
-
-const tr_dz = document.getElementById('tr-drop-zone');
-const tr_ci = document.getElementById('tr-csv-input');
-tr_ci.addEventListener('change', e => tr_handleFile(e.target.files[0]));
-tr_dz.addEventListener('dragover', e => { e.preventDefault(); tr_dz.classList.add('drag-over'); });
-tr_dz.addEventListener('dragleave', () => tr_dz.classList.remove('drag-over'));
-tr_dz.addEventListener('drop', e => { e.preventDefault(); tr_dz.classList.remove('drag-over'); tr_handleFile(e.dataTransfer.files[0]); });
 
 // ── AUTO-LOAD FROM SHARED DATA SOURCE ───────────────────────────────────────
-// Registers with the shell's shared CSV system (see unified-app.html) so
-// this tool loads automatically whenever a file is uploaded or already
-// present, without needing its own separate fetch to the Worker.
+// The file arrives from the shell's shared upload box at the top of the
+// page (one upload feeds every tab), so this tool has no file picker of
+// its own — it just listens for the shared file to be ready.
 function tr_loadTextAsFile(text, filename) {
   const rows = tr_parseCSV(text);
   if (!rows.length || !rows[0].hasOwnProperty('Tournament')) {
-    document.getElementById('tr-drop-hint').textContent = 'Shared file loaded but columns look unexpected — try manual upload.';
+    document.getElementById('tr-drop-hint').textContent = 'Shared file loaded but columns look unexpected — try re-uploading.';
+    document.getElementById('tr-drop-hint').style.display = '';
     return;
   }
   tr_ALL_ROWS = rows;
-  document.getElementById('tr-drop-hint').textContent = '✓ ' + filename + ' · ' + rows.length + ' rows loaded (auto)';
-  tr_goStep(2);
+  tr_goStep(1);
 }
 
 if (window.SHARED_CSV_LISTENERS) {
@@ -4033,7 +4563,7 @@ function tr_populateWinnerList() {
 
 // ── GENERATE ──────────────────────────────────────────────────────────────────
 function tr_generateAndShow() {
-  tr_goStep(4);
+  tr_goStep(3);
   setTimeout(() => {
     const data = tr_computeTournamentStats(tr_ALL_ROWS, tr_SELECTED_TOURNAMENT, tr_SELECTED_WINNER);
     document.getElementById('tr-generator').style.display = 'none';
@@ -4051,7 +4581,7 @@ function tr_backToGenerator() {
   document.getElementById('tr-toolbar').style.display = 'none';
   document.getElementById('tr-report-pages').innerHTML = '';
   tr_reportRoot = null;
-  tr_goStep(2);
+  tr_goStep(1);
 }
 
 // ── HTML DOWNLOAD ─────────────────────────────────────────────────────────────
@@ -4082,576 +4612,6 @@ body{background:#223834!important;}
 #report-output{display:block!important;}
 @media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;}.report-pages>div{box-shadow:none!important;break-after:page;page-break-after:always;}.report-pages>div:last-child{break-after:auto;page-break-after:auto;}}
 @page{size:letter;margin:0;}
-
-    /* ═══ PLAYER REPORT GENERATOR TOOL (scoped) ═══ */
-#tool-reportgen { --g-bg: #0e1512;
---g-surface: #141c19;
---g-surface2: #1c2822;
---g-border: #2a3d35;
---g-teal: #2ea89d;
---g-teal-deep: #0f6b67;
---g-accent: #f6d335;
---g-text: #d4e8e0;
---g-muted: #7a9e92;
---g-danger: #e05a46;
---g-success: #4ec98a }
-#tool-reportgen * { box-sizing: border-box;
-margin: 0;
-padding: 0 }
-#tool-reportgen { font-family: "Barlow", sans-serif;
-background: var(--g-bg);
-color: var(--g-text);
-min-height: 100vh;
--webkit-font-smoothing: antialiased }
-@media print {
-  #tool-reportgen #rg-generator { display: none !important }
-  #tool-reportgen #rg-report-output { display: block !important }
-}
-#tool-reportgen #rg-generator { min-height: 100vh;
-display: flex;
-flex-direction: column }
-#tool-reportgen .gen-header { display: flex;
-align-items: center;
-gap: 20px;
-padding: 20px 40px;
-border-bottom: 1px solid var(--g-border);
-background: var(--g-surface) }
-#tool-reportgen .gen-logo { width: 44px;
-height: 44px;
-background: var(--g-teal-deep);
-border-radius: 50%;
-display: flex;
-align-items: center;
-justify-content: center;
-font-family: "Barlow Condensed", sans-serif;
-font-weight: 900;
-font-size: 11px;
-color: var(--g-accent);
-letter-spacing: 0.08em;
-border: 2px solid var(--g-accent);
-flex-shrink: 0 }
-#tool-reportgen .gen-title-block h1 { font-family: "Barlow Condensed", sans-serif;
-font-weight: 800;
-font-size: 22px;
-letter-spacing: 0.04em;
-color: #fff;
-line-height: 1 }
-#tool-reportgen .gen-title-block p { font-family: "IBM Plex Mono", monospace;
-font-size: 10px;
-color: var(--g-muted);
-letter-spacing: 0.14em;
-margin-top: 3px }
-#tool-reportgen .gen-body { flex: 1;
-display: flex;
-align-items: center;
-justify-content: center;
-padding: 48px 40px }
-#tool-reportgen .gen-card { width: 100%;
-max-width: 640px }
-#tool-reportgen .step-bar { display: flex;
-align-items: center;
-gap: 0;
-margin-bottom: 36px }
-#tool-reportgen .step-item { display: flex;
-align-items: center;
-gap: 10px;
-flex: 1 }
-#tool-reportgen .step-item:last-child { flex: 0 }
-#tool-reportgen .step-dot { width: 28px;
-height: 28px;
-border-radius: 50%;
-border: 2px solid var(--g-border);
-display: flex;
-align-items: center;
-justify-content: center;
-font-family: "IBM Plex Mono", monospace;
-font-size: 11px;
-font-weight: 600;
-color: var(--g-muted);
-flex-shrink: 0;
-transition: all 0.2s }
-#tool-reportgen .step-dot.active { border-color: var(--g-accent);
-background: var(--g-accent);
-color: #0e1512 }
-#tool-reportgen .step-dot.done { border-color: var(--g-teal);
-background: var(--g-teal);
-color: #fff }
-#tool-reportgen .step-line { flex: 1;
-height: 2px;
-background: var(--g-border);
-margin: 0 4px;
-transition: background 0.2s }
-#tool-reportgen .step-line.done { background: var(--g-teal) }
-#tool-reportgen .step-label { font-family: "IBM Plex Mono", monospace;
-font-size: 9px;
-letter-spacing: 0.1em;
-color: var(--g-muted);
-margin-top: 4px;
-white-space: nowrap }
-#tool-reportgen .step-label.active { color: var(--g-accent) }
-#tool-reportgen .step-label.done { color: var(--g-teal) }
-#tool-reportgen .step-col { display: flex;
-flex-direction: column;
-align-items: center }
-#tool-reportgen .panel { background: var(--g-surface);
-border: 1px solid var(--g-border);
-border-radius: 10px;
-padding: 32px }
-#tool-reportgen .panel-title { font-family: "Barlow Condensed", sans-serif;
-font-weight: 700;
-font-size: 20px;
-letter-spacing: 0.04em;
-color: #fff;
-margin-bottom: 6px }
-#tool-reportgen .panel-sub { font-size: 13px;
-color: var(--g-muted);
-margin-bottom: 28px;
-line-height: 1.5 }
-#tool-reportgen .drop-zone { border: 2px dashed var(--g-border);
-border-radius: 8px;
-padding: 40px 24px;
-text-align: center;
-cursor: pointer;
-transition: all 0.2s;
-position: relative }
-#tool-reportgen .drop-zone:hover, #tool-reportgen .drop-zone.drag-over { border-color: var(--g-teal);
-background: rgba(46, 168, 157, 0.06) }
-#tool-reportgen .drop-zone input[type="file"] { position: absolute;
-inset: 0;
-opacity: 0;
-cursor: pointer;
-width: 100%;
-height: 100% }
-#tool-reportgen .drop-icon { width: 48px;
-height: 48px;
-margin: 0 auto 14px;
-background: var(--g-surface2);
-border-radius: 50%;
-display: flex;
-align-items: center;
-justify-content: center;
-font-size: 20px }
-#tool-reportgen .drop-zone h3 { font-family: "Barlow Condensed", sans-serif;
-font-weight: 700;
-font-size: 16px;
-letter-spacing: 0.04em;
-color: #fff;
-margin-bottom: 6px }
-#tool-reportgen .drop-zone p { font-size: 12px;
-color: var(--g-muted);
-font-family: "IBM Plex Mono", monospace }
-#tool-reportgen .select-label { font-family: "IBM Plex Mono", monospace;
-font-size: 10px;
-letter-spacing: 0.14em;
-color: var(--g-muted);
-margin-bottom: 10px }
-#tool-reportgen .option-list { display: flex;
-flex-direction: column;
-gap: 6px;
-max-height: 300px;
-overflow-y: auto;
-margin-bottom: 24px }
-#tool-reportgen .option-list::-webkit-scrollbar { width: 4px }
-#tool-reportgen .option-list::-webkit-scrollbar-track { background: transparent }
-#tool-reportgen .option-list::-webkit-scrollbar-thumb { background: var(--g-border);
-border-radius: 2px }
-#tool-reportgen .option-btn { background: var(--g-surface2);
-border: 1px solid var(--g-border);
-border-radius: 6px;
-padding: 12px 16px;
-cursor: pointer;
-text-align: left;
-color: var(--g-text);
-font-family: "Barlow", sans-serif;
-font-size: 14px;
-font-weight: 500;
-display: flex;
-align-items: center;
-justify-content: space-between;
-transition: all 0.15s }
-#tool-reportgen .option-btn:hover { border-color: var(--g-teal);
-background: rgba(46, 168, 157, 0.08);
-color: #fff }
-#tool-reportgen .option-btn.selected { border-color: var(--g-accent);
-background: rgba(246, 211, 53, 0.08);
-color: #fff }
-#tool-reportgen .option-meta { font-family: "IBM Plex Mono", monospace;
-font-size: 10px;
-color: var(--g-muted) }
-#tool-reportgen .option-btn.selected .option-meta { color: var(--g-accent) }
-#tool-reportgen .btn-row { display: flex;
-gap: 10px;
-justify-content: flex-end;
-margin-top: 24px }
-#tool-reportgen .btn { padding: 10px 22px;
-border-radius: 6px;
-font-family: "Barlow Condensed", sans-serif;
-font-weight: 700;
-font-size: 14px;
-letter-spacing: 0.08em;
-cursor: pointer;
-border: none;
-transition: all 0.15s }
-#tool-reportgen .btn-ghost { background: transparent;
-border: 1px solid var(--g-border);
-color: var(--g-muted) }
-#tool-reportgen .btn-ghost:hover { border-color: var(--g-text);
-color: var(--g-text) }
-#tool-reportgen .btn-primary { background: var(--g-accent);
-color: #0e1512 }
-#tool-reportgen .btn-primary:hover { background: #f8dc55 }
-#tool-reportgen .btn-primary:disabled { opacity: 0.35;
-cursor: not-allowed }
-#tool-reportgen .btn-teal { background: var(--g-teal);
-color: #fff }
-#tool-reportgen .btn-teal:hover { background: #38c4b9 }
-#tool-reportgen .check-item { background: var(--g-surface2);
-border: 1px solid var(--g-border);
-border-radius: 6px;
-padding: 11px 14px;
-cursor: pointer;
-display: flex;
-align-items: center;
-gap: 12px;
-transition: all 0.15s;
-user-select: none }
-#tool-reportgen .check-item:hover { border-color: var(--g-teal);
-background: rgba(46, 168, 157, 0.06) }
-#tool-reportgen .check-item.checked { border-color: var(--g-accent);
-background: rgba(246, 211, 53, 0.07) }
-#tool-reportgen .check-box { width: 18px;
-height: 18px;
-border-radius: 4px;
-border: 2px solid var(--g-border);
-flex-shrink: 0;
-display: flex;
-align-items: center;
-justify-content: center;
-transition: all 0.15s;
-font-size: 11px }
-#tool-reportgen .check-item.checked .check-box { background: var(--g-accent);
-border-color: var(--g-accent);
-color: #0e1512 }
-#tool-reportgen .check-item-label { font-family: "Barlow", sans-serif;
-font-size: 14px;
-font-weight: 500;
-color: var(--g-text);
-flex: 1 }
-#tool-reportgen .check-item.checked .check-item-label { color: #fff }
-#tool-reportgen .select-all-row { display: flex;
-align-items: center;
-justify-content: space-between;
-margin-bottom: 10px }
-#tool-reportgen .select-all-btn { background: none;
-border: none;
-font-family: "IBM Plex Mono", monospace;
-font-size: 10px;
-letter-spacing: 0.12em;
-color: var(--g-teal);
-cursor: pointer;
-padding: 0 }
-#tool-reportgen .select-all-btn:hover { color: #38c4b9 }
-#tool-reportgen .selection-count { font-family: "IBM Plex Mono", monospace;
-font-size: 10px;
-letter-spacing: 0.1em;
-color: var(--g-muted) }
-#tool-reportgen .selection-count span { color: var(--g-accent) }
-#tool-reportgen #rg-placement-modal { display: none;
-position: fixed;
-inset: 0;
-z-index: 9500;
-background: rgba(0, 0, 0, 0.8);
-align-items: center;
-justify-content: center }
-#tool-reportgen #rg-placement-modal.open { display: flex }
-#tool-reportgen .pl-modal-box { background: var(--g-surface);
-border: 1px solid var(--g-border);
-border-radius: 12px;
-padding: 32px;
-width: 100%;
-max-width: 480px;
-max-height: 80vh;
-overflow-y: auto;
-box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6) }
-#tool-reportgen .pl-modal-title { font-family: "Barlow Condensed", sans-serif;
-font-weight: 700;
-font-size: 20px;
-letter-spacing: 0.04em;
-color: #fff;
-margin-bottom: 6px }
-#tool-reportgen .pl-modal-sub { font-size: 12px;
-color: var(--g-muted);
-margin-bottom: 24px;
-line-height: 1.5;
-font-family: "IBM Plex Mono", monospace }
-#tool-reportgen .pl-row { display: flex;
-align-items: center;
-gap: 12px;
-margin-bottom: 10px }
-#tool-reportgen .pl-row-name { flex: 1;
-font-family: "Barlow", sans-serif;
-font-size: 14px;
-font-weight: 500;
-color: var(--g-text);
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis }
-#tool-reportgen .pl-row-input { width: 80px;
-background: var(--g-surface2);
-border: 1px solid var(--g-border);
-border-radius: 6px;
-padding: 7px 10px;
-font-family: "IBM Plex Mono", monospace;
-font-size: 12px;
-color: var(--g-text);
-outline: none;
-text-align: center;
-transition: border-color 0.15s;
-flex-shrink: 0 }
-#tool-reportgen .pl-row-input:focus { border-color: var(--g-teal) }
-#tool-reportgen .pl-row-input::placeholder { color: var(--g-muted) }
-#tool-reportgen .pl-modal-btn-row { display: flex;
-gap: 10px;
-justify-content: flex-end;
-margin-top: 24px;
-border-top: 1px solid var(--g-border);
-padding-top: 20px }
-#tool-reportgen .player-cards-grid { display: grid;
-grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-gap: 8px;
-margin-bottom: 20px }
-#tool-reportgen .player-card { background: var(--g-surface2);
-border: 1px solid var(--g-border);
-border-radius: 8px;
-padding: 14px;
-cursor: pointer;
-transition: all 0.15s }
-#tool-reportgen .player-card:hover { border-color: var(--g-teal);
-transform: translatey(-1px) }
-#tool-reportgen .player-card.active { border-color: var(--g-accent);
-background: rgba(246, 211, 53, 0.07) }
-#tool-reportgen .player-card-name { font-family: "Barlow Condensed", sans-serif;
-font-weight: 700;
-font-size: 15px;
-letter-spacing: 0.03em;
-color: #fff;
-margin-bottom: 8px;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis }
-#tool-reportgen .player-card-stats { display: flex;
-flex-direction: column;
-gap: 3px }
-#tool-reportgen .player-card-stat { display: flex;
-justify-content: space-between;
-align-items: center }
-#tool-reportgen .player-card-stat-label { font-family: "IBM Plex Mono", monospace;
-font-size: 8.5px;
-letter-spacing: 0.1em;
-color: var(--g-muted) }
-#tool-reportgen .player-card-stat-val { font-family: "IBM Plex Mono", monospace;
-font-size: 10px;
-font-weight: 600;
-color: var(--g-text) }
-#tool-reportgen .player-card-stat-val.pos { color: var(--g-teal) }
-#tool-reportgen .player-card-stat-val.acc { color: var(--g-accent) }
-#tool-reportgen .player-card-view-btn { margin-top: 10px;
-width: 100%;
-padding: 6px 0;
-background: rgba(46, 168, 157, 0.12);
-border: 1px solid rgba(46, 168, 157, 0.25);
-border-radius: 4px;
-font-family: "IBM Plex Mono", monospace;
-font-size: 9px;
-letter-spacing: 0.12em;
-color: var(--g-teal);
-cursor: pointer;
-transition: all 0.15s }
-#tool-reportgen .player-card-view-btn:hover { background: rgba(46, 168, 157, 0.22);
-color: #38c4b9 }
-#tool-reportgen #rg-inline-preview-wrap { display: none;
-margin-bottom: 20px }
-#tool-reportgen .preview-header { display: flex;
-align-items: center;
-justify-content: space-between;
-padding: 10px 14px;
-background: var(--g-surface2);
-border: 1px solid var(--g-border);
-border-bottom: none;
-border-radius: 8px 8px 0 0 }
-#tool-reportgen .preview-header-name { font-family: "Barlow Condensed", sans-serif;
-font-weight: 700;
-font-size: 15px;
-color: #fff;
-letter-spacing: 0.04em }
-#tool-reportgen .preview-header-btns { display: flex;
-align-items: center;
-gap: 8px }
-#tool-reportgen .preview-close-btn { background: none;
-border: none;
-color: var(--g-muted);
-font-size: 18px;
-cursor: pointer;
-line-height: 1;
-padding: 0 2px }
-#tool-reportgen .preview-close-btn:hover { color: var(--g-text) }
-#tool-reportgen .preview-fullscreen-btn { background: var(--g-surface);
-border: 1px solid var(--g-border);
-border-radius: 4px;
-color: var(--g-muted);
-font-size: 11px;
-cursor: pointer;
-padding: 3px 8px;
-font-family: "IBM Plex Mono", monospace;
-letter-spacing: 0.08em;
-transition: all 0.15s }
-#tool-reportgen .preview-fullscreen-btn:hover { border-color: var(--g-teal);
-color: var(--g-text) }
-#tool-reportgen .preview-scroll-box { border: 1px solid var(--g-border);
-border-radius: 0 0 8px 8px;
-overflow: auto;
-max-height: 520px;
-background: #223834 }
-#tool-reportgen .preview-scaler { transform-origin: top left }
-#tool-reportgen #rg-preview-modal { display: none;
-position: fixed;
-inset: 0;
-z-index: 9000;
-background: rgba(0, 0, 0, 0.88);
-flex-direction: column }
-#tool-reportgen #rg-preview-modal.open { display: flex }
-#tool-reportgen .modal-bar { display: flex;
-align-items: center;
-justify-content: space-between;
-padding: 12px 20px;
-background: var(--g-surface);
-border-bottom: 1px solid var(--g-border);
-flex-shrink: 0 }
-#tool-reportgen .modal-bar-name { font-family: "Barlow Condensed", sans-serif;
-font-weight: 700;
-font-size: 16px;
-color: #fff;
-letter-spacing: 0.04em }
-#tool-reportgen .modal-bar-close { background: none;
-border: 1px solid var(--g-border);
-border-radius: 4px;
-color: var(--g-muted);
-font-size: 13px;
-cursor: pointer;
-padding: 4px 12px;
-font-family: "IBM Plex Mono", monospace;
-letter-spacing: 0.1em;
-transition: all 0.15s }
-#tool-reportgen .modal-bar-close:hover { border-color: var(--g-danger);
-color: var(--g-danger) }
-#tool-reportgen .modal-scroll { flex: 1;
-overflow: auto;
-padding: 28px 0;
-background: #223834 }
-#tool-reportgen .modal-inner { display: flex;
-flex-direction: column;
-gap: 28px;
-align-items: center;
---accent: #f6d335;
---teal-deep: #0f6b67;
---teal: #2ea89d;
---teal-soft: #a8d9d2;
---paper: #fffdf7;
---paper-soft: #f3efde;
---ink: #14241f;
---ink-soft: #3c4f4a;
---ink-dim: #14241f;
---ink-faint: #14241f;
---ink-faintest: #14241f;
---rule: #c8d5d0;
---rule-soft: #e4ebe7;
---danger: #c23a2a;
---danger-soft: #e89a90;
--webkit-print-color-adjust: exact;
-print-color-adjust: exact }
-#tool-reportgen .swiss-toggle-row { display: flex;
-align-items: center;
-gap: 10px;
-margin-top: 14px;
-padding: 10px 14px;
-background: var(--g-surface2);
-border: 1px solid var(--g-border);
-border-radius: 6px }
-#tool-reportgen .swiss-toggle-label { font-family: "IBM Plex Mono", monospace;
-font-size: 10px;
-letter-spacing: 0.12em;
-color: var(--g-muted);
-flex: 1 }
-#tool-reportgen .swiss-toggle-check { width: 16px;
-height: 16px;
-border-radius: 3px;
-border: 2px solid var(--g-border);
-flex-shrink: 0;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-transition: all 0.15s;
-font-size: 10px }
-#tool-reportgen .swiss-toggle-check.on { background: var(--g-accent);
-border-color: var(--g-accent);
-color: #0e1512 }
-#tool-reportgen #rg-report-output { display: none }
-#tool-reportgen .report-wrapper { --accent: #f6d335;
---teal-deep: #0f6b67;
---teal: #2ea89d;
---teal-soft: #a8d9d2;
---paper: #fffdf7;
---paper-soft: #f3efde;
---ink: #14241f;
---ink-soft: #3c4f4a;
---ink-dim: #14241f;
---ink-faint: #14241f;
---ink-faintest: #14241f;
---rule: #c8d5d0;
---rule-soft: #e4ebe7;
---danger: #c23a2a;
---danger-soft: #e89a90;
-font-family: "Barlow", system-ui, sans-serif;
--webkit-print-color-adjust: exact;
-print-color-adjust: exact;
-background: #223834 }
-#tool-reportgen .report-pages { display: flex;
-flex-direction: column;
-gap: 28px;
-padding: 40px 0 80px;
-align-items: center }
-@media print {
-  #tool-reportgen .report-wrapper { background: white }
-  #tool-reportgen .report-pages { gap: 0;
-padding: 0 }
-  #tool-reportgen .report-pages > div { box-shadow: none !important;
-margin: 0 !important;
-break-after: page;
-page-break-after: always }
-  #tool-reportgen .report-pages > div:last-child { break-after: auto;
-page-break-after: auto }
-}
-@page { size: letter;
-margin: 0 }
-#tool-reportgen #rg-toolbar { position: fixed;
-bottom: 24px;
-right: 24px;
-z-index: 9999;
-display: none;
-gap: 10px }
-#tool-reportgen .toolbar-btn { padding: 10px 20px;
-border-radius: 8px;
-font-family: "Barlow Condensed", sans-serif;
-font-weight: 700;
-font-size: 14px;
-letter-spacing: 0.08em;
-cursor: pointer;
-border: none;
-box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
-@media print {
-  #tool-reportgen #rg-toolbar { display: none !important }
-}
 </style></head><body>
 <div class="report-wrapper"><div class="report-pages">${pagesHTML}</div></div>
 </body></html>`;
@@ -5384,62 +5344,36 @@ let rg_SWISS_ROUNDS = 5; // 5 or 6
 
 // ── STEP NAVIGATION ───────────────────────────────────────────────────────────
 function rg_goStep(n) {
-  [1,2,3,4].forEach(i => {
-    document.getElementById('step'+i).style.display = i===n ? '' : 'none';
-    const dot = document.getElementById('dot-'+i);
-    const lbl = document.getElementById('lbl-'+i);
+  [1,2,3].forEach(i => {
+    document.getElementById('rg-step'+i).style.display = i===n ? '' : 'none';
+    const dot = document.getElementById('rg-dot-'+i);
+    const lbl = document.getElementById('rg-lbl-'+i);
     if (i < n)  { dot.className='step-dot done'; lbl.className='step-label done'; }
     if (i === n){ dot.className='step-dot active'; lbl.className='step-label active'; }
     if (i > n)  { dot.className='step-dot'; lbl.className='step-label'; }
-    if (i < 4) {
-      const line = document.getElementById('line-'+i);
+    if (i < 3) {
+      const line = document.getElementById('rg-line-'+i);
       line.className = i < n ? 'step-line done' : 'step-line';
     }
   });
-  if (n === 2) rg_populateTournaments();
-  if (n === 3) rg_populatePlayers();
-  if (n === 4) rg_populateReviewStep();
+  if (n === 1) rg_populateTournaments();
+  if (n === 2) rg_populatePlayers();
+  if (n === 3) rg_populateReviewStep();
 }
-
-// ── FILE IMPORT ───────────────────────────────────────────────────────────────
-function rg_handleFile(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const rows = rg_parseCSV(e.target.result);
-    if (!rows.length || !rows[0].hasOwnProperty('Tournament')) {
-      alert('Could not find expected columns. Make sure this is a standard NCBLAST CSV export.');
-      return;
-    }
-    rg_ALL_ROWS = rows;
-    document.getElementById('rg-drop-hint').textContent = '\u2713 ' + file.name + ' \u00b7 ' + rows.length + ' rows loaded';
-    rg_goStep(2);
-  };
-  reader.readAsText(file);
-}
-
-const rg_dz = document.getElementById('rg-drop-zone');
-const rg_ci = document.getElementById('rg-csv-input');
-rg_ci.addEventListener('change', e => rg_handleFile(e.target.files[0]));
-rg_dz.addEventListener('dragover', e => { e.preventDefault(); rg_dz.classList.add('drag-over'); });
-rg_dz.addEventListener('dragleave', () => rg_dz.classList.remove('drag-over'));
-rg_dz.addEventListener('drop', e => { e.preventDefault(); rg_dz.classList.remove('drag-over'); rg_handleFile(e.dataTransfer.files[0]); });
 
 // ── AUTO-LOAD FROM SHARED DATA SOURCE ───────────────────────────────────────
-// Registers with the shell's shared CSV system (see the top of this file)
-// so this tool loads automatically whenever a file is uploaded or already
-// present, without needing its own separate fetch to the Worker. This only
-// affects how data gets IN to the tool — it does not touch computeStats,
-// report layout, or any rendering logic.
+// The file arrives from the shell's shared upload box at the top of the
+// page (one upload feeds every tab), so this tool has no file picker of
+// its own — it just listens for the shared file to be ready.
 function rg_loadTextAsFile(text, filename) {
   const rows = rg_parseCSV(text);
   if (!rows.length || !rows[0].hasOwnProperty('Tournament')) {
-    document.getElementById('rg-drop-hint').textContent = 'Shared file loaded but columns look unexpected — try manual upload.';
+    document.getElementById('rg-drop-hint').textContent = 'Shared file loaded but columns look unexpected — try re-uploading.';
+    document.getElementById('rg-drop-hint').style.display = '';
     return;
   }
   rg_ALL_ROWS = rows;
-  document.getElementById('rg-drop-hint').textContent = '✓ ' + filename + ' · ' + rows.length + ' rows loaded (auto)';
-  rg_goStep(2);
+  rg_goStep(1);
 }
 
 if (window.SHARED_CSV_LISTENERS) {
@@ -5496,7 +5430,7 @@ function rg_confirmPlacements() {
     }
   });
   rg_closePlacementModal();
-  rg_goStep(4);
+  rg_goStep(3);
 }
 
 function rg_formatPlacement(rank) {
@@ -5694,7 +5628,7 @@ function rg_backToTournament() {
   document.getElementById('rg-report-output').style.display = 'none';
   document.getElementById('rg-toolbar').style.display = 'none';
   document.getElementById('rg-report-pages').innerHTML = '';
-  rg_goStep(2);
+  rg_goStep(1);
 }
 
 function rg_downloadReportHTML() {
