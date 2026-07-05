@@ -3865,7 +3865,7 @@ function ph_renderRankings(){
   const filtered=ph_RANK_SEARCH?data.filter(d=>d.name.toLowerCase().includes(ph_RANK_SEARCH)):data;
 
   // Sort
-  const dir=ph_RANK_DIR==='asc'?1:-1;
+  const dir=ph_RANK_DIR==='desc'?-1:1;
   filtered.sort((a,b)=>{
     const v={
       battles:d=>d.battles,winpct:d=>d.winPct,ppb:d=>d.ppb,
@@ -3873,8 +3873,8 @@ function ph_renderRankings(){
       record:d=>d.setW,
     };
     const fn=v[ph_RANK_SORT]||v.battles;
-    const diff=ph_RANK_SORT==='name'?(a.name.localeCompare(b.name)):fn(b)-fn(a);
-    return dir*(ph_RANK_SORT==='name'?diff:fn(b)-fn(a))|| (ph_RANK_DIR==='asc'?1:-1)*(ph_RANK_SORT==='name'?0:a.name.localeCompare(b.name));
+    if(ph_RANK_SORT==='name')return dir*a.name.localeCompare(b.name);
+    return dir*(fn(a)-fn(b))||dir*a.name.localeCompare(b.name);
   });
 
   const cols=[
@@ -4005,11 +4005,11 @@ function ph_renderComboLeaderboard(){
   }
 
   // Sort
-  const dir=ph_COMBO_DIR==='asc'?1:-1;
+  const dir=ph_COMBO_DIR==='desc'?-1:1;
   playerData.sort((a,b)=>{
-    if(ph_COMBO_SORT==='winpct')return dir*(b.winPct-a.winPct)||b.battles-a.battles;
-    if(ph_COMBO_SORT==='ppb')return dir*(b.ppb-a.ppb)||b.battles-a.battles;
-    return dir*(b.battles-a.battles)||dir*(b.winPct-a.winPct);
+    if(ph_COMBO_SORT==='winpct')return dir*(a.winPct-b.winPct)||dir*(a.battles-b.battles);
+    if(ph_COMBO_SORT==='ppb')return dir*(a.ppb-b.ppb)||dir*(a.battles-b.battles);
+    return dir*(a.battles-b.battles)||dir*(a.winPct-b.winPct);
   });
 
   const maxB=playerData.length>0?Math.max(...playerData.map(d=>d.battles)):1;
