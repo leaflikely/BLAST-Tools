@@ -1780,6 +1780,33 @@ color: var(--g-muted);
 margin-bottom: 24px;
 line-height: 1.5;
 font-family: "IBM Plex Mono", monospace }
+#tool-reportgen .pl-challonge-row { display: flex;
+gap: 8px;
+margin-bottom: 8px }
+#tool-reportgen .pl-challonge-input { flex: 1;
+min-width: 0;
+background: var(--g-surface2);
+border: 1px solid var(--g-border);
+border-radius: 6px;
+padding: 7px 10px;
+font-family: "IBM Plex Mono", monospace;
+font-size: 11px;
+color: var(--g-text);
+outline: none;
+transition: border-color 0.15s }
+#tool-reportgen .pl-challonge-input:focus { border-color: var(--g-teal) }
+#tool-reportgen .pl-challonge-input::placeholder { color: var(--g-muted) }
+#tool-reportgen .pl-challonge-btn { white-space: nowrap;
+flex-shrink: 0 }
+#tool-reportgen .pl-challonge-status { font-family: "IBM Plex Mono", monospace;
+font-size: 10px;
+letter-spacing: 0.04em;
+line-height: 1.5;
+min-height: 14px;
+margin-bottom: 18px }
+#tool-reportgen .pl-challonge-status.success { color: var(--g-teal) }
+#tool-reportgen .pl-challonge-status.warn { color: var(--g-accent) }
+#tool-reportgen .pl-challonge-status.error { color: var(--g-danger) }
 #tool-reportgen .pl-row { display: flex;
 align-items: center;
 gap: 12px;
@@ -2166,6 +2193,11 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
   <div class="pl-modal-box">
     <div class="pl-modal-title">Enter Placements</div>
     <div class="pl-modal-sub">Enter the final placement number for each player. Leave blank to show "—" on the report.</div>
+    <div class="pl-challonge-row">
+      <input type="text" id="rg-challonge-link" class="pl-challonge-input" placeholder="Paste Challonge tournament link (optional)" />
+      <button class="btn btn-ghost pl-challonge-btn" id="rg-challonge-fetch-btn" onclick="rg_fetchChallongePlacements()">Fetch Placements</button>
+    </div>
+    <div id="rg-challonge-status" class="pl-challonge-status"></div>
     <div id="rg-pl-rows"></div>
     <div class="pl-modal-btn-row">
       <button class="btn btn-ghost" onclick="rg_closePlacementModal()">← Back</button>
@@ -5362,6 +5394,7 @@ let rg_inlineReportRoot = null;
 let rg_modalReportRoot = null;
 let rg_PLACEMENTS = {}; // playerNameLower → placement string e.g. "1st", "2nd"
 let rg_SWISS_ROUNDS = 5; // 5 or 6
+let rg_CHALLONGE_LINKS = {}; // tournament name → last Challonge link typed in for it (this session only)
 
 // ── STEP NAVIGATION ───────────────────────────────────────────────────────────
 function rg_goStep(n) {
@@ -5428,6 +5461,14 @@ function rg_openPlacementModal() {
     row.innerHTML = '<span class="pl-row-name" title="'+p+'">'+p+'</span><input class="pl-row-input" type="number" min="1" placeholder="—" value="'+numVal+'" data-player="'+p.replace(/"/g,'&quot;')+'" />';
     rowsEl.appendChild(row);
   });
+
+  // Restore whatever Challonge link was last used for this tournament, if any.
+  const linkInput = document.getElementById('rg-challonge-link');
+  linkInput.value = rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] || '';
+  const statusEl = document.getElementById('rg-challonge-status');
+  statusEl.textContent = '';
+  statusEl.className = 'pl-challonge-status';
+
   document.getElementById('rg-placement-modal').classList.add('open');
   // Focus the first input
   const first = rowsEl.querySelector('.pl-row-input');
@@ -5436,6 +5477,89 @@ function rg_openPlacementModal() {
 
 function rg_closePlacementModal() {
   document.getElementById('rg-placement-modal').classList.remove('open');
+}
+
+// Pulls final placements from Challonge for the pasted tournament link and
+// pre-fills the placement number inputs above. This is a convenience only —
+// it never submits anything, and every filled-in number can still be
+// reviewed or overwritten by hand before you click "Generate Reports".
+// Uses the shared WORKER_URL declared in the shell's own <script> block.
+async function rg_fetchChallongePlacements() {
+  const linkInput = document.getElementById('rg-challonge-link');
+  const statusEl  = document.getElementById('rg-challonge-status');
+  const btn       = document.getElementById('rg-challonge-fetch-btn');
+  const link = linkInput.value.trim();
+
+  if (!link) {
+    statusEl.textContent = 'Paste a Challonge tournament link first.';
+    statusEl.className = 'pl-challonge-status error';
+    return;
+  }
+
+  rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] = link;
+
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Fetching…';
+  statusEl.textContent = 'Asking Challonge for this bracket\u2019s results\u2026';
+  statusEl.className = 'pl-challonge-status';
+
+  try {
+    const res = await fetch(WORKER_URL + '/challonge-placements?tournament=' + encodeURIComponent(link));
+    let data;
+    try { data = await res.json(); } catch (e) { data = null; }
+
+    if (!res.ok || !data || data.error) {
+      statusEl.textContent = (data && data.error) ? data.error
+        : 'Could not reach Challonge for that link (server said ' + res.status + '). Double-check the link and try again.';
+      statusEl.className = 'pl-challonge-status error';
+      return;
+    }
+
+    // Match Challonge participant names to the players in this report by
+    // exact, case-insensitive match on their NCBLAST tag. Anything that
+    // doesn't match exactly (nicknames, typos, etc.) is left untouched for
+    // manual entry — we never guess.
+    const byNameLower = {};
+    (data.placements || []).forEach(p => {
+      if (p && p.name) byNameLower[String(p.name).trim().toLowerCase()] = p.finalRank;
+    });
+
+    const inputs = Array.from(document.querySelectorAll('.pl-row-input'));
+    let matched = 0, foundButUnranked = 0;
+
+    inputs.forEach(input => {
+      const player = (input.getAttribute('data-player') || '').toLowerCase();
+      if (!Object.prototype.hasOwnProperty.call(byNameLower, player)) return;
+      const rank = byNameLower[player];
+      if (rank === null || rank === undefined) {
+        foundButUnranked++;
+      } else {
+        input.value = rank;
+        matched++;
+      }
+    });
+
+    if (matched === 0 && foundButUnranked > 0) {
+      statusEl.textContent = 'Found that bracket on Challonge, but it hasn\u2019t been finalized there yet — no placements to pull. Finalize it on Challonge, then fetch again.';
+      statusEl.className = 'pl-challonge-status error';
+    } else if (matched === 0) {
+      statusEl.textContent = 'Found that bracket, but none of the Challonge names matched your selected players\u2019 tags exactly. Enter placements manually below.';
+      statusEl.className = 'pl-challonge-status warn';
+    } else if (matched < inputs.length) {
+      statusEl.textContent = 'Matched ' + matched + ' of ' + inputs.length + ' players from Challonge. The rest need manual entry (name may not match their NCBLAST tag).';
+      statusEl.className = 'pl-challonge-status warn';
+    } else {
+      statusEl.textContent = 'Matched all ' + matched + ' players from Challonge. Double-check below, then continue.';
+      statusEl.className = 'pl-challonge-status success';
+    }
+  } catch (err) {
+    statusEl.textContent = 'Something went wrong reaching the data server. Check your connection and try again.';
+    statusEl.className = 'pl-challonge-status error';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 }
 
 function rg_confirmPlacements() {
