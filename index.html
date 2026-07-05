@@ -547,45 +547,30 @@
       color: var(--muted); margin-top: 4px;
     }
 
-    /* ── SUMMARY STAT CHIPS ──────────────────────────────────────────── */
-    #tool-combostats .stat-chips {
+    /* ── SUB-TABS (Build Stats / Matchup Stats) ─────────────────────── */
+    #tool-combostats .cs-subnav {
       display: flex;
-      gap: 10px;
-      margin-bottom: 22px;
-      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
     }
 
-    #tool-combostats .stat-chip {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 18px;
-      display: flex; flex-direction: column; gap: 3px;
-      flex: 1; min-width: 110px;
-    }
-
-    #tool-combostats .stat-chip-label {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 8.5px; letter-spacing: 0.16em;
-      color: var(--muted); text-transform: uppercase;
-    }
-
-    #tool-combostats .stat-chip-val {
+    #tool-combostats .cs-subtab {
+      padding: 10px 18px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
       font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700; font-size: 28px;
-      letter-spacing: -0.01em; color: #fff;
-      line-height: 1;
-    }
-
-    #tool-combostats .stat-chip-val.teal { color: var(--teal); }
-    #tool-combostats .stat-chip-val.accent { color: var(--accent); }
-    #tool-combostats .stat-chip-val.danger { color: var(--danger); }
-
-    #tool-combostats .stat-chip-sub {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 9px; letter-spacing: 0.06em;
+      font-weight: 700; font-size: 13px;
+      letter-spacing: 0.1em;
       color: var(--muted);
+      transition: all .15s;
     }
+
+    #tool-combostats .cs-subtab:hover { color: var(--text); }
+    #tool-combostats .cs-subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
     /* ── SORT CONTROLS ───────────────────────────────────────────────── */
     #tool-combostats .controls-row {
@@ -2381,7 +2366,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
             </div>
             <div class="combo-preview placeholder" id="cs-combo-preview">Load a file to begin…</div>
             <div style="display:flex;gap:8px;margin-top:4px">
-              <button class="run-btn" id="cs-run-btn" disabled onclick="cs_runSearch()" style="flex:1;margin-top:0">SEARCH MATCHUPS</button>
+              <button class="run-btn" id="cs-run-btn" disabled onclick="cs_runSearch()" style="flex:1;margin-top:0">SEARCH</button>
               <button id="cs-clear-btn" onclick="cs_clearSelection()" title="Clear all part selections" style="
                 padding:0 12px;
                 background:transparent;
@@ -2413,12 +2398,21 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 
     <!-- MAIN -->
     <div class="main" id="cs-main">
+      <div class="cs-subnav" id="cs-subnav" style="display:none">
+        <button class="cs-subtab active" id="cs-tab-build" onclick="cs_showView('build')">BUILD STATS</button>
+        <button class="cs-subtab" id="cs-tab-matchup" onclick="cs_showView('matchup')">MATCHUP STATS</button>
+      </div>
       <div class="empty-state" id="cs-empty-state">
         <div class="empty-icon">⚙️</div>
         <h2>NO FILTER APPLIED</h2>
         <p>Import a CSV or TSV file, then select one or more parts on the left. Leave any field blank to treat it as a wildcard — search just a blade, a bit, a ratchet+bit combo, or a full exact combo.</p>
       </div>
-      <div id="cs-results-area" style="display:none"></div>
+      <div id="cs-view-build" style="display:none">
+        <div id="cs-build-results-area" style="display:none"></div>
+      </div>
+      <div id="cs-view-matchup" style="display:none">
+        <div id="cs-results-area" style="display:none"></div>
+      </div>
     </div>
 
   </div>
@@ -2705,8 +2699,12 @@ let cs_ALL_TOURNAMENTS = [];
 let cs_ALL_COMBO_INDEX = []; // [{ blade, ratchet, bit, full }] — built by cs_buildPartIndex()
 let cs_CURRENT_SORT = 'samples';
 let cs_SORT_DIR = 'desc'; // 'desc' = high-to-low, 'asc' = low-to-high
-let cs_EXPANDED_ROWS = new Set();
+let cs_MIN_SAMPLE = 10; // rows with fewer battles than this are hidden from the table
+let cs_EXPANDED_ROWS_MATCHUP = new Set();
+let cs_EXPANDED_ROWS_BUILD = new Set();
 let cs_LAST_RESULTS = [];
+let cs_LAST_BUILD_RESULTS = [];
+let cs_CURRENT_VIEW = 'build'; // 'build' | 'matchup'
 let cs_LAST_BLADE = '', cs_LAST_RATCHET = '', cs_LAST_BIT = '';
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -2739,6 +2737,8 @@ function cs_loadTextIntoTool(text, filename) {
   cs_refreshDropdowns('', '', '');
 
   document.getElementById('cs-run-btn').disabled = false;
+  document.getElementById('cs-subnav').style.display = '';
+  cs_showView('build');
 
   const preview = document.getElementById('cs-combo-preview');
   preview.innerHTML = '<span style="color:var(--accent)">ALL COMBOS</span> — global field stats';
@@ -2954,11 +2954,25 @@ function cs_updateTournAllBtn() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+//  SUB-TAB SWITCHING — "Build Stats" (combos played) vs "Matchup Stats"
+//  (existing opponent-combo breakdown). Both are computed on every search;
+//  switching tabs just shows/hides the already-rendered panel.
+// ══════════════════════════════════════════════════════════════════════════
+function cs_showView(view) {
+  cs_CURRENT_VIEW = view;
+  document.getElementById('cs-tab-build').classList.toggle('active', view === 'build');
+  document.getElementById('cs-tab-matchup').classList.toggle('active', view === 'matchup');
+  document.getElementById('cs-view-build').style.display   = view === 'build'   ? '' : 'none';
+  document.getElementById('cs-view-matchup').style.display = view === 'matchup' ? '' : 'none';
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 //  CORE SEARCH ENGINE
 // ══════════════════════════════════════════════════════════════════════════
 function cs_runSearch() {
   if (!cs_ALL_ROWS.length) return;
-  cs_EXPANDED_ROWS.clear();
+  cs_EXPANDED_ROWS_MATCHUP.clear();
+  cs_EXPANDED_ROWS_BUILD.clear();
 
   const blade   = document.getElementById('cs-sel-blade').value.trim();
   const ratchet = document.getElementById('cs-sel-ratchet').value.trim();
@@ -2976,10 +2990,17 @@ function cs_runSearch() {
     return true;
   });
 
-  // ── BUILD MATCHUP MAP ─────────────────────────────────────────────────
+  // ── BUILD MATCHUP MAP (Matchup Stats tab) ───────────────────────────────
   // Key: the opponent combo string. For Format B (winner-only), opponent combo is unknown
   // so we use a special sentinel.
   const matchups = {};
+
+  // ── BUILD "COMBOS PLAYED" MAP (Build Stats tab) ─────────────────────────
+  // Key: the actual full combo used (Blade·Ratchet·Bit) by whichever side(s)
+  // match the selected parts. Unlike the matchup map, both sides are tallied
+  // independently when both match — they're usually different specific
+  // builds and each one's own performance should be counted.
+  const builds = {};
 
   battleRows.forEach(r => {
     if (cs_FILE_HAS_BOTH_COMBOS) {
@@ -2989,22 +3010,33 @@ function cs_runSearch() {
       const p2matches = cs_comboMatchesParts(p2c, blade, ratchet, bit);
       if (!p1matches && !p2matches) return;
 
-      // If both match (mirror), count once from P1's perspective
+      const winnerIsP1 = r.winner.toLowerCase() === r.p1.toLowerCase();
+      const ft   = r.finishType;
+      const pts  = r.points;
+
+      // -- Matchup Stats: if both match (mirror), count once from P1's perspective --
       const sides = [];
-      if (p1matches) sides.push({ myCombo: p1c, oppCombo: p2c, iAmP1: true });
-      if (p2matches && !(p1matches)) sides.push({ myCombo: p2c, oppCombo: p1c, iAmP1: false });
+      if (p1matches) sides.push({ oppCombo: p2c, iAmP1: true });
+      if (p2matches && !(p1matches)) sides.push({ oppCombo: p1c, iAmP1: false });
 
-      sides.forEach(({ myCombo, oppCombo, iAmP1 }) => {
-        const winnerIsP1 = r.winner.toLowerCase() === r.p1.toLowerCase();
+      sides.forEach(({ oppCombo, iAmP1 }) => {
         const iWon = iAmP1 ? winnerIsP1 : !winnerIsP1;
-        const ft   = r.finishType;
-        const pts  = r.points;
-
-        // Opponent combo key — group by exact opponent build
         const key = oppCombo || '(unknown)';
         if (!matchups[key]) matchups[key] = cs_mkMatchup(key);
         cs_tally(matchups[key], iWon, ft, pts, r.p1combo, r.p2combo, iAmP1);
       });
+
+      // -- Build Stats: tally each matching side independently under its own combo --
+      if (p1matches && p1c && p1c.trim()) {
+        const key = p1c;
+        if (!builds[key]) builds[key] = cs_mkMatchup(key);
+        cs_tally(builds[key], winnerIsP1, ft, pts, r.p1combo, r.p2combo, true);
+      }
+      if (p2matches && p2c && p2c.trim()) {
+        const key = p2c;
+        if (!builds[key]) builds[key] = cs_mkMatchup(key);
+        cs_tally(builds[key], !winnerIsP1, ft, pts, r.p1combo, r.p2combo, false);
+      }
 
     } else {
       // Format B: only winner's combo is known
@@ -3013,19 +3045,23 @@ function cs_runSearch() {
       // In format B we can only track when the target combo WON.
       // We also need to track losses — but we don't know what combo was used when losing.
       // Strategy: scan every row. If the winning combo matches → it's a win for us.
-      // If the winning combo does NOT match, we need to check if the loser could have used our target.
-      // Since we don't know the loser's combo, we can't attribute losses per opponent.
-      // → We track wins directly, and also count rows where our combo did NOT win
-      //   (i.e. this is a battle we played in and lost) only if we can identify ourselves.
-      // For combo stats in format B: track won rows where winnerCombo matches.
+      // Since we don't know the loser's combo, we can't attribute losses per opponent
+      // (Matchup Stats) or per build (Build Stats).
       if (!matches) return;
 
-      const key = '(field)'; // all losses are vs "the field" — no opponent combo breakdown
-      if (!matchups[key]) matchups[key] = cs_mkMatchup(key);
-      // This row = a win for this combo
       const ft  = r.finishType;
       const pts = r.points;
-      cs_tallySingle(matchups[key], true, ft, pts);
+
+      // -- Matchup Stats: all wins bucket under "the field" (no opponent breakdown) --
+      const matchupKey = '(field)';
+      if (!matchups[matchupKey]) matchups[matchupKey] = cs_mkMatchup(matchupKey);
+      cs_tallySingle(matchups[matchupKey], true, ft, pts);
+
+      // -- Build Stats: we DO know which combo won, so bucket directly under it --
+      if (wc && wc.trim()) {
+        if (!builds[wc]) builds[wc] = cs_mkMatchup(wc);
+        cs_tallySingle(builds[wc], true, ft, pts);
+      }
     }
   });
 
@@ -3037,17 +3073,20 @@ function cs_runSearch() {
   // (Format A is fine — both sides are tracked above.)
 
   // ── COMPUTE DERIVED STATS ─────────────────────────────────────────────
-  cs_LAST_RESULTS = Object.values(matchups).map(m => {
+  const deriveStats = m => {
     const battles = m.w + m.l;
     return {
       ...m, battles,
       winPct: battles > 0 ? m.w / battles * 100 : 100, // if no losses tracked, show wins only
       ppb:    battles > 0 ? (m.ptsScored - m.ptsAllowed) / battles : 0,
     };
-  }).filter(m => m.battles > 0);
+  };
 
-  const comboLabel = [blade, ratchet, bit].filter(Boolean).join(' · ') || 'All Combos';
-  cs_renderResults(comboLabel, blade, ratchet, bit);
+  cs_LAST_RESULTS       = Object.values(matchups).map(deriveStats).filter(m => m.battles > 0);
+  cs_LAST_BUILD_RESULTS = Object.values(builds).map(deriveStats).filter(m => m.battles > 0);
+
+  cs_renderResultsView('build');
+  cs_renderResultsView('matchup');
 }
 
 function cs_mkMatchup(oppCombo) {
@@ -3098,12 +3137,20 @@ function cs_getSorted(data, sortKey) {
   });
 }
 
-function cs_renderResults(comboLabel, blade, ratchet, bit) {
+// Renders one of the two result panels. mode is 'build' (combos played) or
+// 'matchup' (existing opponent-combo breakdown). Both read their filter
+// context from cs_LAST_BLADE/RATCHET/BIT, set once per search by cs_runSearch.
+function cs_renderResultsView(mode) {
   document.getElementById('cs-empty-state').style.display = 'none';
-  const area = document.getElementById('cs-results-area');
+
+  const areaId = mode === 'build' ? 'cs-build-results-area' : 'cs-results-area';
+  const area = document.getElementById(areaId);
   area.style.display = '';
 
-  const data = cs_LAST_RESULTS;
+  const blade   = cs_LAST_BLADE;
+  const ratchet = cs_LAST_RATCHET;
+  const bit     = cs_LAST_BIT;
+  const data    = mode === 'build' ? cs_LAST_BUILD_RESULTS : cs_LAST_RESULTS;
 
   // Build qualifier tag description
   const activeParts = [];
@@ -3119,11 +3166,14 @@ function cs_renderResults(comboLabel, blade, ratchet, bit) {
     ? ` <span style="color:var(--muted);font-size:9px">(${wildCount} wildcard${wildCount>1?'s':''})</span>`
     : '';
 
+  const comboLabel = [blade, ratchet, bit].filter(Boolean).join(' · ') || 'All Combos';
+  const noneFoundLabel = mode === 'build' ? 'No Combos Found' : 'No Matchups Found';
+
   if (!data.length) {
     area.innerHTML = `
       <div class="results-header">
         <div>
-          <div class="results-title">No Matchups Found</div>
+          <div class="results-title">${noneFoundLabel}</div>
           <div class="results-combo">${filterDesc}${wildcardNote}</div>
           <div class="results-meta">No battles matched this filter in the selected tournaments.</div>
         </div>
@@ -3131,79 +3181,58 @@ function cs_renderResults(comboLabel, blade, ratchet, bit) {
     return;
   }
 
-  const totals = data.reduce((acc,m) => ({
-    battles:    acc.battles    + m.battles,
-    w:          acc.w          + m.w,
-    l:          acc.l          + m.l,
-    ptsScored:  acc.ptsScored  + m.ptsScored,
-    ptsAllowed: acc.ptsAllowed + m.ptsAllowed,
-  }), {battles:0,w:0,l:0,ptsScored:0,ptsAllowed:0});
-
-  const totalWinPct = totals.battles > 0 ? totals.w / totals.battles * 100 : 0;
-  const totalPPB    = totals.battles > 0 ? (totals.ptsScored - totals.ptsAllowed) / totals.battles : 0;
-
   const tournsLabel = cs_SELECTED_TOURNAMENTS.size === cs_ALL_TOURNAMENTS.length
     ? 'all tournaments'
     : `${cs_SELECTED_TOURNAMENTS.size} tournament${cs_SELECTED_TOURNAMENTS.size===1?'':'s'}`;
 
   const formatBNote = !cs_FILE_HAS_BOTH_COMBOS
     ? `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;letter-spacing:0.04em;">
-        ⚠ TSV format — only winning combos are recorded. Loss attribution by opponent combo is not available. Showing win counts only.
+        ⚠ TSV format — only winning combos are recorded. ${mode === 'build'
+          ? 'Loss totals per combo are not available. Showing win counts only.'
+          : 'Loss attribution by opponent combo is not available. Showing win counts only.'}
        </div>`
     : '';
 
-  const sorted = cs_getSorted(data, cs_CURRENT_SORT);
-  const oppColLabel = cs_FILE_HAS_BOTH_COMBOS ? 'OPPONENT COMBO' : 'SCOPE';
+  const filteredForTable = data.filter(m => m.battles >= cs_MIN_SAMPLE);
+  const sorted = cs_getSorted(filteredForTable, cs_CURRENT_SORT);
+  const oppColLabel = mode === 'build' ? 'COMBO' : (cs_FILE_HAS_BOTH_COMBOS ? 'OPPONENT COMBO' : 'SCOPE');
+  const hiddenCount = data.length - filteredForTable.length;
+  const metaNoun = mode === 'build' ? 'combo' : 'opponent combo';
+  const countNoun = mode === 'build' ? 'combo' : 'matchup';
 
   area.innerHTML = `
     <div class="results-header">
       <div>
         <div class="results-title">${cs_escHTML(comboLabel) || 'All Combos'}</div>
         <div class="results-combo" style="margin-top:5px">${filterDesc}${wildcardNote}</div>
-        <div class="results-meta">${data.length} opponent combo${data.length===1?'':'s'} · ${tournsLabel}</div>
+        <div class="results-meta">${data.length} ${metaNoun}${data.length===1?'':'s'} · ${tournsLabel}</div>
         ${formatBNote}
       </div>
     </div>
 
-    <div class="stat-chips">
-      <div class="stat-chip">
-        <div class="stat-chip-label">TOTAL BATTLES</div>
-        <div class="stat-chip-val">${totals.battles}</div>
-        <div class="stat-chip-sub">${totals.w}W · ${totals.l}L</div>
-      </div>
-      <div class="stat-chip">
-        <div class="stat-chip-label">OVERALL WIN %</div>
-        <div class="stat-chip-val ${totalWinPct>=50?'teal':'danger'}">${totalWinPct.toFixed(1)}%</div>
-        <div class="stat-chip-sub">across ${data.length} matchups</div>
-      </div>
-      <div class="stat-chip">
-        <div class="stat-chip-label">OVERALL PPB</div>
-        <div class="stat-chip-val ${totalPPB>=0?'teal':'danger'}">${totalPPB>=0?'+':''}${totalPPB.toFixed(2)}</div>
-        <div class="stat-chip-sub">net pts ÷ battles</div>
-      </div>
-      <div class="stat-chip">
-        <div class="stat-chip-label">PTS SCORED</div>
-        <div class="stat-chip-val accent">${totals.ptsScored}</div>
-        <div class="stat-chip-sub">${totals.ptsAllowed} allowed · net ${totals.ptsScored-totals.ptsAllowed>=0?'+':''}${totals.ptsScored-totals.ptsAllowed}</div>
-      </div>
-    </div>
-
-    <div class="controls-row">
+    <div class="controls-row" id="cs-controls-${mode}">
       <span class="sort-label">SORT BY</span>
-      <button class="sort-btn ${cs_CURRENT_SORT==='samples'?'active':''}" onclick="cs_setSort('samples')">MOST SAMPLES</button>
-      <button class="sort-btn ${cs_CURRENT_SORT==='winpct'?'active':''}"  onclick="cs_setSort('winpct')">HIGHEST WIN %</button>
-      <button class="sort-btn ${cs_CURRENT_SORT==='ppb'?'active':''}"     onclick="cs_setSort('ppb')">HIGHEST PPB</button>
-      <button class="sort-btn" id="cs-dir-btn" onclick="cs_toggleSortDir()" style="margin-left:4px;min-width:52px">${cs_SORT_DIR==='desc'?'↓ HI–LO':'↑ LO–HI'}</button>
-      <span class="results-count"><span>${data.length}</span> matchup${data.length===1?'':'s'}</span>
+      <button class="sort-btn ${cs_CURRENT_SORT==='samples'?'active':''}" onclick="cs_setSort('samples','${mode}')">MOST SAMPLES</button>
+      <button class="sort-btn ${cs_CURRENT_SORT==='winpct'?'active':''}"  onclick="cs_setSort('winpct','${mode}')">HIGHEST WIN %</button>
+      <button class="sort-btn ${cs_CURRENT_SORT==='ppb'?'active':''}"     onclick="cs_setSort('ppb','${mode}')">HIGHEST PPB</button>
+      <button class="sort-btn" id="cs-dir-btn-${mode}" onclick="cs_toggleSortDir('${mode}')" style="margin-left:4px;min-width:52px">${cs_SORT_DIR==='desc'?'↓ HI–LO':'↑ LO–HI'}</button>
+      <span class="sort-label" style="margin-left:10px">MIN SAMPLE</span>
+      <input type="number" id="cs-min-sample-input-${mode}" class="min-sample-input" min="0" step="1"
+             value="${cs_MIN_SAMPLE}" onchange="cs_setMinSample(this.value)"
+             style="width:56px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;
+                    background:var(--surface2);color:var(--text);border:1px solid var(--border);
+                    border-radius:4px;padding:4px 2px;" />
+      <span class="results-count"><span id="cs-results-count-num-${mode}">${sorted.length}</span> ${countNoun}<span id="cs-results-count-word-${mode}">${sorted.length===1?'':'s'}</span>${hiddenCount>0?` <span id="cs-results-hidden-note-${mode}" style="color:var(--muted)">(${hiddenCount} hidden below min sample)</span>`:`<span id="cs-results-hidden-note-${mode}"></span>`}</span>
     </div>
 
-    <div class="matchup-table-wrap">
-      ${cs_renderTable(sorted, oppColLabel)}
+    <div class="matchup-table-wrap" id="cs-table-wrap-${mode}">
+      ${cs_renderTable(sorted, oppColLabel, mode)}
     </div>`;
 }
 
-function cs_renderTable(rows, oppColLabel) {
-  if (!rows.length) return '<div class="no-results">No matchups to display.</div>';
+function cs_renderTable(rows, oppColLabel, mode) {
+  if (!rows.length) return '<div class="no-results">No results to display.</div>';
+  const expandedSet = mode === 'build' ? cs_EXPANDED_ROWS_BUILD : cs_EXPANDED_ROWS_MATCHUP;
   const maxBattles = Math.max(...rows.map(r => r.battles));
 
   const headerCols = [
@@ -3220,7 +3249,7 @@ function cs_renderTable(rows, oppColLabel) {
     if (!c.sortable) return `<th style="text-align:${c.align}">${c.label}</th>`;
     const active = (c.key==='battles'&&cs_CURRENT_SORT==='samples')||(c.key==='winpct'&&cs_CURRENT_SORT==='winpct')||(c.key==='ppb'&&cs_CURRENT_SORT==='ppb');
     const sortKey = c.key==='battles'?'samples':c.key;
-    return `<th class="${active?'sorted':''}" style="text-align:${c.align}" onclick="cs_setSort('${sortKey}')">
+    return `<th class="${active?'sorted':''}" style="text-align:${c.align}" onclick="cs_setSort('${sortKey}','${mode}')">
       ${c.label}<span class="sort-arrow">${active?'↓':'↕'}</span></th>`;
   }).join('');
 
@@ -3229,12 +3258,12 @@ function cs_renderTable(rows, oppColLabel) {
     const winColor = m.winPct >= 60 ? 'var(--win-col)' : m.winPct >= 40 ? 'var(--accent)' : 'var(--loss-col)';
     const ppbColor = m.ppb > 0 ? 'var(--win-col)' : m.ppb < 0 ? 'var(--loss-col)' : 'var(--muted)';
     const ppbStr   = (m.ppb > 0 ? '+' : '') + m.ppb.toFixed(2);
-    const isExp    = cs_EXPANDED_ROWS.has(idx);
+    const isExp    = expandedSet.has(idx);
 
     return `
-      <tr class="${isExp?'expanded':''}" id="mrow-${idx}">
+      <tr class="${isExp?'expanded':''}" id="mrow-${mode}-${idx}">
         <td style="width:28px;padding-right:4px">
-          <button class="expand-btn ${isExp?'open':''}" onclick="cs_toggleRow(${idx})">${isExp?'▾':'▸'}</button>
+          <button class="expand-btn ${isExp?'open':''}" onclick="cs_toggleRow(${idx},'${mode}')">${isExp?'▾':'▸'}</button>
         </td>
         <td class="combo-cell" title="${cs_escAttr(m.oppCombo)}">${cs_escHTML(m.oppCombo)}</td>
         <td class="num-cell" style="width:90px">
@@ -3253,7 +3282,7 @@ function cs_renderTable(rows, oppColLabel) {
         <td class="ppb-cell" style="width:64px;color:${ppbColor}">${ppbStr}</td>
         <td>${cs_buildFinishPills(m.finishes)}</td>
       </tr>
-      ${isExp ? cs_buildDetailRow(idx, m) : ''}`;
+      ${isExp ? cs_buildDetailRow(`${mode}-${idx}`, m) : ''}`;
   }).join('');
 
   return `<table class="matchup-table">
@@ -3336,30 +3365,65 @@ function cs_buildDetailRow(idx, m) {
 
 // ══════════════════════════════════════════════════════════════════════════
 //  INTERACTIONS
+//  Sort order and the min-sample threshold are shared settings that apply
+//  to both panels — changing either refreshes both tables, so whichever tab
+//  you switch to next is already up to date.
 // ══════════════════════════════════════════════════════════════════════════
-function cs_setSort(key) {
+function cs_setSort(key, mode) {
   cs_CURRENT_SORT = key;
-  const sorted = cs_getSorted(cs_LAST_RESULTS, key);
-  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-  const map = {samples:0,winpct:1,ppb:2};
-  document.querySelectorAll('.sort-btn')[map[key]]?.classList.add('active');
-  // Keep direction button un-highlighted but update its label
-  const dirBtn = document.getElementById('cs-dir-btn');
-  if (dirBtn) dirBtn.textContent = cs_SORT_DIR === 'desc' ? '↓ HI–LO' : '↑ LO–HI';
-  const wrap = document.querySelector('.matchup-table-wrap');
-  const oppColLabel = cs_FILE_HAS_BOTH_COMBOS ? 'OPPONENT COMBO' : 'SCOPE';
-  if (wrap) wrap.innerHTML = cs_renderTable(sorted, oppColLabel);
+  ['build','matchup'].forEach(cs_refreshTableView);
+  ['build','matchup'].forEach(m => {
+    const panel = document.getElementById(`cs-controls-${m}`);
+    if (!panel) return;
+    panel.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    const map = {samples:0,winpct:1,ppb:2};
+    panel.querySelectorAll('.sort-btn')[map[key]]?.classList.add('active');
+    const dirBtn = document.getElementById(`cs-dir-btn-${m}`);
+    if (dirBtn) dirBtn.textContent = cs_SORT_DIR === 'desc' ? '↓ HI–LO' : '↑ LO–HI';
+  });
 }
 
-function cs_toggleSortDir() {
+function cs_toggleSortDir(mode) {
   cs_SORT_DIR = cs_SORT_DIR === 'desc' ? 'asc' : 'desc';
-  cs_setSort(cs_CURRENT_SORT);
+  cs_setSort(cs_CURRENT_SORT, mode);
 }
 
-function cs_toggleRow(idx) {
-  if (cs_EXPANDED_ROWS.has(idx)) cs_EXPANDED_ROWS.delete(idx);
-  else cs_EXPANDED_ROWS.add(idx);
-  cs_setSort(cs_CURRENT_SORT);
+// Re-render just one panel's table + count, using the current sort and
+// min-sample threshold. Used whenever sorting, row expansion, or the
+// min-sample filter changes. mode is 'build' or 'matchup'.
+function cs_refreshTableView(mode) {
+  const data = mode === 'build' ? cs_LAST_BUILD_RESULTS : cs_LAST_RESULTS;
+  const filtered = data.filter(m => m.battles >= cs_MIN_SAMPLE);
+  const sorted = cs_getSorted(filtered, cs_CURRENT_SORT);
+  const wrap = document.getElementById(`cs-table-wrap-${mode}`);
+  const oppColLabel = mode === 'build' ? 'COMBO' : (cs_FILE_HAS_BOTH_COMBOS ? 'OPPONENT COMBO' : 'SCOPE');
+  if (wrap) wrap.innerHTML = cs_renderTable(sorted, oppColLabel, mode);
+
+  const hiddenCount = data.length - filtered.length;
+  const countNumEl   = document.getElementById(`cs-results-count-num-${mode}`);
+  const countWordEl  = document.getElementById(`cs-results-count-word-${mode}`);
+  const hiddenNoteEl = document.getElementById(`cs-results-hidden-note-${mode}`);
+  if (countNumEl)  countNumEl.textContent = sorted.length;
+  if (countWordEl) countWordEl.textContent = sorted.length === 1 ? '' : 's';
+  if (hiddenNoteEl) hiddenNoteEl.textContent = hiddenCount > 0 ? `(${hiddenCount} hidden below min sample)` : '';
+}
+
+function cs_setMinSample(rawVal) {
+  let n = parseInt(rawVal, 10);
+  if (isNaN(n) || n < 0) n = 0;
+  cs_MIN_SAMPLE = n;
+  ['build','matchup'].forEach(m => {
+    const input = document.getElementById(`cs-min-sample-input-${m}`);
+    if (input) input.value = n;
+  });
+  ['build','matchup'].forEach(cs_refreshTableView);
+}
+
+function cs_toggleRow(idx, mode) {
+  const set = mode === 'build' ? cs_EXPANDED_ROWS_BUILD : cs_EXPANDED_ROWS_MATCHUP;
+  if (set.has(idx)) set.delete(idx);
+  else set.add(idx);
+  cs_refreshTableView(mode);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
