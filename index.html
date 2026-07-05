@@ -1807,6 +1807,35 @@ margin-bottom: 18px }
 #tool-reportgen .pl-challonge-status.success { color: var(--g-teal) }
 #tool-reportgen .pl-challonge-status.warn { color: var(--g-accent) }
 #tool-reportgen .pl-challonge-status.error { color: var(--g-danger) }
+#tool-reportgen #rg-challonge-box { margin-bottom: 18px }
+#tool-reportgen .rg-challonge-linked { display: flex;
+align-items: center;
+gap: 8px;
+background: var(--g-surface2);
+border: 1px solid var(--g-border);
+border-radius: 6px;
+padding: 9px 12px;
+font-family: "IBM Plex Mono", monospace;
+font-size: 11px }
+#tool-reportgen .rg-challonge-check { color: var(--g-teal);
+font-weight: 700;
+flex-shrink: 0 }
+#tool-reportgen .rg-challonge-linked-text { flex: 1;
+color: var(--g-text);
+letter-spacing: 0.02em }
+#tool-reportgen .rg-challonge-notice { font-family: "IBM Plex Mono", monospace;
+font-size: 10.5px;
+letter-spacing: 0.03em;
+color: var(--g-accent);
+margin-bottom: 8px;
+line-height: 1.5 }
+#tool-reportgen .rg-no-link-dot { display: inline-block;
+width: 6px;
+height: 6px;
+border-radius: 50%;
+background: var(--g-accent);
+margin-left: 7px;
+vertical-align: middle }
 #tool-reportgen .pl-row { display: flex;
 align-items: center;
 gap: 12px;
@@ -2147,6 +2176,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
       <div class="panel" id="rg-step2" style="display:none">
         <div class="panel-title">Select Players</div>
         <div class="panel-sub">Choose one or more players to generate reports for. You can preview each report before exporting.</div>
+        <div id="rg-challonge-box"></div>
         <div class="select-all-row">
           <div class="select-label" style="margin-bottom:0">PLAYERS IN THIS TOURNAMENT</div>
           <div style="display:flex;align-items:center;gap:14px">
@@ -2192,12 +2222,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 <div id="rg-placement-modal">
   <div class="pl-modal-box">
     <div class="pl-modal-title">Enter Placements</div>
-    <div class="pl-modal-sub">Enter the final placement number for each player. Leave blank to show "—" on the report.</div>
-    <div class="pl-challonge-row">
-      <input type="text" id="rg-challonge-link" class="pl-challonge-input" placeholder="Paste Challonge tournament link (optional)" />
-      <button class="btn btn-ghost pl-challonge-btn" id="rg-challonge-fetch-btn" onclick="rg_fetchChallongePlacements()">Fetch Placements</button>
-    </div>
-    <div id="rg-challonge-status" class="pl-challonge-status"></div>
+    <div class="pl-modal-sub">Enter the final placement number for each player. Leave blank to show "—" on the report. Numbers already pulled from Challonge (if this event is linked) are pre-filled below — double-check them, then continue.</div>
     <div id="rg-pl-rows"></div>
     <div class="pl-modal-btn-row">
       <button class="btn btn-ghost" onclick="rg_closePlacementModal()">← Back</button>
@@ -5394,10 +5419,20 @@ let rg_inlineReportRoot = null;
 let rg_modalReportRoot = null;
 let rg_PLACEMENTS = {}; // playerNameLower → placement string e.g. "1st", "2nd"
 let rg_SWISS_ROUNDS = 5; // 5 or 6
-let rg_CHALLONGE_LINKS = {}; // tournament name → last Challonge link typed in for it (this session only)
+let rg_CURRENT_STEP = 1;
+
+// tournament name → { link, placements: [{name, finalRank}], fetchedAt }
+// This mirrors the shared record kept in the Worker's KV storage — loaded
+// once via rg_loadChallongeLinks() and updated whenever this browser saves
+// a new link, so every tournament is only ever fetched from Challonge once,
+// by whoever links it first.
+let rg_CHALLONGE_LINKS = {};
+let rg_CHALLONGE_LINKS_LOADED = false;
+let rg_CHALLONGE_BOX_EDITING = false; // true while the "change link" input is open on Step 2
 
 // ── STEP NAVIGATION ───────────────────────────────────────────────────────────
 function rg_goStep(n) {
+  rg_CURRENT_STEP = n;
   [1,2,3].forEach(i => {
     document.getElementById('rg-step'+i).style.display = i===n ? '' : 'none';
     const dot = document.getElementById('rg-dot-'+i);
@@ -5411,7 +5446,7 @@ function rg_goStep(n) {
     }
   });
   if (n === 1) rg_populateTournaments();
-  if (n === 2) rg_populatePlayers();
+  if (n === 2) { rg_renderChallongeBox(); rg_populatePlayers(); }
   if (n === 3) rg_populateReviewStep();
 }
 
@@ -5439,56 +5474,85 @@ if (window.SHARED_CSV_LISTENERS) {
   }
 }
 
-// ── SWISS ROUNDS TOGGLE ───────────────────────────────────────────────────────
-function rg_toggleSwissRounds() {
-  rg_SWISS_ROUNDS = rg_SWISS_ROUNDS === 5 ? 6 : 5;
-  const el = document.getElementById('rg-swiss-6-toggle');
-  if (rg_SWISS_ROUNDS === 6) { el.classList.add('on'); el.textContent = '\u2713'; }
-  else { el.classList.remove('on'); el.textContent = ''; }
+// ── CHALLONGE LINKS: load the shared record once per page load ─────────────
+// This is a GET against our own Worker (not Challonge itself), so it never
+// counts against Challonge's request limit — it's just reading back
+// whatever the team has already saved for each tournament.
+async function rg_loadChallongeLinks() {
+  try {
+    const res = await fetch(WORKER_URL + '/challonge-links');
+    const data = await res.json();
+    rg_CHALLONGE_LINKS = (data && data.links) ? data.links : {};
+  } catch (e) {
+    rg_CHALLONGE_LINKS = {};
+  }
+  rg_CHALLONGE_LINKS_LOADED = true;
+  // Whichever step is on screen right now, refresh it so the "no link yet"
+  // notifiers and the Step 2 link box reflect what's actually on file.
+  if (rg_CURRENT_STEP === 1) rg_populateTournaments();
+  if (rg_CURRENT_STEP === 2) rg_renderChallongeBox();
+}
+rg_loadChallongeLinks();
+
+// ── CHALLONGE LINK BOX (Player Select step) ─────────────────────────────────
+// Shows either "already linked" (with a placement count and a way to
+// change it) or a link input with a nudge to add one. This is the only
+// place in the app that talks to Challonge — Challonge is contacted at
+// most once per tournament, ever, right here.
+function rg_renderChallongeBox() {
+  const box = document.getElementById('rg-challonge-box');
+  if (!box) return;
+  if (!rg_SELECTED_TOURNAMENT) { box.innerHTML = ''; return; }
+
+  const rec = rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT];
+  const linked = !!(rec && Array.isArray(rec.placements) && rec.placements.length > 0);
+
+  if (linked && !rg_CHALLONGE_BOX_EDITING) {
+    box.innerHTML =
+      '<div class="rg-challonge-linked">' +
+        '<span class="rg-challonge-check">\u2713</span>' +
+        '<span class="rg-challonge-linked-text">Linked to Challonge \u2014 ' + rec.placements.length +
+          ' placement' + (rec.placements.length === 1 ? '' : 's') + ' on file</span>' +
+        '<button class="btn btn-ghost pl-challonge-btn" onclick="rg_showChallongeInput()">Change link</button>' +
+      '</div>';
+    return;
+  }
+
+  const existingLink = rec ? rec.link : '';
+  box.innerHTML =
+    '<div class="rg-challonge-unlinked">' +
+      (!linked ? '<div class="rg-challonge-notice">\u26A0 No Challonge link set for this event yet \u2014 add one so placements auto-fill on the next step.</div>' : '') +
+      '<div class="pl-challonge-row">' +
+        '<input type="text" id="rg-challonge-link-input" class="pl-challonge-input" placeholder="Paste Challonge tournament link" value="' + existingLink.replace(/"/g,'&quot;') + '" />' +
+        '<button class="btn btn-ghost pl-challonge-btn" id="rg-challonge-savefetch-btn" onclick="rg_saveAndFetchChallongeLink()">Save &amp; Fetch</button>' +
+        (linked ? '<button class="btn btn-ghost pl-challonge-btn" onclick="rg_cancelChallongeEdit()">Cancel</button>' : '') +
+      '</div>' +
+      '<div id="rg-challonge-box-status" class="pl-challonge-status"></div>' +
+    '</div>';
 }
 
-// ── PLACEMENT MODAL ───────────────────────────────────────────────────────────
-function rg_openPlacementModal() {
-  const players = Array.from(rg_SELECTED_PLAYERS);
-  const rowsEl = document.getElementById('rg-pl-rows');
-  rowsEl.innerHTML = '';
-  players.forEach(p => {
-    const existingVal = rg_PLACEMENTS[p.toLowerCase()] || '';
-    // Extract the raw number from a stored string like "1st" or "5th–8th"
-    const numVal = existingVal.match(/^(\d+)/) ? existingVal.match(/^(\d+)/)[1] : '';
-    const row = document.createElement('div');
-    row.className = 'pl-row';
-    row.innerHTML = '<span class="pl-row-name" title="'+p+'">'+p+'</span><input class="pl-row-input" type="number" min="1" placeholder="—" value="'+numVal+'" data-player="'+p.replace(/"/g,'&quot;')+'" />';
-    rowsEl.appendChild(row);
-  });
-
-  // Restore whatever Challonge link was last used for this tournament, if any.
-  const linkInput = document.getElementById('rg-challonge-link');
-  linkInput.value = rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] || '';
-  const statusEl = document.getElementById('rg-challonge-status');
-  statusEl.textContent = '';
-  statusEl.className = 'pl-challonge-status';
-
-  document.getElementById('rg-placement-modal').classList.add('open');
-  // Focus the first input
-  const first = rowsEl.querySelector('.pl-row-input');
-  if (first) setTimeout(() => first.focus(), 50);
+function rg_showChallongeInput() {
+  rg_CHALLONGE_BOX_EDITING = true;
+  rg_renderChallongeBox();
+  const input = document.getElementById('rg-challonge-link-input');
+  if (input) setTimeout(() => input.focus(), 30);
 }
 
-function rg_closePlacementModal() {
-  document.getElementById('rg-placement-modal').classList.remove('open');
+function rg_cancelChallongeEdit() {
+  rg_CHALLONGE_BOX_EDITING = false;
+  rg_renderChallongeBox();
 }
 
-// Pulls final placements from Challonge for the pasted tournament link and
-// pre-fills the placement number inputs above. This is a convenience only —
-// it never submits anything, and every filled-in number can still be
-// reviewed or overwritten by hand before you click "Generate Reports".
-// Uses the shared WORKER_URL declared in the shell's own <script> block.
-async function rg_fetchChallongePlacements() {
-  const linkInput = document.getElementById('rg-challonge-link');
-  const statusEl  = document.getElementById('rg-challonge-status');
-  const btn       = document.getElementById('rg-challonge-fetch-btn');
-  const link = linkInput.value.trim();
+// Pulls final placements from Challonge for the pasted tournament link,
+// saves the result to the shared Worker so this exact call never needs to
+// happen again for this event (from any browser), and refreshes the box.
+// This never touches rg_PLACEMENTS directly — the placement modal reads
+// rg_CHALLONGE_LINKS itself when it opens.
+async function rg_saveAndFetchChallongeLink() {
+  const input    = document.getElementById('rg-challonge-link-input');
+  const statusEl = document.getElementById('rg-challonge-box-status');
+  const btn      = document.getElementById('rg-challonge-savefetch-btn');
+  const link = input.value.trim();
 
   if (!link) {
     statusEl.textContent = 'Paste a Challonge tournament link first.';
@@ -5496,11 +5560,9 @@ async function rg_fetchChallongePlacements() {
     return;
   }
 
-  rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] = link;
-
   btn.disabled = true;
   const originalLabel = btn.textContent;
-  btn.textContent = 'Fetching…';
+  btn.textContent = 'Fetching\u2026';
   statusEl.textContent = 'Asking Challonge for this bracket\u2019s results\u2026';
   statusEl.className = 'pl-challonge-status';
 
@@ -5516,43 +5578,29 @@ async function rg_fetchChallongePlacements() {
       return;
     }
 
-    // Match Challonge participant names to the players in this report by
-    // exact, case-insensitive match on their NCBLAST tag. Anything that
-    // doesn't match exactly (nicknames, typos, etc.) is left untouched for
-    // manual entry — we never guess.
-    const byNameLower = {};
-    (data.placements || []).forEach(p => {
-      if (p && p.name) byNameLower[String(p.name).trim().toLowerCase()] = p.finalRank;
-    });
+    const placements = Array.isArray(data.placements) ? data.placements : [];
+    const rankedCount = placements.filter(p => p.finalRank !== null && p.finalRank !== undefined).length;
 
-    const inputs = Array.from(document.querySelectorAll('.pl-row-input'));
-    let matched = 0, foundButUnranked = 0;
-
-    inputs.forEach(input => {
-      const player = (input.getAttribute('data-player') || '').toLowerCase();
-      if (!Object.prototype.hasOwnProperty.call(byNameLower, player)) return;
-      const rank = byNameLower[player];
-      if (rank === null || rank === undefined) {
-        foundButUnranked++;
-      } else {
-        input.value = rank;
-        matched++;
-      }
-    });
-
-    if (matched === 0 && foundButUnranked > 0) {
-      statusEl.textContent = 'Found that bracket on Challonge, but it hasn\u2019t been finalized there yet — no placements to pull. Finalize it on Challonge, then fetch again.';
+    if (rankedCount === 0) {
+      statusEl.textContent = 'Found that bracket, but it hasn\u2019t been finalized on Challonge yet \u2014 no placements available. Finalize it there, then try again.';
       statusEl.className = 'pl-challonge-status error';
-    } else if (matched === 0) {
-      statusEl.textContent = 'Found that bracket, but none of the Challonge names matched your selected players\u2019 tags exactly. Enter placements manually below.';
-      statusEl.className = 'pl-challonge-status warn';
-    } else if (matched < inputs.length) {
-      statusEl.textContent = 'Matched ' + matched + ' of ' + inputs.length + ' players from Challonge. The rest need manual entry (name may not match their NCBLAST tag).';
-      statusEl.className = 'pl-challonge-status warn';
-    } else {
-      statusEl.textContent = 'Matched all ' + matched + ' players from Challonge. Double-check below, then continue.';
-      statusEl.className = 'pl-challonge-status success';
+      return;
     }
+
+    // Save it — in memory now, and on the shared server in the background —
+    // so every future visit (this browser or anyone else's) reads it back
+    // instantly with no further calls to Challonge for this event.
+    rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] = { link, placements, fetchedAt: new Date().toISOString() };
+    rg_CHALLONGE_BOX_EDITING = false;
+
+    fetch(WORKER_URL + '/challonge-links', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tournament: rg_SELECTED_TOURNAMENT, link, placements }),
+    }).catch(() => { /* best-effort — this browser's cache already has it either way */ });
+
+    rg_renderChallongeBox();
+    rg_populateTournaments(); // clears this tournament's "no link" notifier for next time Step 1 is shown
   } catch (err) {
     statusEl.textContent = 'Something went wrong reaching the data server. Check your connection and try again.';
     statusEl.className = 'pl-challonge-status error';
@@ -5560,6 +5608,56 @@ async function rg_fetchChallongePlacements() {
     btn.disabled = false;
     btn.textContent = originalLabel;
   }
+}
+
+// ── SWISS ROUNDS TOGGLE ───────────────────────────────────────────────────────
+function rg_toggleSwissRounds() {
+  rg_SWISS_ROUNDS = rg_SWISS_ROUNDS === 5 ? 6 : 5;
+  const el = document.getElementById('rg-swiss-6-toggle');
+  if (rg_SWISS_ROUNDS === 6) { el.classList.add('on'); el.textContent = '\u2713'; }
+  else { el.classList.remove('on'); el.textContent = ''; }
+}
+
+// ── PLACEMENT MODAL ───────────────────────────────────────────────────────────
+function rg_openPlacementModal() {
+  const players = Array.from(rg_SELECTED_PLAYERS);
+  const rowsEl = document.getElementById('rg-pl-rows');
+  rowsEl.innerHTML = '';
+
+  // Placements already pulled from Challonge for this tournament, if it's
+  // linked — matched to players by exact, case-insensitive tag. A manual
+  // value entered previously (in rg_PLACEMENTS) always takes priority over
+  // this, since that represents a deliberate correction someone made.
+  const rec = rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT];
+  const byNameLower = {};
+  if (rec && Array.isArray(rec.placements)) {
+    rec.placements.forEach(p => {
+      if (p && p.name) byNameLower[String(p.name).trim().toLowerCase()] = p.finalRank;
+    });
+  }
+
+  players.forEach(p => {
+    const existingVal = rg_PLACEMENTS[p.toLowerCase()] || '';
+    // Extract the raw number from a stored string like "1st" or "5th–8th"
+    let numVal = existingVal.match(/^(\d+)/) ? existingVal.match(/^(\d+)/)[1] : '';
+    if (!numVal) {
+      const rank = byNameLower[p.toLowerCase()];
+      if (rank !== null && rank !== undefined) numVal = String(rank);
+    }
+    const row = document.createElement('div');
+    row.className = 'pl-row';
+    row.innerHTML = '<span class="pl-row-name" title="'+p+'">'+p+'</span><input class="pl-row-input" type="number" min="1" placeholder="—" value="'+numVal+'" data-player="'+p.replace(/"/g,'&quot;')+'" />';
+    rowsEl.appendChild(row);
+  });
+
+  document.getElementById('rg-placement-modal').classList.add('open');
+  // Focus the first input
+  const first = rowsEl.querySelector('.pl-row-input');
+  if (first) setTimeout(() => first.focus(), 50);
+}
+
+function rg_closePlacementModal() {
+  document.getElementById('rg-placement-modal').classList.remove('open');
 }
 
 function rg_confirmPlacements() {
@@ -5594,7 +5692,10 @@ function rg_populateTournaments() {
   Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t, n]) => {
     const btn = document.createElement('button');
     btn.className = 'option-btn' + (t === rg_SELECTED_TOURNAMENT ? ' selected' : '');
-    btn.innerHTML = '<span>'+t+'</span><span class="option-meta">'+n+' battles</span>';
+    const rec = rg_CHALLONGE_LINKS[t];
+    const hasLink = !!(rec && Array.isArray(rec.placements) && rec.placements.length > 0);
+    const notifier = hasLink ? '' : '<span class="rg-no-link-dot" title="No Challonge link set yet \u2014 add one on the next step so placements auto-fill"></span>';
+    btn.innerHTML = '<span>'+t+notifier+'</span><span class="option-meta">'+n+' battles</span>';
     btn.onclick = () => {
       document.querySelectorAll('#rg-tournament-list .option-btn').forEach(b=>b.classList.remove('selected'));
       btn.classList.add('selected');
@@ -5602,6 +5703,7 @@ function rg_populateTournaments() {
       rg_SELECTED_PLAYERS.clear();
       rg_COMPUTED_STATS = {};
       rg_PLACEMENTS = {};
+      rg_CHALLONGE_BOX_EDITING = false;
       document.getElementById('rg-btn-step2-next').disabled = false;
     };
     list.appendChild(btn);
