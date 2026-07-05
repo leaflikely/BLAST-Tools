@@ -324,6 +324,25 @@
       font-size: 9px; color: var(--muted); letter-spacing: 0.08em;
     }
 
+    /* ── LOADED-FILE BAR (shown instead of drop-zone once a file is loaded) ── */
+    #tool-combostats .loaded-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 14px; background: var(--surface2);
+      margin-bottom: 20px;
+    }
+    #tool-combostats .loaded-bar-info { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    #tool-combostats .loaded-bar-info span {
+      font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--text);
+      letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #tool-combostats .change-file-btn {
+      flex-shrink: 0; background: none; border: 1px solid var(--border2); border-radius: 5px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.06em;
+      color: var(--teal); padding: 5px 9px; cursor: pointer; transition: all .15s;
+    }
+    #tool-combostats .change-file-btn:hover { border-color: var(--teal); background: rgba(46,168,157,0.08); }
+
     /* ── COMBO BUILDER ───────────────────────────────────────────────── */
     #tool-combostats .combo-builder {
       display: flex;
@@ -900,6 +919,23 @@
 #tool-playerhub .file-status{display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-top:8px;}
 #tool-playerhub .file-dot{width:6px;height:6px;border-radius:50%;background:var(--faint);}
 #tool-playerhub .file-dot.on{background:var(--win);}
+
+/* Collapsed loaded-file bar (shown instead of drop-zone once a file is loaded) */
+#tool-playerhub .loaded-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  border:1px solid var(--bdr);border-radius:8px;padding:9px 12px;background:var(--sur2);
+}
+#tool-playerhub .loaded-bar-info{display:flex;align-items:center;gap:7px;min-width:0;}
+#tool-playerhub .loaded-bar-info span{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text);letter-spacing:.04em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#tool-playerhub .change-file-btn{
+  flex-shrink:0;background:none;border:1px solid var(--bdr2);border-radius:5px;
+  font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.06em;
+  color:var(--teal);padding:4px 8px;cursor:pointer;transition:all .15s;
+}
+#tool-playerhub .change-file-btn:hover{border-color:var(--teal);background:rgba(46,168,157,.08);}
 
 /* Player search */
 #tool-playerhub .search-input{
@@ -2252,15 +2288,11 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
   <div class="sb-inner">
     <div class="sb-section">
       <div class="sb-label">DATA SOURCE</div>
-      <div class="drop-zone" id="ph-dz">
-        <input type="file" id="ph-file-input" accept=".csv,.tsv,.txt">
-        <div class="drop-zone-icon">📂</div>
-        <h3>Drop file here</h3>
-        <p id="ph-dz-hint">CSV or TSV · NCBLAST export</p>
-      </div>
-      <div class="file-status">
-        <div class="file-dot" id="ph-file-dot"></div>
-        <span id="ph-file-lbl">No file loaded</span>
+      <div class="loaded-bar" id="ph-loaded-bar">
+        <div class="loaded-bar-info">
+          <div class="file-dot" id="ph-file-dot"></div>
+          <span id="ph-loaded-bar-lbl">Waiting for shared file…</span>
+        </div>
       </div>
     </div>
     <div class="sb-section" id="ph-sb-search-sec" style="display:none">
@@ -2321,17 +2353,6 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
     <!-- SIDEBAR -->
     <div class="sidebar">
       <div class="sidebar-inner">
-
-        <!-- File Import -->
-        <div class="sidebar-section">
-          <div class="sidebar-label">DATA SOURCE</div>
-          <div class="drop-zone" id="cs-drop-zone">
-            <input type="file" id="cs-csv-input" accept=".csv,.tsv,.txt">
-            <div class="drop-zone-icon">📂</div>
-            <h3>Drop file here</h3>
-            <p id="cs-drop-hint">CSV or TSV · NCBLAST export · any size</p>
-          </div>
-        </div>
 
         <!-- Combo Builder -->
         <div class="sidebar-section" id="cs-combo-section">
@@ -2689,49 +2710,10 @@ let cs_LAST_RESULTS = [];
 let cs_LAST_BLADE = '', cs_LAST_RATCHET = '', cs_LAST_BIT = '';
 
 // ══════════════════════════════════════════════════════════════════════════
-//  FILE HANDLING
+//  FILE HANDLING — data always arrives from the app's shared CSV
+//  (see the "Upload New CSV" button in the top shell bar). This tool
+//  has no manual upload of its own; it only listens for the shared file.
 // ══════════════════════════════════════════════════════════════════════════
-function cs_handleFile(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const rows = cs_detectAndParse(e.target.result);
-    if (!rows.length) { alert('Could not parse this file. Make sure it is a standard NCBLAST CSV or TSV export.'); return; }
-
-    cs_ALL_ROWS = rows;
-    cs_FILE_HAS_BOTH_COMBOS = !rows[0].formatB;
-
-    const rowCount = rows.length;
-    const fmt = cs_FILE_HAS_BOTH_COMBOS ? 'CSV' : 'TSV';
-    document.getElementById('cs-file-dot').classList.add('loaded');
-    document.getElementById('cs-file-label').textContent = `${file.name} · ${rowCount} rows · ${fmt}`;
-    document.getElementById('cs-drop-hint').textContent  = `✓ ${rowCount} rows loaded (${fmt})`;
-
-    cs_buildPartIndex();
-    cs_buildTournamentList();
-    cs_refreshDropdowns('', '', '');  // populate all three selects — nothing selected yet
-
-    document.getElementById('cs-run-btn').disabled = false;
-
-    // Set initial preview text without triggering a full onChange cycle
-    const preview = document.getElementById('cs-combo-preview');
-    preview.innerHTML = '<span style="color:var(--accent)">ALL COMBOS</span> — global field stats';
-    preview.className = 'combo-preview';
-
-    cs_runSearch();
-  };
-  reader.readAsText(file);
-}
-
-const cs_dz = document.getElementById('cs-drop-zone');
-const cs_ci = document.getElementById('cs-csv-input');
-cs_ci.addEventListener('change', e => cs_handleFile(e.target.files[0]));
-cs_dz.addEventListener('dragover', e => { e.preventDefault(); cs_dz.classList.add('drag-over'); });
-cs_dz.addEventListener('dragleave', () => cs_dz.classList.remove('drag-over'));
-cs_dz.addEventListener('drop', e => {
-  e.preventDefault(); cs_dz.classList.remove('drag-over');
-  cs_handleFile(e.dataTransfer.files[0]);
-});
 
 // ── AUTO-LOAD FROM SHARED DATA SOURCE ───────────────────────────────────────
 // Registers with the shell's shared CSV system (see unified-app.html) so
@@ -2740,7 +2722,7 @@ cs_dz.addEventListener('drop', e => {
 function cs_loadTextIntoTool(text, filename) {
   const rows = cs_detectAndParse(text);
   if (!rows.length) {
-    document.getElementById('cs-drop-hint').textContent = 'Shared file loaded but could not be parsed — try manual upload.';
+    document.getElementById('cs-file-label').textContent = 'Shared file could not be parsed.';
     return;
   }
 
@@ -2750,8 +2732,7 @@ function cs_loadTextIntoTool(text, filename) {
   const rowCount = rows.length;
   const fmt = cs_FILE_HAS_BOTH_COMBOS ? 'CSV' : 'TSV';
   document.getElementById('cs-file-dot').classList.add('loaded');
-  document.getElementById('cs-file-label').textContent = `${filename} · ${rowCount} rows · ${fmt} (auto)`;
-  document.getElementById('cs-drop-hint').textContent  = `✓ ${rowCount} rows loaded (${fmt}, auto)`;
+  document.getElementById('cs-file-label').textContent = `${filename} · ${rowCount} rows · ${fmt}`;
 
   cs_buildPartIndex();
   cs_buildTournamentList();
@@ -3108,12 +3089,12 @@ function cs_tallySingle(m, iWon, ft, pts) {
 //  RENDER RESULTS
 // ══════════════════════════════════════════════════════════════════════════
 function cs_getSorted(data, sortKey) {
-  const dir = cs_SORT_DIR === 'asc' ? 1 : -1;
+  const dir = cs_SORT_DIR === 'desc' ? -1 : 1;
   return [...data].sort((a, b) => {
-    if (sortKey === 'winpct') return dir * (b.winPct - a.winPct) || b.battles - a.battles;
-    if (sortKey === 'ppb')    return dir * (b.ppb    - a.ppb)    || b.battles - a.battles;
+    if (sortKey === 'winpct') return dir * (a.winPct - b.winPct) || dir * (a.battles - b.battles);
+    if (sortKey === 'ppb')    return dir * (a.ppb    - b.ppb)    || dir * (a.battles - b.battles);
     // samples: always use battles as primary, winPct as tiebreak — both respect dir
-    return dir * (b.battles - a.battles) || dir * (b.winPct - a.winPct);
+    return dir * (a.battles - b.battles) || dir * (a.winPct - b.winPct);
   });
 }
 
@@ -3531,35 +3512,13 @@ let ph_CMP_PLAYER='';
 let ph_OPP_EXPANDED=new Set();
 
 // ═══════════════════════════════════════════════════════════════
-//  FILE HANDLING
+//  FILE HANDLING — data always arrives from the app's shared CSV
+//  (see the "Upload New CSV" button in the top shell bar). This tool
+//  has no manual upload of its own; it only listens for the shared file.
 // ═══════════════════════════════════════════════════════════════
-const ph_dz=document.getElementById('ph-dz');
-const ph_fi=document.getElementById('ph-file-input');
-ph_fi.addEventListener('change',e=>ph_loadFile(e.target.files[0]));
-ph_dz.addEventListener('dragover',e=>{e.preventDefault();ph_dz.classList.add('drag-over');});
-ph_dz.addEventListener('dragleave',()=>ph_dz.classList.remove('drag-over'));
-ph_dz.addEventListener('drop',e=>{e.preventDefault();ph_dz.classList.remove('drag-over');ph_loadFile(e.dataTransfer.files[0]);});
-
-function ph_loadFile(file){
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const rows=ph_detectAndParse(e.target.result);
-    if(!rows.length){alert('Could not parse file. Ensure it is a standard NCBLAST CSV or TSV export.');return;}
-    ph_ALL_ROWS=rows;
-    ph_FILE_HAS_BOTH=!rows[0].formatB;
-    document.getElementById('ph-file-dot').classList.add('on');
-    document.getElementById('ph-file-lbl').textContent=`${file.name} · ${rows.length} rows`;
-    document.getElementById('ph-dz-hint').textContent=`✓ ${rows.length} rows loaded`;
-    document.getElementById('ph-nav-file-info').textContent=`${file.name}`;
-    ph_buildComboIndex();
-    ph_buildTournamentList();
-    document.getElementById('ph-sb-search-sec').style.display='';
-    document.getElementById('ph-sb-tourn-sec').style.display='';
-    document.getElementById('ph-empty-state').style.display='none';
-    ph_showView('rankings');
-  };
-  reader.readAsText(file);
+function ph_setFileLoadedUI(label){
+  document.getElementById('ph-loaded-bar-lbl').textContent=label;
+  document.getElementById('ph-file-dot').classList.add('on');
 }
 
 // ── AUTO-LOAD FROM SHARED DATA SOURCE ───────────────────────────────────────
@@ -3569,15 +3528,13 @@ function ph_loadFile(file){
 function ph_loadTextIntoTool(text, filename) {
   const rows = ph_detectAndParse(text);
   if (!rows.length) {
-    document.getElementById('ph-dz-hint').textContent = 'Shared file loaded but could not be parsed — try manual upload.';
+    document.getElementById('ph-loaded-bar-lbl').textContent = 'Shared file could not be parsed.';
     return;
   }
   ph_ALL_ROWS = rows;
   ph_FILE_HAS_BOTH = !rows[0].formatB;
-  document.getElementById('ph-file-dot').classList.add('on');
-  document.getElementById('ph-file-lbl').textContent = `${filename} · ${rows.length} rows (auto)`;
-  document.getElementById('ph-dz-hint').textContent = `✓ ${rows.length} rows loaded (auto)`;
   document.getElementById('ph-nav-file-info').textContent = `${filename}`;
+  ph_setFileLoadedUI(`${filename} · ${rows.length} rows`);
   ph_buildComboIndex();
   ph_buildTournamentList();
   document.getElementById('ph-sb-search-sec').style.display = '';
@@ -3858,7 +3815,7 @@ function ph_getAllPlayers(rows){
 function ph_showView(view){
   ph_CURRENT_VIEW=view;
   ['rankings','combo'].forEach(v=>{
-    document.getElementById('tab-'+v).classList.toggle('active',v===view);
+    document.getElementById('ph-tab-'+v).classList.toggle('active',v===view);
   });
   document.getElementById('ph-view-rankings').style.display=view==='rankings'?'':'none';
   document.getElementById('ph-view-combo').style.display=view==='combo'?'':'none';
@@ -3875,7 +3832,7 @@ function ph_goProfile(name){
   ph_H2H_PLAYER='';ph_CMP_PLAYER='';ph_OPP_EXPANDED=new Set();
   ph_PROFILE_PLAYER=name;
   ph_CURRENT_VIEW='profile';
-  ['rankings','combo'].forEach(v=>document.getElementById('tab-'+v).classList.remove('active'));
+  ['rankings','combo'].forEach(v=>document.getElementById('ph-tab-'+v).classList.remove('active'));
   document.getElementById('ph-view-rankings').style.display='none';
   document.getElementById('ph-view-combo').style.display='none';
   document.getElementById('ph-view-profile').style.display='';
