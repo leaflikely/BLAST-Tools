@@ -2048,6 +2048,13 @@ font-size: 10px }
 #tool-reportgen .swiss-toggle-check.on { background: var(--g-accent);
 border-color: var(--g-accent);
 color: #0e1512 }
+#tool-reportgen .swiss-auto-note { font-family: "IBM Plex Mono", monospace;
+font-size: 9.5px;
+letter-spacing: 0.05em;
+margin-top: 6px;
+line-height: 1.5 }
+#tool-reportgen .swiss-auto-note.detected { color: var(--g-teal) }
+#tool-reportgen .swiss-auto-note.mismatch { color: var(--g-accent) }
 #tool-reportgen #rg-report-output { display: none }
 #tool-reportgen .report-wrapper { --accent: #f6d335;
 --teal-deep: #0f6b67;
@@ -2168,6 +2175,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
           <span class="swiss-toggle-label">6-ROUND SWISS &mdash; enable if this tournament ran 6 Swiss rounds before top cut</span>
           <div class="swiss-toggle-check" id="rg-swiss-6-toggle" onclick="rg_toggleSwissRounds()"></div>
         </div>
+        <div id="rg-swiss-auto-note"></div>
         <div class="btn-row">
           <button class="btn btn-primary" id="rg-btn-step2-next" disabled onclick="rg_goStep(2)" style="margin-left:auto">Next &#x2192;</button>
         </div>
@@ -5419,6 +5427,7 @@ let rg_inlineReportRoot = null;
 let rg_modalReportRoot = null;
 let rg_PLACEMENTS = {}; // playerNameLower → placement string e.g. "1st", "2nd"
 let rg_SWISS_ROUNDS = 5; // 5 or 6
+let rg_SWISS_ROUNDS_AUTO = false; // true if the current value came from Challonge, not a manual click
 let rg_CURRENT_STEP = 1;
 
 // tournament name → { link, placements: [{name, finalRank}], fetchedAt }
@@ -5488,8 +5497,9 @@ async function rg_loadChallongeLinks() {
   }
   rg_CHALLONGE_LINKS_LOADED = true;
   // Whichever step is on screen right now, refresh it so the "no link yet"
-  // notifiers and the Step 2 link box reflect what's actually on file.
-  if (rg_CURRENT_STEP === 1) rg_populateTournaments();
+  // notifiers, the Step 2 link box, and the Swiss toggle all reflect what's
+  // actually on file.
+  if (rg_CURRENT_STEP === 1) { rg_populateTournaments(); rg_syncSwissToggleFromChallonge(); }
   if (rg_CURRENT_STEP === 2) rg_renderChallongeBox();
 }
 rg_loadChallongeLinks();
@@ -5508,11 +5518,14 @@ function rg_renderChallongeBox() {
   const linked = !!(rec && Array.isArray(rec.placements) && rec.placements.length > 0);
 
   if (linked && !rg_CHALLONGE_BOX_EDITING) {
+    const swissNote = (typeof rec.swissRounds === 'number')
+      ? ', ' + rec.swissRounds + ' Swiss round' + (rec.swissRounds === 1 ? '' : 's') + ' detected'
+      : ' (Swiss round count not detected \u2014 set the toggle above manually)';
     box.innerHTML =
       '<div class="rg-challonge-linked">' +
         '<span class="rg-challonge-check">\u2713</span>' +
         '<span class="rg-challonge-linked-text">Linked to Challonge \u2014 ' + rec.placements.length +
-          ' placement' + (rec.placements.length === 1 ? '' : 's') + ' on file</span>' +
+          ' placement' + (rec.placements.length === 1 ? '' : 's') + ' on file' + swissNote + '</span>' +
         '<button class="btn btn-ghost pl-challonge-btn" onclick="rg_showChallongeInput()">Change link</button>' +
       '</div>';
     return;
@@ -5580,6 +5593,7 @@ async function rg_saveAndFetchChallongeLink() {
 
     const placements = Array.isArray(data.placements) ? data.placements : [];
     const rankedCount = placements.filter(p => p.finalRank !== null && p.finalRank !== undefined).length;
+    const swissRounds = (typeof data.swissRounds === 'number' && data.swissRounds > 0) ? data.swissRounds : null;
 
     if (rankedCount === 0) {
       statusEl.textContent = 'Found that bracket, but it hasn\u2019t been finalized on Challonge yet \u2014 no placements available. Finalize it there, then try again.';
@@ -5590,17 +5604,17 @@ async function rg_saveAndFetchChallongeLink() {
     // Save it — in memory now, and on the shared server in the background —
     // so every future visit (this browser or anyone else's) reads it back
     // instantly with no further calls to Challonge for this event.
-    rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] = { link, placements, fetchedAt: new Date().toISOString() };
+    rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] = { link, placements, swissRounds, fetchedAt: new Date().toISOString() };
     rg_CHALLONGE_BOX_EDITING = false;
 
     fetch(WORKER_URL + '/challonge-links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tournament: rg_SELECTED_TOURNAMENT, link, placements }),
+      body: JSON.stringify({ tournament: rg_SELECTED_TOURNAMENT, link, placements, swissRounds }),
     }).catch(() => { /* best-effort — this browser's cache already has it either way */ });
 
     rg_renderChallongeBox();
-    rg_populateTournaments(); // clears this tournament's "no link" notifier for next time Step 1 is shown
+    rg_populateTournaments(); // clears this tournament's "no link" notifier and syncs the Swiss toggle for next time Step 1 is shown
   } catch (err) {
     statusEl.textContent = 'Something went wrong reaching the data server. Check your connection and try again.';
     statusEl.className = 'pl-challonge-status error';
@@ -5613,9 +5627,44 @@ async function rg_saveAndFetchChallongeLink() {
 // ── SWISS ROUNDS TOGGLE ───────────────────────────────────────────────────────
 function rg_toggleSwissRounds() {
   rg_SWISS_ROUNDS = rg_SWISS_ROUNDS === 5 ? 6 : 5;
+  rg_SWISS_ROUNDS_AUTO = false; // a manual click always overrides whatever Challonge said
   const el = document.getElementById('rg-swiss-6-toggle');
   if (rg_SWISS_ROUNDS === 6) { el.classList.add('on'); el.textContent = '\u2713'; }
   else { el.classList.remove('on'); el.textContent = ''; }
+  const note = document.getElementById('rg-swiss-auto-note');
+  if (note) note.innerHTML = '';
+}
+
+// Checks whatever Challonge data is on file for the selected tournament and,
+// if it includes a usable Swiss round count, sets the toggle automatically.
+// The toggle itself is never hidden — this only pre-sets it, the same way
+// placements get pre-filled but stay editable. If Challonge reports a round
+// count that isn't 5 or 6 (the only two this toggle supports), the toggle
+// is left alone and a warning is shown instead of guessing.
+function rg_syncSwissToggleFromChallonge() {
+  const note = document.getElementById('rg-swiss-auto-note');
+  if (!note) return;
+
+  const rec = rg_SELECTED_TOURNAMENT ? rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] : null;
+  const detected = rec && typeof rec.swissRounds === 'number' ? rec.swissRounds : null;
+
+  if (detected === null) {
+    note.innerHTML = '';
+    return;
+  }
+
+  if (detected === 5 || detected === 6) {
+    rg_SWISS_ROUNDS = detected;
+    rg_SWISS_ROUNDS_AUTO = true;
+    const el = document.getElementById('rg-swiss-6-toggle');
+    if (el) {
+      if (detected === 6) { el.classList.add('on'); el.textContent = '\u2713'; }
+      else { el.classList.remove('on'); el.textContent = ''; }
+    }
+    note.innerHTML = '<div class="swiss-auto-note detected">\u2713 Auto-set from Challonge (' + detected + ' Swiss rounds)</div>';
+  } else {
+    note.innerHTML = '<div class="swiss-auto-note mismatch">\u26A0 Challonge reports ' + detected + ' Swiss rounds, which this toggle doesn\u2019t support (only 5 or 6) \u2014 please verify manually.</div>';
+  }
 }
 
 // ── PLACEMENT MODAL ───────────────────────────────────────────────────────────
@@ -5704,11 +5753,19 @@ function rg_populateTournaments() {
       rg_COMPUTED_STATS = {};
       rg_PLACEMENTS = {};
       rg_CHALLONGE_BOX_EDITING = false;
+      // Reset to the plain manual default before checking whether Challonge
+      // has a better answer for this specific tournament.
+      rg_SWISS_ROUNDS = 5;
+      rg_SWISS_ROUNDS_AUTO = false;
+      const toggleEl = document.getElementById('rg-swiss-6-toggle');
+      if (toggleEl) { toggleEl.classList.remove('on'); toggleEl.textContent = ''; }
+      rg_syncSwissToggleFromChallonge();
       document.getElementById('rg-btn-step2-next').disabled = false;
     };
     list.appendChild(btn);
   });
   document.getElementById('rg-btn-step2-next').disabled = !rg_SELECTED_TOURNAMENT;
+  rg_syncSwissToggleFromChallonge();
 }
 
 // ── POPULATE PLAYER LIST ──────────────────────────────────────────────────────
