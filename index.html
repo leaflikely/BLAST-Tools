@@ -2012,9 +2012,9 @@ align-items: center;
 --paper-soft: #f3efde;
 --ink: #14241f;
 --ink-soft: #3c4f4a;
---ink-dim: #14241f;
---ink-faint: #14241f;
---ink-faintest: #14241f;
+--ink-dim: #5c6f6a;
+--ink-faint: #8b9c96;
+--ink-faintest: #aebbb5;
 --rule: #c8d5d0;
 --rule-soft: #e4ebe7;
 --danger: #c23a2a;
@@ -2064,9 +2064,9 @@ line-height: 1.5 }
 --paper-soft: #f3efde;
 --ink: #14241f;
 --ink-soft: #3c4f4a;
---ink-dim: #14241f;
---ink-faint: #14241f;
---ink-faintest: #14241f;
+--ink-dim: #5c6f6a;
+--ink-faint: #8b9c96;
+--ink-faintest: #aebbb5;
 --rule: #c8d5d0;
 --rule-soft: #e4ebe7;
 --danger: #c23a2a;
@@ -2212,7 +2212,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
           </div>
           <div class="preview-scroll-box">
             <div id="rg-inline-preview-scaler" class="preview-scaler">
-              <div id="rg-inline-report-pages" style="display:flex;flex-direction:column;gap:28px;padding:28px;align-items:center;--accent:#f6d335;--teal-deep:#0f6b67;--teal:#2ea89d;--teal-soft:#a8d9d2;--paper:#fffdf7;--paper-soft:#f3efde;--ink:#14241f;--ink-soft:#3c4f4a;--ink-dim:#14241f;--ink-faint:#14241f;--ink-faintest:#14241f;--rule:#c8d5d0;--rule-soft:#e4ebe7;--danger:#c23a2a;--danger-soft:#e89a90;-webkit-print-color-adjust:exact;print-color-adjust:exact;"></div>
+              <div id="rg-inline-report-pages" style="display:flex;flex-direction:column;gap:28px;padding:28px;align-items:center;--accent:#f6d335;--teal-deep:#0f6b67;--teal:#2ea89d;--teal-soft:#a8d9d2;--paper:#fffdf7;--paper-soft:#f3efde;--ink:#14241f;--ink-soft:#3c4f4a;--ink-dim:#5c6f6a;--ink-faint:#8b9c96;--ink-faintest:#aebbb5;--rule:#c8d5d0;--rule-soft:#e4ebe7;--danger:#c23a2a;--danger-soft:#e89a90;-webkit-print-color-adjust:exact;print-color-adjust:exact;"></div>
             </div>
           </div>
         </div>
@@ -5438,6 +5438,12 @@ let rg_CURRENT_STEP = 1;
 let rg_CHALLONGE_LINKS = {};
 let rg_CHALLONGE_LINKS_LOADED = false;
 let rg_CHALLONGE_BOX_EDITING = false; // true while the "change link" input is open on Step 2
+// TEMPORARY DEBUG — holds the raw Challonge data from the last fetch, so it
+// can be shown reliably (see rg_renderChallongeBox) instead of being wiped
+// out by an unrelated re-render that happens to fire around the same time.
+// Remove this variable and every block referencing it once the round-count
+// bug is fixed for good.
+let rg_LAST_CHALLONGE_DEBUG = null; // { tournament, raw } | null
 
 // ── STEP NAVIGATION ───────────────────────────────────────────────────────────
 function rg_goStep(n) {
@@ -5517,6 +5523,24 @@ function rg_renderChallongeBox() {
   const rec = rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT];
   const linked = !!(rec && Array.isArray(rec.placements) && rec.placements.length > 0);
 
+  // TEMPORARY DEBUG — shows the raw Challonge data from the last fetch for
+  // THIS tournament, if any. Rendered here (not appended separately) so it
+  // can't be silently erased by some other, unrelated re-render. Remove
+  // this block once the round-count field is confirmed and fixed.
+  let debugHTML = '';
+  if (rg_LAST_CHALLONGE_DEBUG && rg_LAST_CHALLONGE_DEBUG.tournament === rg_SELECTED_TOURNAMENT && rg_LAST_CHALLONGE_DEBUG.raw) {
+    debugHTML =
+      '<div style="margin-top:10px">' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9.5px;color:var(--g-accent);margin-bottom:4px;letter-spacing:0.04em">' +
+        '\u26A0 TEMPORARY DEBUG \u2014 click the box below, select all, copy, and send it back:</div>' +
+        '<textarea readonly style="width:100%;height:160px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+        'background:var(--g-surface2);color:var(--g-text);border:1px solid var(--g-border);border-radius:6px;padding:8px;' +
+        'white-space:pre;overflow:auto" onclick="this.select()">' +
+        JSON.stringify(rg_LAST_CHALLONGE_DEBUG.raw, null, 2).replace(/</g,'&lt;') +
+        '</textarea>' +
+      '</div>';
+  }
+
   if (linked && !rg_CHALLONGE_BOX_EDITING) {
     const swissNote = (typeof rec.swissRounds === 'number')
       ? ', ' + rec.swissRounds + ' Swiss round' + (rec.swissRounds === 1 ? '' : 's') + ' detected'
@@ -5527,7 +5551,7 @@ function rg_renderChallongeBox() {
         '<span class="rg-challonge-linked-text">Linked to Challonge \u2014 ' + rec.placements.length +
           ' placement' + (rec.placements.length === 1 ? '' : 's') + ' on file' + swissNote + '</span>' +
         '<button class="btn btn-ghost pl-challonge-btn" onclick="rg_showChallongeInput()">Change link</button>' +
-      '</div>';
+      '</div>' + debugHTML;
     return;
   }
 
@@ -5541,7 +5565,7 @@ function rg_renderChallongeBox() {
         (linked ? '<button class="btn btn-ghost pl-challonge-btn" onclick="rg_cancelChallongeEdit()">Cancel</button>' : '') +
       '</div>' +
       '<div id="rg-challonge-box-status" class="pl-challonge-status"></div>' +
-    '</div>';
+    '</div>' + debugHTML;
 }
 
 function rg_showChallongeInput() {
@@ -5607,6 +5631,12 @@ async function rg_saveAndFetchChallongeLink() {
     rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] = { link, placements, swissRounds, fetchedAt: new Date().toISOString() };
     rg_CHALLONGE_BOX_EDITING = false;
 
+    // TEMPORARY DEBUG — store the raw Challonge data so rg_renderChallongeBox
+    // can show it reliably. Remove this line (and rg_LAST_CHALLONGE_DEBUG,
+    // and its rendering block in rg_renderChallongeBox) once the round-count
+    // field is confirmed and fixed.
+    rg_LAST_CHALLONGE_DEBUG = data.rawTournamentDebug ? { tournament: rg_SELECTED_TOURNAMENT, raw: data.rawTournamentDebug } : null;
+
     fetch(WORKER_URL + '/challonge-links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -5615,30 +5645,6 @@ async function rg_saveAndFetchChallongeLink() {
 
     rg_renderChallongeBox();
     rg_populateTournaments(); // clears this tournament's "no link" notifier and syncs the Swiss toggle for next time Step 1 is shown
-
-    // TEMPORARY DEBUG — the round count Challonge sends back has been wrong
-    // (off by exactly 2 both times seen so far), so this shows the complete,
-    // unfiltered data Challonge actually returned. Copy everything in the
-    // box below and share it back so the correct field can be identified
-    // for certain, instead of guessing again. Safe to ignore/remove once
-    // that's done — this has no effect on placements, reports, or anything
-    // else in the app.
-    if (data.rawTournamentDebug) {
-      const box = document.getElementById('rg-challonge-box');
-      if (box) {
-        const debugDiv = document.createElement('div');
-        debugDiv.style.marginTop = '10px';
-        debugDiv.innerHTML =
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9.5px;color:var(--g-accent);margin-bottom:4px;letter-spacing:0.04em">' +
-          '\u26A0 TEMPORARY DEBUG \u2014 click the box below, select all, copy, and send it back:</div>' +
-          '<textarea readonly style="width:100%;height:160px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-          'background:var(--g-surface2);color:var(--g-text);border:1px solid var(--g-border);border-radius:6px;padding:8px;' +
-          'white-space:pre;overflow:auto" onclick="this.select()">' +
-          JSON.stringify(data.rawTournamentDebug, null, 2).replace(/</g,'&lt;') +
-          '</textarea>';
-        box.appendChild(debugDiv);
-      }
-    }
   } catch (err) {
     statusEl.textContent = 'Something went wrong reaching the data server. Check your connection and try again.';
     statusEl.className = 'pl-challonge-status error';
