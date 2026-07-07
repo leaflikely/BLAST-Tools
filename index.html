@@ -2012,14 +2012,13 @@ align-items: center;
 --paper-soft: #f3efde;
 --ink: #14241f;
 --ink-soft: #3c4f4a;
---ink-dim: #5c6f6a;
---ink-faint: #8b9c96;
---ink-faintest: #aebbb5;
+--ink-dim: #14241f;
+--ink-faint: #14241f;
+--ink-faintest: #14241f;
 --rule: #c8d5d0;
 --rule-soft: #e4ebe7;
 --danger: #c23a2a;
 --danger-soft: #e89a90;
-color-scheme: light;
 -webkit-print-color-adjust: exact;
 print-color-adjust: exact }
 #tool-reportgen .swiss-toggle-row { display: flex;
@@ -2065,15 +2064,14 @@ line-height: 1.5 }
 --paper-soft: #f3efde;
 --ink: #14241f;
 --ink-soft: #3c4f4a;
---ink-dim: #5c6f6a;
---ink-faint: #8b9c96;
---ink-faintest: #aebbb5;
+--ink-dim: #14241f;
+--ink-faint: #14241f;
+--ink-faintest: #14241f;
 --rule: #c8d5d0;
 --rule-soft: #e4ebe7;
 --danger: #c23a2a;
 --danger-soft: #e89a90;
 font-family: "Barlow", system-ui, sans-serif;
-color-scheme: light;
 -webkit-print-color-adjust: exact;
 print-color-adjust: exact;
 background: #223834 }
@@ -2214,7 +2212,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
           </div>
           <div class="preview-scroll-box">
             <div id="rg-inline-preview-scaler" class="preview-scaler">
-              <div id="rg-inline-report-pages" style="display:flex;flex-direction:column;gap:28px;padding:28px;align-items:center;--accent:#f6d335;--teal-deep:#0f6b67;--teal:#2ea89d;--teal-soft:#a8d9d2;--paper:#fffdf7;--paper-soft:#f3efde;--ink:#14241f;--ink-soft:#3c4f4a;--ink-dim:#5c6f6a;--ink-faint:#8b9c96;--ink-faintest:#aebbb5;--rule:#c8d5d0;--rule-soft:#e4ebe7;--danger:#c23a2a;--danger-soft:#e89a90;color-scheme:light;-webkit-print-color-adjust:exact;print-color-adjust:exact;"></div>
+              <div id="rg-inline-report-pages" style="display:flex;flex-direction:column;gap:28px;padding:28px;align-items:center;--accent:#f6d335;--teal-deep:#0f6b67;--teal:#2ea89d;--teal-soft:#a8d9d2;--paper:#fffdf7;--paper-soft:#f3efde;--ink:#14241f;--ink-soft:#3c4f4a;--ink-dim:#14241f;--ink-faint:#14241f;--ink-faintest:#14241f;--rule:#c8d5d0;--rule-soft:#e4ebe7;--danger:#c23a2a;--danger-soft:#e89a90;-webkit-print-color-adjust:exact;print-color-adjust:exact;"></div>
             </div>
           </div>
         </div>
@@ -6001,44 +5999,8 @@ function rg_downloadReportHTML() {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Guaranteed base theme for this standalone file — written directly
-       here (not only copied from the live page's styles) so the report's
-       light background and text colors are always correct even if copying
-       the live styles below happens to miss something. This is a light,
-       printable document, so color-scheme is explicitly "light" — this
-       stops a browser or extension's automatic dark mode from repainting
-       it, which is a common cause of hard-to-read text on a page that was
-       designed to always be light. */
-    html { color-scheme: light; }
-    .report-wrapper {
-      --accent: #f6d335;
-      --teal-deep: #0f6b67;
-      --teal: #2ea89d;
-      --teal-soft: #a8d9d2;
-      --paper: #fffdf7;
-      --paper-soft: #f3efde;
-      --ink: #14241f;
-      --ink-soft: #3c4f4a;
-      --ink-dim: #5c6f6a;
-      --ink-faint: #8b9c96;
-      --ink-faintest: #aebbb5;
-      --rule: #c8d5d0;
-      --rule-soft: #e4ebe7;
-      --danger: #c23a2a;
-      --danger-soft: #e89a90;
-      font-family: "Barlow", system-ui, sans-serif;
-      color-scheme: light;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
 ${allStyles}
-    /* Override: the live app shows a dark backdrop behind the light report
-       pages so they stand out against its own dark interface. A downloaded,
-       standalone file has no such interface to stand out against, so this
-       keeps the backdrop light instead — otherwise the rule copied in
-       above would silently bring the dark backdrop along with it. */
-    .report-wrapper{background:#e4ebe7!important;}
-    body{background:#fffdf7;}
+    body{background:#223834!important;}
     #generator,#toolbar{display:none!important;}
     #report-output{display:block!important;}
     @media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;}.report-pages>div{box-shadow:none!important;break-after:page;page-break-after:always;}.report-pages>div:last-child{break-after:auto;page-break-after:auto;}}
