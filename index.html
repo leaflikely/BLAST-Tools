@@ -7076,7 +7076,7 @@ function rg_ComboPage({data,accent}){
   return(<rg_Page num={3} total={rg_TOTAL_PAGES} label="Combos">
     <rg_ST num="03" title="Combo Performance" sub="Per-combo \u00b7 Field tier \u00b7 Matchups"/>
     <div style={{marginBottom:20}}>
-      <h3 style={{margin:'0 0 10px',fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:600}}>Per-Combo Stats</h3>
+      <h3 style={{margin:'0 0 10px',fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:600,color:'#fffdf7'}}>Per-Combo Stats</h3>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
         {deck.map((c,i)=>{
           const peer=peerComparison.find(g=>g.combo===c.slot);
@@ -7108,31 +7108,31 @@ function rg_ComboPage({data,accent}){
               <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,letterSpacing:'0.18em',color:'var(--teal-deep)',fontWeight:700}}>COMBO 0{c.slot}</div>
               <div style={{display:'flex',alignItems:'center',gap:6}}>
                 {tier&&<span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:18,height:18,borderRadius:3,background:tColors[tier]||'#6b7d78',color:'white',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700}}>{tier}</span>}
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'var(--ink-faint)'}}>{c.battles} btl</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'#14241f'}}>{c.battles} btl</div>
               </div>
             </div>
-            <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:12,fontWeight:700,letterSpacing:'-0.005em',lineHeight:1.3,marginBottom:12,minHeight:30,color:'var(--ink)'}}>{c.name}</div>
+            <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:12,fontWeight:700,letterSpacing:'-0.005em',lineHeight:1.3,marginBottom:12,minHeight:30,color:'#14241f'}}>{c.name}</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:8}}>
-              <div><rg_SL style={{fontSize:8.5}}>Win%</rg_SL><rg_SV size="md" style={{marginTop:3,color:'#14241f'}}>{c.winPct.toFixed(1)}<span style={{fontSize:14,color:'#14241f'}}>%</span></rg_SV></div>
-              <div><rg_SL style={{fontSize:8.5}}>PPB</rg_SL><rg_SV size="md" style={{marginTop:3,color:c.ppb>=1?'var(--teal-deep)':c.ppb<0?'var(--danger)':'#14241f'}}>{c.ppb>0?'+':''}{c.ppb.toFixed(2)}</rg_SV></div>
-              {sideStrengthLabel&&<div style={{gridColumn:'1 / -1'}}><rg_SL style={{fontSize:8.5}}>Side Strength</rg_SL><rg_SV size="sm" style={{marginTop:3,color:'var(--ink)',fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700}}>{sideStrengthLabel}</rg_SV>{sideStrengthSub&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'var(--ink-faint)',letterSpacing:'0.04em',marginTop:2}}>{sideStrengthSub}</div>}</div>}
+              <div><rg_SL style={{fontSize:8.5,color:'#14241f'}}>Win%</rg_SL><rg_SV size="md" style={{marginTop:3,color:'#14241f'}}>{c.winPct.toFixed(1)}<span style={{fontSize:14,color:'#14241f'}}>%</span></rg_SV></div>
+              <div><rg_SL style={{fontSize:8.5,color:'#14241f'}}>PPB</rg_SL><rg_SV size="md" style={{marginTop:3,color:c.ppb>=1?'var(--teal-deep)':c.ppb<0?'var(--danger)':'#14241f'}}>{c.ppb>0?'+':''}{c.ppb.toFixed(2)}</rg_SV></div>
+              {sideStrengthLabel&&<div style={{gridColumn:'1 / -1'}}><rg_SL style={{fontSize:8.5,color:'#14241f'}}>Side Strength</rg_SL><rg_SV size="sm" style={{marginTop:3,color:'#14241f',fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700}}>{sideStrengthLabel}</rg_SV>{sideStrengthSub&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#14241f',letterSpacing:'0.04em',marginTop:2}}>{sideStrengthSub}</div>}</div>}
             </div>
             <div style={{height:5,background:'var(--rule-soft)',borderRadius:2,overflow:'hidden',marginBottom:6}}><div style={{height:'100%',width:Math.min(100,c.winPct)+'%',background:'var(--teal-deep)'}}/></div>
-            {fa!==null&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'var(--ink-faint)',letterSpacing:'0.06em'}}>Field {fa.toFixed(1)}% &middot; Gap {gap>=0?'+':''}{gap?.toFixed(1)}%{ro?' \u00b7 of '+ro+' peers':''}</div>}
+            {fa!==null&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#14241f',letterSpacing:'0.06em'}}>Field {fa.toFixed(1)}% &middot; Gap {gap>=0?'+':''}{gap?.toFixed(1)}%{ro?' \u00b7 of '+ro+' peers':''}</div>}
           </div>);
         })}
       </div>
-      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'var(--ink-faint)',letterSpacing:'0.08em',marginTop:8,textTransform:'uppercase'}}>Tier vs field avg on same combo: S +10%+ &middot; A +3&ndash;10% &middot; B &plusmn;3% &middot; C -3&ndash;10% &middot; D -10%+</div>
+      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#fffdf7',letterSpacing:'0.08em',marginTop:8,textTransform:'uppercase'}}>Tier vs field avg on same combo: S +10%+ &middot; A +3&ndash;10% &middot; B &plusmn;3% &middot; C -3&ndash;10% &middot; D -10%+</div>
     </div>
     <div style={{flex:1,display:'flex',flexDirection:'column',minHeight:0}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
-        <h3 style={{margin:0,fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:600}}>Recurring Combo Matchups</h3>
-        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,letterSpacing:'0.1em',color:'var(--ink-faint)'}}>&ge; 2 ENCOUNTERS</div>
+        <h3 style={{margin:0,fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:600,color:'#fffdf7'}}>Recurring Combo Matchups</h3>
+        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,letterSpacing:'0.1em',color:'#fffdf7'}}>&ge; 2 ENCOUNTERS</div>
       </div>
-      {recurringMatchups.length===0?<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:'var(--ink-faint)',letterSpacing:'0.08em',padding:'12px 0'}}>No matchups with 2+ encounters recorded.</div>
+      {recurringMatchups.length===0?<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:'#fffdf7',letterSpacing:'0.08em',padding:'12px 0'}}>No matchups with 2+ encounters recorded.</div>
       :<table style={{width:'100%',borderCollapse:'collapse',fontSize:11}}>
-        <thead><tr style={{borderBottom:'1px solid var(--rule)'}}><th style={rg_thS('auto','left')}>Your Combo</th><th style={rg_thS('auto','left')}>Opponent Combo</th><th style={rg_thS(44)}>Faced</th><th style={rg_thS(50)}>W&ndash;L</th><th style={rg_thS(54)}>Win%</th><th style={rg_thS(50)}>PPB</th><th style={rg_thS(44)}>Net</th></tr></thead>
-        <tbody>{recurringMatchups.map((m,i)=><tr key={i} style={{borderBottom:'1px solid var(--rule-soft)'}}><td style={{...rg_tdS,textAlign:'left',fontWeight:700,color:'var(--teal-deep)',fontFamily:"'Space Grotesk',system-ui",fontSize:10.5}}>{m.yourComboName.split('\u00b7')[0].trim()}</td><td style={{...rg_tdS,textAlign:'left',fontWeight:500,fontFamily:"'Space Grotesk',system-ui",fontSize:10.5,color:'var(--ink)'}}>{m.oppCombo}</td><td style={{...rg_tdS,fontSize:10}}>{m.times}</td><td style={{...rg_tdS,fontSize:10}}>{m.w}&ndash;{m.l}</td><td style={{...rg_tdS,fontWeight:600,color:m.winPct>=50?'var(--ink)':'var(--danger)',fontSize:10}}>{m.winPct.toFixed(1)}%</td><td style={{...rg_tdS,fontWeight:700,color:m.ppb>=0?'var(--teal-deep)':'var(--danger)',fontSize:10}}>{m.ppb>0?'+':''}{m.ppb.toFixed(2)}</td><td style={{...rg_tdS,fontWeight:700,color:m.net>=0?'var(--teal-deep)':'var(--danger)',fontSize:10}}>{m.net>0?'+':''}{m.net}</td></tr>)}</tbody>
+        <thead><tr style={{borderBottom:'1px solid var(--rule)'}}><th style={{...rg_thS('auto','left'),color:'#fffdf7'}}>Your Combo</th><th style={{...rg_thS('auto','left'),color:'#fffdf7'}}>Opponent Combo</th><th style={{...rg_thS(44),color:'#fffdf7'}}>Faced</th><th style={{...rg_thS(50),color:'#fffdf7'}}>W&ndash;L</th><th style={{...rg_thS(54),color:'#fffdf7'}}>Win%</th><th style={{...rg_thS(50),color:'#fffdf7'}}>PPB</th><th style={{...rg_thS(44),color:'#fffdf7'}}>Net</th></tr></thead>
+        <tbody>{recurringMatchups.map((m,i)=><tr key={i} style={{borderBottom:'1px solid var(--rule-soft)'}}><td style={{...rg_tdS,textAlign:'left',fontWeight:700,color:'var(--teal-deep)',fontFamily:"'Space Grotesk',system-ui",fontSize:10.5}}>{m.yourComboName.split('\u00b7')[0].trim()}</td><td style={{...rg_tdS,textAlign:'left',fontWeight:500,fontFamily:"'Space Grotesk',system-ui",fontSize:10.5,color:'#fffdf7'}}>{m.oppCombo}</td><td style={{...rg_tdS,color:'#fffdf7',fontSize:10}}>{m.times}</td><td style={{...rg_tdS,color:'#fffdf7',fontSize:10}}>{m.w}&ndash;{m.l}</td><td style={{...rg_tdS,fontWeight:600,color:m.winPct>=50?'#fffdf7':'var(--danger)',fontSize:10}}>{m.winPct.toFixed(1)}%</td><td style={{...rg_tdS,fontWeight:700,color:m.ppb>=0?'var(--teal-deep)':'var(--danger)',fontSize:10}}>{m.ppb>0?'+':''}{m.ppb.toFixed(2)}</td><td style={{...rg_tdS,fontWeight:700,color:m.net>=0?'var(--teal-deep)':'var(--danger)',fontSize:10}}>{m.net>0?'+':''}{m.net}</td></tr>)}</tbody>
       </table>}
     </div>
   </rg_Page>);
@@ -7170,18 +7170,18 @@ function rg_ComboFinishPage({data,accent,pageNum}){
     return(<div>
       <div style={{display:'flex',alignItems:'baseline',gap:6,marginBottom:5,paddingBottom:4,borderBottom:'1px solid var(--rule-soft)'}}>
         <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.14em',color:ac,fontWeight:700}}>{title}</div>
-        <div style={{marginLeft:'auto',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'var(--ink-faint)'}}>{rows.reduce((s,r)=>s+r.count,0)}</div>
+        <div style={{marginLeft:'auto',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#14241f'}}>{rows.reduce((s,r)=>s+r.count,0)}</div>
       </div>
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
         <MiniPie rows={rows}/>
         <div style={{flex:1,display:'flex',flexDirection:'column',gap:2,minWidth:0}}>
-          {rows.length===0&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,color:'var(--ink-faint)'}}>None</div>}
+          {rows.length===0&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,color:'#14241f'}}>None</div>}
           {rows.map((f,i)=>{
             const t=f.count*f.pts;const pct=gTotal>0?(t/gTotal*100).toFixed(0):'0';
             return(<div key={i} style={{display:'flex',alignItems:'center',gap:4}}>
               <div style={{width:6,height:6,borderRadius:2,background:palette[i%palette.length],flexShrink:0}}/>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,color:'var(--ink-dim)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.type}</div>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,fontWeight:600,color:'var(--ink)'}}>{f.count} &middot; {pct}%</div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,color:'#14241f',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.type}</div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,fontWeight:600,color:'#14241f'}}>{f.count} &middot; {pct}%</div>
             </div>);
           })}
         </div>
@@ -7191,13 +7191,13 @@ function rg_ComboFinishPage({data,accent,pageNum}){
 
   return(<rg_Page num={pageNum} total={rg_TOTAL_PAGES} label="Combo Finishes">
     <rg_ST num="03" title="Combo Finish Breakdown" sub="Top 3 combos \u00b7 Finish types"/>
-    <p style={{margin:'0 0 16px',fontSize:10.5,color:'var(--ink-dim)',fontFamily:"'Barlow',system-ui",lineHeight:1.5}}>How each of your most-played combos wins and loses battles, broken down by finish type.</p>
+    <p style={{margin:'0 0 16px',fontSize:10.5,color:'#fffdf7',fontFamily:"'Barlow',system-ui",lineHeight:1.5}}>How each of your most-played combos wins and loses battles, broken down by finish type.</p>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16}}>
       {comboFinishes.map((c,i)=>(
         <div key={i} style={{border:'2px solid var(--ink)',borderRadius:6,padding:12,background:'var(--paper-soft)',position:'relative',overflow:'hidden',boxShadow:'3px 3px 0 var(--teal-deep)'}}>
           <div style={{position:'absolute',left:0,top:0,right:0,height:4,background:i===0?accent:'var(--teal-deep)'}}/>
           <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.14em',color:'var(--teal-deep)',fontWeight:700,marginTop:4,marginBottom:2}}>COMBO 0{c.slot}</div>
-          <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:10.5,fontWeight:700,lineHeight:1.3,marginBottom:10,minHeight:26,color:'var(--ink)'}}>{c.name}</div>
+          <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:10.5,fontWeight:700,lineHeight:1.3,marginBottom:10,minHeight:26,color:'#14241f'}}>{c.name}</div>
           <MiniFT rows={c.scored} title="SCORED" />
           <div style={{height:8}}/>
           <MiniFT rows={c.allowed} title="ALLOWED" tone="danger"/>
@@ -7213,20 +7213,20 @@ function rg_PeerComparisonPage({data,accent,pageNum}){
   if(!peerComparison||peerComparison.length===0) return null;
   return(<rg_Page num={pageNum} total={rg_TOTAL_PAGES} label="Peer Comparison">
     <rg_ST num="03" title="Shared-Combo Peer Comparison" sub="Same exact combo \u00b7 \u22653 battles"/>
-    <p style={{margin:'0 0 14px',fontSize:10.5,color:'var(--ink-dim)',fontFamily:"'Barlow',system-ui",lineHeight:1.5}}>How you performed with each of your deck combos compared to everyone else in the tournament who played the exact same combo.</p>
+    <p style={{margin:'0 0 14px',fontSize:10.5,color:'#fffdf7',fontFamily:"'Barlow',system-ui",lineHeight:1.5}}>How you performed with each of your deck combos compared to everyone else in the tournament who played the exact same combo.</p>
     <table style={{width:'100%',borderCollapse:'collapse',fontSize:10.5}}>
-      <thead><tr style={{borderBottom:'1px solid var(--rule)'}}><th style={rg_thS(100,'left')}>Combo</th><th style={rg_thS('auto','left')}>Player</th><th style={rg_thS(60)}>Win%</th><th style={rg_thS(60)}>PPB</th><th style={rg_thS(60)}>Battles</th></tr></thead>
+      <thead><tr style={{borderBottom:'1px solid var(--rule)'}}><th style={{...rg_thS(100,'left'),color:'#fffdf7'}}>Combo</th><th style={{...rg_thS('auto','left'),color:'#fffdf7'}}>Player</th><th style={{...rg_thS(60),color:'#fffdf7'}}>Win%</th><th style={{...rg_thS(60),color:'#fffdf7'}}>PPB</th><th style={{...rg_thS(60),color:'#fffdf7'}}>Battles</th></tr></thead>
       <tbody>{peerComparison.flatMap((group,gi)=>group.players.map((p,pi)=>{
         const fg=pi===0;
         return(<tr key={gi+'-'+pi} style={{borderBottom:'1px solid var(--rule-soft)',borderTop:fg&&gi>0?'2px solid var(--rule)':undefined,background:p.highlight?'rgba(246,211,53,0.12)':undefined}}>
           <td style={{...rg_tdS,textAlign:'left',fontWeight:700,padding:'6px 6px',color:fg?'var(--teal-deep)':'transparent',fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5}}>{fg?group.comboName.split('\u00b7')[0].trim():'\u00b7'}</td>
-          <td style={{...rg_tdS,textAlign:'left',padding:'6px 6px',fontWeight:p.highlight?800:500,color:p.highlight?'var(--teal-deep)':'var(--ink)',fontFamily:"'Space Grotesk',system-ui",fontSize:11}}>
+          <td style={{...rg_tdS,textAlign:'left',padding:'6px 6px',fontWeight:p.highlight?800:500,color:p.highlight?'var(--teal-deep)':'#fffdf7',fontFamily:"'Space Grotesk',system-ui",fontSize:11}}>
             {p.highlight&&<span style={{background:accent,color:'var(--ink)',padding:'1px 5px',borderRadius:3,marginRight:6,fontSize:8.5,letterSpacing:'0.08em',fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",verticalAlign:'middle',display:'inline-block'}}>YOU</span>}
             {p.highlight?(p.name!=='YOU'?p.name:''):p.name}
           </td>
-          <td style={{...rg_tdS,padding:'6px 6px',fontWeight:p.highlight?700:400,color:p.highlight?'var(--teal-deep)':'var(--ink)'}}>{p.winPct.toFixed(1)}%</td>
-          <td style={{...rg_tdS,padding:'6px 6px',fontWeight:p.highlight?700:400,color:p.highlight?'var(--teal-deep)':'var(--ink)'}}>{p.ppb>0?'+':''}{p.ppb.toFixed(2)}</td>
-          <td style={{...rg_tdS,padding:'6px 6px',fontWeight:p.highlight?700:400,color:p.highlight?'var(--teal-deep)':'var(--ink)'}}>{p.battles}</td>
+          <td style={{...rg_tdS,padding:'6px 6px',fontWeight:p.highlight?700:400,color:p.highlight?'var(--teal-deep)':'#fffdf7'}}>{p.winPct.toFixed(1)}%</td>
+          <td style={{...rg_tdS,padding:'6px 6px',fontWeight:p.highlight?700:400,color:p.highlight?'var(--teal-deep)':'#fffdf7'}}>{p.ppb>0?'+':''}{p.ppb.toFixed(2)}</td>
+          <td style={{...rg_tdS,padding:'6px 6px',fontWeight:p.highlight?700:400,color:p.highlight?'var(--teal-deep)':'#fffdf7'}}>{p.battles}</td>
         </tr>);
       }))}
       </tbody>
@@ -7244,10 +7244,10 @@ function rg_BattleDynamicsPage({data,accent}){
   const bname=n=>{const e=deck&&deck.find(d=>d.slot===n);if(!e)return'C0'+n;return e.name.split('\u00b7')[0].trim().split(' ')[0];};
   function SlotTbl({rows,slots,title,sub}){
     return(<div style={{marginBottom:14}}>
-      <h4 style={{margin:'0 0 6px',fontFamily:"'Space Grotesk',system-ui",fontSize:12,fontWeight:600}}>{title}</h4>
-      {sub&&<p style={{margin:'0 0 6px',fontSize:9.5,color:'var(--ink-dim)',fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'0.06em'}}>{sub}</p>}
+      <h4 style={{margin:'0 0 6px',fontFamily:"'Space Grotesk',system-ui",fontSize:12,fontWeight:600,color:'#fffdf7'}}>{title}</h4>
+      {sub&&<p style={{margin:'0 0 6px',fontSize:9.5,color:'#fffdf7',fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'0.06em'}}>{sub}</p>}
       <div style={{border:'1px solid var(--rule)',borderRadius:5,overflow:'hidden'}}>
-        <div style={{display:'grid',gridTemplateColumns:'1.4fr '+slots.map(()=>'1fr').join(' '),background:'var(--paper-soft)',borderBottom:'1px solid var(--rule)',fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.14em',color:'var(--ink-dim)',fontWeight:600}}>
+        <div style={{display:'grid',gridTemplateColumns:'1.4fr '+slots.map(()=>'1fr').join(' '),background:'var(--paper-soft)',borderBottom:'1px solid var(--rule)',fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.14em',color:'#14241f',fontWeight:600}}>
           <div style={{padding:'7px 10px'}}>COMBO</div>
           {slots.map(n=><div key={n} style={{padding:'7px 8px',textAlign:'center',borderLeft:'1px solid var(--rule)'}}>SLOT {n}</div>)}
         </div>
@@ -7255,15 +7255,15 @@ function rg_BattleDynamicsPage({data,accent}){
           <div key={ci} style={{display:'grid',gridTemplateColumns:'1.4fr '+slots.map(()=>'1fr').join(' '),borderBottom:ci<rows.length-1?'1px solid var(--rule-soft)':'none',alignItems:'stretch'}}>
             <div style={{padding:'8px 10px',background:'var(--paper-soft)',display:'flex',flexDirection:'column',justifyContent:'center'}}>
               <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.16em',color:'var(--teal-deep)',fontWeight:700}}>C0{c.combo}</div>
-              <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:11,fontWeight:600,letterSpacing:'-0.01em',marginTop:2,lineHeight:1.2,color:'var(--ink)'}}>{c.shortName}</div>
+              <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:11,fontWeight:600,letterSpacing:'-0.01em',marginTop:2,lineHeight:1.2,color:'#14241f'}}>{c.shortName}</div>
             </div>
             {c.slots.map((s,si)=>{
-              if(s.tot===0) return <div key={si} style={{padding:'8px 8px',borderLeft:'1px solid var(--rule)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'var(--ink-faintest)'}}>&mdash;</span></div>;
+              if(s.tot===0) return <div key={si} style={{padding:'8px 8px',borderLeft:'1px solid var(--rule)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'#fffdf7'}}>&mdash;</span></div>;
               const good=s.ppb!==null&&s.ppb>=1;
               return(<div key={si} style={{padding:'8px 8px',borderLeft:'1px solid var(--rule)',display:'flex',flexDirection:'column',justifyContent:'center'}}>
-                <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:14,fontWeight:700,lineHeight:1,letterSpacing:'-0.02em',fontVariantNumeric:'tabular-nums'}}>{s.winPct!==null?s.winPct.toFixed(0):'&mdash;'}<span style={{fontSize:9,color:'var(--ink-dim)',fontWeight:600}}>%</span></div>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,marginTop:2,color:good?'var(--teal-deep)':'var(--ink-dim)',fontWeight:600}}>{s.ppb!==null?'PPB '+(s.ppb>0?'+':'')+s.ppb.toFixed(2):''}</div>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'var(--ink-faint)',marginTop:1}}>{s.w}W&ndash;{s.l}L</div>
+                <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:14,fontWeight:700,lineHeight:1,letterSpacing:'-0.02em',fontVariantNumeric:'tabular-nums',color:'#fffdf7'}}>{s.winPct!==null?s.winPct.toFixed(0):'&mdash;'}<span style={{fontSize:9,color:'#fffdf7',fontWeight:600}}>%</span></div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,marginTop:2,color:good?'var(--teal-deep)':'#fffdf7',fontWeight:600}}>{s.ppb!==null?'PPB '+(s.ppb>0?'+':'')+s.ppb.toFixed(2):''}</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#fffdf7',marginTop:1}}>{s.w}W&ndash;{s.l}L</div>
               </div>);
             })}
           </div>
@@ -7279,19 +7279,19 @@ function rg_BattleDynamicsPage({data,accent}){
         <SlotTbl rows={shufflePost} slots={[4,5,6]} title="Post-Shuffle" sub="Slots 4–6 · battles after the first re-order."/>
       </div>
       <div>
-        <h3 style={{margin:'0 0 10px',fontFamily:"'Space Grotesk',system-ui",fontSize:12,fontWeight:600}}>Stadium Side Split</h3>
+        <h3 style={{margin:'0 0 10px',fontFamily:"'Space Grotesk',system-ui",fontSize:12,fontWeight:600,color:'#fffdf7'}}>Stadium Side Split</h3>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:18}}>
-          {sides.map((s,i)=>{const isB=s.side==='B';return(<div key={i} style={{padding:'10px 12px',background:isB?'var(--paper-soft)':'var(--teal-deep)',color:isB?'var(--ink)':'var(--paper)',borderRadius:5,border:'1px solid '+(isB?'var(--rule)':'var(--teal-deep)'),position:'relative',overflow:'hidden'}}>
+          {sides.map((s,i)=>{const isB=s.side==='B';return(<div key={i} style={{padding:'10px 12px',background:isB?'var(--paper-soft)':'var(--teal-deep)',color:isB?'#14241f':'#fffdf7',borderRadius:5,border:'1px solid '+(isB?'var(--rule)':'var(--teal-deep)'),position:'relative',overflow:'hidden'}}>
             <div style={{position:'absolute',right:-6,top:-14,fontFamily:"'Space Grotesk',system-ui",fontSize:60,fontWeight:800,color:isB?'var(--rule)':'rgba(255,255,255,.12)',lineHeight:1,letterSpacing:'-0.06em',pointerEvents:'none'}}>{s.side}</div>
             <div style={{position:'relative'}}>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.14em',color:isB?'var(--ink-dim)':accent,fontWeight:700}}>{s.side} SIDE</div>
-              <rg_SV size="sm" style={{color:'inherit',marginTop:3}}>{s.battleWinPct.toFixed(1)}%</rg_SV>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,opacity:0.65,marginTop:2,color:isB?'var(--ink)':'var(--paper)'}}>{s.battles} btl &middot; PPB {s.ppb>=0?'+':''}{s.ppb.toFixed(2)}</div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.14em',color:isB?'#14241f':accent,fontWeight:700}}>{s.side} SIDE</div>
+              <rg_SV size="sm" style={{color:isB?'#14241f':'#fffdf7',marginTop:3}}>{s.battleWinPct.toFixed(1)}%</rg_SV>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,opacity:0.65,marginTop:2,color:isB?'#14241f':'#fffdf7'}}>{s.battles} btl &middot; PPB {s.ppb>=0?'+':''}{s.ppb.toFixed(2)}</div>
             </div>
           </div>);})}
         </div>
-        <h3 style={{margin:'0 0 8px',fontFamily:"'Space Grotesk',system-ui",fontSize:12,fontWeight:600}}>Points Distribution</h3>
-        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'var(--teal-deep)',fontWeight:600,letterSpacing:'0.06em',marginBottom:8}}>NET {totalNet>=0?'+':''}{totalNet} &middot; <span style={{color:'var(--ink-dim)'}}>+{totalScored} / -{totalAllowed}</span></div>
+        <h3 style={{margin:'0 0 8px',fontFamily:"'Space Grotesk',system-ui",fontSize:12,fontWeight:600,color:'#fffdf7'}}>Points Distribution</h3>
+        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:'var(--teal-deep)',fontWeight:600,letterSpacing:'0.06em',marginBottom:8}}>NET {totalNet>=0?'+':''}{totalNet} &middot; <span style={{color:'#fffdf7'}}>+{totalScored} / -{totalAllowed}</span></div>
         <div style={{display:'flex',height:18,borderRadius:3,overflow:'hidden',border:'1px solid var(--rule)',marginBottom:4}}>
           {pointsDetail.map((p,i)=><div key={i} style={{width:(totalScored>0?(p.scored/totalScored)*100:33)+'%',background:cColors[i],display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,color:i===2?'var(--ink)':'white'}}>{totalScored>0&&(p.scored/totalScored*100)>12&&bname(p.combo)}</div>)}
         </div>
@@ -7299,8 +7299,8 @@ function rg_BattleDynamicsPage({data,accent}){
           {pointsDetail.map((p,i)=><div key={i} style={{width:(totalAllowed>0?(p.allowed/totalAllowed)*100:33)+'%',background:cColors[i],display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,color:i===2?'var(--ink)':'white'}}>{totalAllowed>0&&(p.allowed/totalAllowed*100)>12&&bname(p.combo)}</div>)}
         </div>
         <table style={{width:'100%',borderCollapse:'collapse',fontSize:10}}>
-          <thead><tr style={{borderBottom:'1px solid var(--rule)'}}><th style={rg_thS('auto','left')}>Combo</th><th style={rg_thS(36)}>Scored</th><th style={rg_thS(36)}>Allow</th><th style={rg_thS(40)}>Net</th></tr></thead>
-          <tbody>{pointsDetail.map((p,i)=><tr key={i} style={{borderBottom:'1px solid var(--rule-soft)'}}><td style={{...rg_tdS,textAlign:'left',display:'flex',alignItems:'center',gap:6,padding:'4px 6px'}}><span style={{width:7,height:7,borderRadius:2,background:cColors[i],flexShrink:0,display:'inline-block'}}/><span style={{fontWeight:700,fontFamily:"'Space Grotesk',system-ui",fontSize:10,color:'var(--ink)'}}>{bname(p.combo)}</span></td><td style={{...rg_tdS,padding:'4px 6px'}}>{p.scored}</td><td style={{...rg_tdS,padding:'4px 6px'}}>{p.allowed}</td><td style={{...rg_tdS,padding:'4px 6px',fontWeight:700,color:p.net>=0?'var(--teal-deep)':'var(--danger)'}}>{p.net>0?'+':''}{p.net}</td></tr>)}</tbody>
+          <thead><tr style={{borderBottom:'1px solid var(--rule)'}}><th style={{...rg_thS('auto','left'),color:'#fffdf7'}}>Combo</th><th style={{...rg_thS(36),color:'#fffdf7'}}>Scored</th><th style={{...rg_thS(36),color:'#fffdf7'}}>Allow</th><th style={{...rg_thS(40),color:'#fffdf7'}}>Net</th></tr></thead>
+          <tbody>{pointsDetail.map((p,i)=><tr key={i} style={{borderBottom:'1px solid var(--rule-soft)'}}><td style={{...rg_tdS,textAlign:'left',display:'flex',alignItems:'center',gap:6,padding:'4px 6px'}}><span style={{width:7,height:7,borderRadius:2,background:cColors[i],flexShrink:0,display:'inline-block'}}/><span style={{fontWeight:700,fontFamily:"'Space Grotesk',system-ui",fontSize:10,color:'#fffdf7'}}>{bname(p.combo)}</span></td><td style={{...rg_tdS,color:'#fffdf7',padding:'4px 6px'}}>{p.scored}</td><td style={{...rg_tdS,color:'#fffdf7',padding:'4px 6px'}}>{p.allowed}</td><td style={{...rg_tdS,padding:'4px 6px',fontWeight:700,color:p.net>=0?'var(--teal-deep)':'var(--danger)'}}>{p.net>0?'+':''}{p.net}</td></tr>)}</tbody>
         </table>
       </div>
     </div>
@@ -7334,8 +7334,8 @@ function rg_BattleDynamicsPage({data,accent}){
       return(
         <div style={{marginTop:14,borderTop:'1px solid var(--rule)',paddingTop:12}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
-            <h3 style={{margin:0,fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:700}}>Combo Side PPB</h3>
-            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'var(--ink-faint)',letterSpacing:'0.06em'}}>Points per battle · B-side vs X-side · zero line = breakeven · capped at ±1.50</div>
+            <h3 style={{margin:0,fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:700,color:'#fffdf7'}}>Combo Side PPB</h3>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#fffdf7',letterSpacing:'0.06em'}}>Points per battle · B-side vs X-side · zero line = breakeven · capped at ±1.50</div>
           </div>
           {/* Legend removed — color identity shown in label text */}
           <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`}
@@ -7352,12 +7352,12 @@ function rg_BattleDynamicsPage({data,accent}){
               return(
                 <g key={v}>
                   <line x1={padL} y1={y} x2={chartW-padR} y2={y}
-                    stroke={isZero?'var(--ink)':'var(--rule)'}
+                    stroke={isZero?'#fffdf7':'var(--rule)'}
                     strokeWidth={isZero?2:0.7}
                     strokeDasharray={isZero?'none':'4 3'}/>
                   <text x={padL-6} y={y} textAnchor="end" dominantBaseline="middle"
                     style={{fontFamily:'IBM Plex Mono,monospace',fontSize:9,
-                      fill:isZero?'var(--ink)':'var(--ink-dim)',
+                      fill:'#fffdf7',
                       fontWeight:isZero?700:500}}>
                     {isZero?'0.00':(v>0?'+':'')+v.toFixed(2)}
                   </text>
@@ -7394,13 +7394,13 @@ function rg_BattleDynamicsPage({data,accent}){
                     </text>
                     <text x={x+barW/2} y={labelY+(clamped>=0?-9:9)} textAnchor="middle"
                       style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7.5,
-                        fill:'var(--ink-faint)',fontWeight:400}}>
+                        fill:'#fffdf7',fontWeight:400}}>
                       {s.battles}btl
                     </text>
                     {/* B / X side label at the zero line */}
                     <text x={x+barW/2} y={zeroY+(clamped>=0?10:-4)} textAnchor="middle"
                       style={{fontFamily:'IBM Plex Mono,monospace',fontSize:8,
-                        fill:'var(--ink-dim)',fontWeight:700,letterSpacing:'0.06em'}}>
+                        fill:'#fffdf7',fontWeight:700,letterSpacing:'0.06em'}}>
                       {s.pal.side}
                     </text>
                   </g>
@@ -7410,7 +7410,7 @@ function rg_BattleDynamicsPage({data,accent}){
             {/* Combo group labels at bottom */}
             {bars.map((b,i)=>(
               <text key={i} x={groupCenterX(i)} y={chartH-6} textAnchor="middle"
-                style={{fontFamily:'Space Grotesk,system-ui',fontSize:11,fill:'var(--ink)',
+                style={{fontFamily:'Space Grotesk,system-ui',fontSize:11,fill:'#fffdf7',
                   fontWeight:700,letterSpacing:'-0.01em'}}>
                 {b.shortName}
               </text>
@@ -7443,7 +7443,7 @@ function rg_MatchRecapPages({data,accent,startPageNum}){
     return(
     <rg_Page key={pi} num={startPageNum+pi} total={rg_TOTAL_PAGES} label={'Match Recap'+(chunks.length>1?' ('+(pi+1)+'/'+chunks.length+')':'')}>
       <rg_ST num="06" title="Match Recap" sub={'Every match \u00b7 Numbers only'+(chunks.length>1?' \u00b7 '+(pi+1)+'/'+chunks.length:'')}/>
-      {pi===0&&<p style={{margin:'0 0 10px',fontSize:10,color:'var(--ink-dim)',fontFamily:"'Barlow',system-ui",lineHeight:1.4}}>Opponent combos shown. W-L = that combo vs you this match. Combo PPB = that combo's efficiency against you in this match only.</p>}
+      {pi===0&&<p style={{margin:'0 0 10px',fontSize:10,color:'#fffdf7',fontFamily:"'Barlow',system-ui",lineHeight:1.4}}>Opponent combos shown. W-L = that combo vs you this match. Combo PPB = that combo's efficiency against you in this match only.</p>}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {pageMatches.map((m,i)=>{
           const globalIdx=pageStartIdx+i;
@@ -7458,17 +7458,17 @@ function rg_MatchRecapPages({data,accent,startPageNum}){
             <div style={{border:'1px solid var(--rule)',borderRadius:5,overflow:'hidden'}}>
               <div style={{display:'flex',alignItems:'center',gap:10,padding:'7px 12px',background:'var(--paper-soft)',borderBottom:'1px solid var(--rule-soft)'}}>
                 <div style={{padding:'3px 8px',borderRadius:3,background:isWin?'var(--teal-deep)':'var(--danger)',color:'white',fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,fontWeight:700,letterSpacing:'0.1em',flexShrink:0}}>{m.result}</div>
-                <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:700,color:'var(--ink)'}}>vs {m.opponent}</div>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,color:'var(--ink-dim)',marginLeft:'auto'}}>{m.setW}-{m.setL} sets &middot; {m.battles} btl &middot; NET {m.net>=0?'+':''}{m.net} &middot; PPB <span style={{color:m.mPPB>=0?'var(--teal-deep)':'var(--danger)',fontWeight:700}}>{m.mPPB>=0?'+':''}{m.mPPB.toFixed(2)}</span></div>
+                <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:700,color:'#14241f'}}>vs {m.opponent}</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,color:'#14241f',marginLeft:'auto'}}>{m.setW}-{m.setL} sets &middot; {m.battles} btl &middot; NET {m.net>=0?'+':''}{m.net} &middot; PPB <span style={{color:m.mPPB>=0?'var(--teal-deep)':'var(--danger)',fontWeight:700}}>{m.mPPB>=0?'+':''}{m.mPPB.toFixed(2)}</span></div>
               </div>
               <div style={{padding:'5px 12px'}}>
                 <table style={{width:'100%',borderCollapse:'collapse',fontSize:10}}>
-                  <thead><tr style={{borderBottom:'1px solid var(--rule-soft)'}}><th style={rg_thS('auto','left')}>Opp Combo</th><th style={rg_thS(54)}>W-L (match)</th><th style={rg_thS(74)}>Combo PPB</th></tr></thead>
+                  <thead><tr style={{borderBottom:'1px solid var(--rule-soft)'}}><th style={{...rg_thS('auto','left'),color:'#fffdf7'}}>Opp Combo</th><th style={{...rg_thS(54),color:'#fffdf7'}}>W-L (match)</th><th style={{...rg_thS(74),color:'#fffdf7'}}>Combo PPB</th></tr></thead>
                   <tbody>{m.topCombos.length===0
-                    ?<tr><td colSpan={3} style={{...rg_tdS,textAlign:'center',color:'var(--ink-faint)',padding:'4px 6px',fontSize:9.5}}>No combo data</td></tr>
+                    ?<tr><td colSpan={3} style={{...rg_tdS,textAlign:'center',color:'#fffdf7',padding:'4px 6px',fontSize:9.5}}>No combo data</td></tr>
                     :m.topCombos.map((c,j)=><tr key={j} style={{borderBottom:j<m.topCombos.length-1?'1px solid var(--rule-soft)':'none'}}>
-                      <td style={{...rg_tdS,textAlign:'left',padding:'4px 6px',fontFamily:"'Space Grotesk',system-ui",fontSize:10.5,fontWeight:500}}>{c.shortName}</td>
-                      <td style={{...rg_tdS,padding:'4px 6px',fontSize:10}}>{c.w}-{c.l}</td>
+                      <td style={{...rg_tdS,color:'#fffdf7',textAlign:'left',padding:'4px 6px',fontFamily:"'Space Grotesk',system-ui",fontSize:10.5,fontWeight:500}}>{c.shortName}</td>
+                      <td style={{...rg_tdS,color:'#fffdf7',padding:'4px 6px',fontSize:10}}>{c.w}-{c.l}</td>
                       <td style={{...rg_tdS,padding:'4px 6px',fontWeight:700,fontSize:10,color:c.matchPPB>=0?'var(--teal-deep)':'var(--danger)'}}>{c.matchPPB>0?'+':''}{c.matchPPB.toFixed(2)}</td>
                     </tr>)}
                   </tbody>
@@ -7492,7 +7492,7 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
 
   const isApex=archetype.startsWith('Apex');
   const archetypeColor=isApex?accent:'var(--teal-deep)';
-  const archetypeTextColor=isApex?'var(--ink)':'var(--paper)';
+  const archetypeTextColor=isApex?'#14241f':'#fffdf7';
 
   // ── PENTAGON ──────────────────────────────────────────────────────────────
   const axes=[
@@ -7539,7 +7539,7 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
     return(
       <div style={{display:'grid',gridTemplateColumns:'82px 1fr 24px',alignItems:'center',gap:8,marginBottom:6}}>
         <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.1em',
-          color:hl?'var(--ink)':'var(--ink-dim)',fontWeight:hl?700:500,textTransform:'uppercase',
+          color:'#fffdf7',fontWeight:hl?700:500,textTransform:'uppercase',
           textAlign:'right',whiteSpace:'nowrap'}}>
           {label}{hl&&<span style={{marginLeft:4,color:accent}}>★</span>}
         </div>
@@ -7550,7 +7550,7 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
             marginLeft:-1,background:'var(--ink-dim)',borderRadius:1}}/>
         </div>
         <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,
-          color:hl?'var(--ink)':'var(--ink-soft)',textAlign:'left'}}>{score}</div>
+          color:'#fffdf7',textAlign:'left'}}>{score}</div>
       </div>
     );
   }
@@ -7624,8 +7624,8 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
           <div style={{marginBottom:2}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:5}}>
               <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,letterSpacing:'0.14em',
-                color:'var(--ink-dim)',fontWeight:600,textTransform:'uppercase'}}>Axis Scores</div>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:'var(--ink-faint)',
+                color:'#fffdf7',fontWeight:600,textTransform:'uppercase'}}>Axis Scores</div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:'#fffdf7',
                 letterSpacing:'0.05em',marginLeft:8}}>pct rank · ★ defining · tick = avg</div>
             </div>
             <AxisBar label="Efficiency"    score={scores.E||0}  highlighted={isApex}/>
@@ -7638,12 +7638,12 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
           {/* Pentagon */}
           <div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
           <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.12em',
-            color:'var(--ink-dim)',fontWeight:600,textTransform:'uppercase',marginBottom:2,
+            color:'#fffdf7',fontWeight:600,textTransform:'uppercase',marginBottom:2,
             display:'flex',gap:12,alignItems:'center'}}>
             <span>Style Radar</span>
-            <span style={{color:'var(--ink-faint)',fontWeight:400,display:'flex',alignItems:'center',gap:4}}>
+            <span style={{color:'#fffdf7',fontWeight:400,display:'flex',alignItems:'center',gap:4}}>
               <svg width={14} height={6} style={{display:'inline-block',verticalAlign:'middle'}}>
-                <line x1={0} y1={3} x2={14} y2={3} stroke="var(--ink-faint)" strokeWidth={1.5} strokeDasharray="3 2"/>
+                <line x1={0} y1={3} x2={14} y2={3} stroke="#fffdf7" strokeWidth={1.5} strokeDasharray="3 2"/>
               </svg>avg
             </span>
           </div>
@@ -7659,7 +7659,7 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
               return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="var(--rule)" strokeWidth={1}/>;
             })}
             <polygon points={controlPolyStr} fill="rgba(0,0,0,0.05)"
-              stroke="var(--ink-faint)" strokeWidth={1.5} strokeDasharray="5 3"/>
+              stroke="#fffdf7" strokeWidth={1.5} strokeDasharray="5 3"/>
             <polygon points={playerPolyStr}
               fill={isApex?'rgba(246,211,53,0.20)':'rgba(46,168,157,0.18)'}
               stroke={isApex?accent:'var(--teal)'} strokeWidth={2.5}/>
@@ -7675,13 +7675,13 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
               const{anchor,dy}=labelProps(a.angle);
               return(
                 <text key={i} x={lp.x} y={lp.y} textAnchor={anchor} dy={dy}
-                  style={{fontFamily:'IBM Plex Mono,monospace',fontSize:9,fill:'var(--ink-dim)',
+                  style={{fontFamily:'IBM Plex Mono,monospace',fontSize:9,fill:'#fffdf7',
                     fontWeight:600,letterSpacing:'0.08em',textTransform:'uppercase'}}>
                   {a.label}
                 </text>
               );
             })}
-            <circle cx={cx} cy={cy} r={3} fill="var(--ink-faint)"/>
+            <circle cx={cx} cy={cy} r={3} fill="#fffdf7"/>
           </svg>
           {/* Translation key */}
           <div style={{width:svgW,marginTop:2}}>
@@ -7695,8 +7695,8 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
               <div key={key} style={{display:'flex',gap:6,alignItems:'baseline',marginBottom:3}}>
                 <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,fontWeight:700,
                   letterSpacing:'0.1em',color:'var(--teal-deep)',flexShrink:0,width:14,textAlign:'right'}}>{key}</div>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:'var(--ink-faint)',lineHeight:1.4}}>
-                  <span style={{fontWeight:600,color:'var(--ink-dim)'}}>{label}</span> — {def}
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:'#fffdf7',lineHeight:1.4}}>
+                  <span style={{fontWeight:600,color:'#fffdf7'}}>{label}</span> — {def}
                 </div>
               </div>
             ))}
@@ -7707,10 +7707,10 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
         {/* RIGHT: Scatter plot — padded down so its center aligns with pentagon center */}
         <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,paddingTop:88}}>
           <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.12em',
-            color:'var(--ink-dim)',fontWeight:600,textTransform:'uppercase',marginBottom:4,
+            color:'#fffdf7',fontWeight:600,textTransform:'uppercase',marginBottom:4,
             display:'flex',gap:12,alignItems:'center'}}>
             <span>Field Style Map</span>
-            <span style={{color:'var(--ink-faint)',fontWeight:400}}>Aggression × Efficiency · all players</span>
+            <span style={{color:'#fffdf7',fontWeight:400}}>Aggression × Efficiency · all players</span>
           </div>
           <svg width={scSize} height={scSize} viewBox={`0 0 ${scSize} ${scSize}`}
             style={{display:'block',overflow:'visible',maxWidth:'100%'}}>
@@ -7726,26 +7726,26 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
             {/* Quadrant labels */}
             {qLabels.map((q,i)=>(
               <text key={i} x={q.x} y={q.y+9} textAnchor={q.ax}
-                style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7,fill:'var(--ink-faintest)',
+                style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7,fill:'#fffdf7',
                   fontWeight:600,letterSpacing:'0.06em',textTransform:'uppercase'}}>{q.sub}</text>
             ))}
             {/* Grid lines */}
             <line x1={scPad.l} y1={midY} x2={scSize-scPad.r} y2={midY}
-              stroke="var(--ink-faint)" strokeWidth={1} strokeDasharray="4 3"/>
+              stroke="#fffdf7" strokeWidth={1} strokeDasharray="4 3"/>
             <line x1={midX} y1={scPad.t} x2={midX} y2={scSize-scPad.b}
-              stroke="var(--ink-faint)" strokeWidth={1} strokeDasharray="4 3"/>
+              stroke="#fffdf7" strokeWidth={1} strokeDasharray="4 3"/>
             {/* Border */}
             <rect x={scPad.l} y={scPad.t} width={scInW} height={scInH}
               fill="none" stroke="var(--rule)" strokeWidth={1}/>
             {/* Axis labels */}
             <text x={scPad.l} y={scSize-2} textAnchor="start"
-              style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7.5,fill:'var(--ink-dim)',
+              style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7.5,fill:'#fffdf7',
                 fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase'}}>LOW AG</text>
             <text x={scSize-scPad.r} y={scSize-2} textAnchor="end"
-              style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7.5,fill:'var(--ink-dim)',
+              style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7.5,fill:'#fffdf7',
                 fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase'}}>HIGH AG</text>
             <text x={scPad.l-4} y={scPad.t} textAnchor="end" dominantBaseline="middle"
-              style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7.5,fill:'var(--ink-dim)',
+              style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7.5,fill:'#fffdf7',
                 fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase'}}
               transform={`rotate(-90,${scPad.l-10},${midY})`}>EFF</text>
             {/* Other players */}
@@ -7754,9 +7754,9 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
               return(
                 <g key={i}>
                   <circle cx={px} cy={py} r={4}
-                    fill="var(--ink-faint)" stroke="var(--paper)" strokeWidth={1}/>
+                    fill="#fffdf7" stroke="var(--paper)" strokeWidth={1}/>
                   <text x={px} y={py-6} textAnchor="middle"
-                    style={{fontFamily:'IBM Plex Mono,monospace',fontSize:6.5,fill:'var(--ink-faint)',
+                    style={{fontFamily:'IBM Plex Mono,monospace',fontSize:6.5,fill:'#fffdf7',
                       fontWeight:500}}>
                     {s.name.split(' ')[0]}
                   </text>
@@ -7772,9 +7772,9 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
                 <g>
                   <circle cx={px} cy={py} r={7}
                     fill={isApex?accent:'var(--teal)'}
-                    stroke="var(--ink)" strokeWidth={2}/>
+                    stroke="#fffdf7" strokeWidth={2}/>
                   <text x={px} y={py-10} textAnchor="middle"
-                    style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7.5,fill:'var(--ink)',
+                    style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7.5,fill:'#fffdf7',
                       fontWeight:700,letterSpacing:'0.04em'}}>
                     {data.player.name.split(' ')[0]}
                   </text>
@@ -7789,7 +7789,7 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
       {/* ── ARCHETYPE GRID ─────────────────────────────────────────────────── */}
       <div style={{marginTop:8}}>
         <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,letterSpacing:'0.14em',
-          color:'var(--ink-dim)',fontWeight:600,textTransform:'uppercase',marginBottom:5}}>All Archetypes</div>
+          color:'#fffdf7',fontWeight:600,textTransform:'uppercase',marginBottom:5}}>All Archetypes</div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:4}}>
           {allArchetypes.map(([name,sub],i)=>{
             const isMe=name===archetype;
@@ -7799,10 +7799,10 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
                 border:isMe?'2px solid var(--ink)':'1px solid var(--rule)',
                 boxShadow:isMe?'2px 2px 0 var(--ink)':'none'}}>
                 <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:9,
-                  fontWeight:isMe?800:600,color:isMe?archetypeTextColor:'var(--ink)',
+                  fontWeight:isMe?800:600,color:isMe?archetypeTextColor:'#14241f',
                   lineHeight:1.2,marginBottom:1}}>{name}</div>
                 <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:6.5,
-                  color:isMe?(isApex?'var(--teal-deep)':'rgba(255,255,255,0.7)'):'var(--ink-faint)',
+                  color:isMe?(isApex?'var(--teal-deep)':'rgba(255,255,255,0.7)'):'#14241f',
                   lineHeight:1.3}}>{sub}</div>
               </div>
             );
@@ -7881,19 +7881,19 @@ function rg_PressureProfilePage({data,accent,pageNum}){
     const fieldFillPct=hasField?Math.min(100,Math.max(0,card.fieldAvgPct)):null;
 
     // Tier vs field average (or absolute if no field data)
-    let tier='',tierColor='var(--ink-dim)';
+    let tier='',tierColor='#14241f';
     if(hasData){
       if(hasField){
         const gap=pct-card.fieldAvgPct;
         if(gap>=20){tier='ELITE';tierColor='var(--teal-deep)';}
         else if(gap>=8){tier='ABOVE AVG';tierColor='var(--teal)';}
-        else if(gap>=-8){tier='NEAR AVG';tierColor='var(--ink-dim)';}
+        else if(gap>=-8){tier='NEAR AVG';tierColor='#14241f';}
         else if(gap>=-20){tier='BELOW AVG';tierColor='#b07a00';}
         else{tier='WELL BELOW';tierColor='var(--danger)';}
       } else {
         if(pct>=80){tier='ELITE';tierColor='var(--teal-deep)';}
         else if(pct>=65){tier='STRONG';tierColor='var(--teal)';}
-        else if(pct>=50){tier='SOLID';tierColor='var(--ink-dim)';}
+        else if(pct>=50){tier='SOLID';tierColor='#14241f';}
         else if(pct>=35){tier='DEVELOPING';tierColor='#b07a00';}
         else{tier='NEEDS WORK';tierColor='var(--danger)';}
       }
@@ -7911,7 +7911,7 @@ function rg_PressureProfilePage({data,accent,pageNum}){
         border:'2px solid var(--rule)',
         borderRadius:8,
         overflow:'hidden',
-        background:'var(--paper)',
+        background:'#fffdf7',
         boxShadow:'3px 3px 0 rgba(20,36,31,0.08)',
       }}>
         {/* Top accent strip */}
@@ -7931,7 +7931,7 @@ function rg_PressureProfilePage({data,accent,pageNum}){
           <div style={{
             fontFamily:"'Space Grotesk',system-ui",
             fontSize:13,fontWeight:800,letterSpacing:'-0.01em',
-            color:'var(--ink)',lineHeight:1.15,
+            color:'#14241f',lineHeight:1.15,
           }}>{card.label}</div>
         </div>
 
@@ -7942,18 +7942,18 @@ function rg_PressureProfilePage({data,accent,pageNum}){
               <div style={{
                 fontFamily:"'Space Grotesk',system-ui",
                 fontSize:56,fontWeight:900,letterSpacing:'-0.04em',lineHeight:1,
-                color:'var(--ink)',fontVariantNumeric:'tabular-nums',
+                color:'#14241f',fontVariantNumeric:'tabular-nums',
               }}>{pct.toFixed(0)}</div>
               <div style={{
                 fontFamily:"'Space Grotesk',system-ui",
-                fontSize:22,fontWeight:700,color:'var(--ink-dim)',lineHeight:1,
+                fontSize:22,fontWeight:700,color:'#14241f',lineHeight:1,
                 marginBottom:4,
               }}>%</div>
             </div>
           ):(
             <div style={{
               fontFamily:"'Space Grotesk',system-ui",
-              fontSize:40,fontWeight:700,color:'var(--ink-faint)',lineHeight:1,
+              fontSize:40,fontWeight:700,color:'#14241f',lineHeight:1,
             }}>—</div>
           )}
           {hasData&&(
@@ -7982,10 +7982,10 @@ function rg_PressureProfilePage({data,accent,pageNum}){
               return(
                 <g>
                   <line x1={tx} y1={-1} x2={tx} y2={barH+tickOverhang+1}
-                    stroke="var(--ink)" strokeWidth={1.5} strokeDasharray="2 1"/>
+                    stroke="#14241f" strokeWidth={1.5} strokeDasharray="2 1"/>
                   <text x={tx} y={barH+tickOverhang+labelGap-1} textAnchor="middle"
                     style={{fontFamily:'IBM Plex Mono,monospace',fontSize:7.5,
-                      fill:'var(--ink-dim)',fontWeight:600}}>
+                      fill:'#14241f',fontWeight:600}}>
                     {`avg ${card.fieldAvgPct.toFixed(0)}%`}
                   </text>
                 </g>
@@ -8000,18 +8000,18 @@ function rg_PressureProfilePage({data,accent,pageNum}){
             <div style={{
               fontFamily:"'IBM Plex Mono',monospace",
               fontSize:10,fontWeight:600,letterSpacing:'0.04em',
-              color:'var(--ink-dim)',
+              color:'#14241f',
             }}>
-              <span style={{color:'var(--ink)',fontWeight:700}}>{card.num}</span>
+              <span style={{color:'#14241f',fontWeight:700}}>{card.num}</span>
               {' / '}
-              <span style={{color:'var(--ink)',fontWeight:700}}>{card.den}</span>
+              <span style={{color:'#14241f',fontWeight:700}}>{card.den}</span>
               {' '}
-              <span style={{fontSize:8.5,letterSpacing:'0.06em',color:'var(--ink-dim)'}}>{card.denomLabel}</span>
+              <span style={{fontSize:8.5,letterSpacing:'0.06em',color:'#14241f'}}>{card.denomLabel}</span>
             </div>
           ):(
             <div style={{
               fontFamily:"'IBM Plex Mono',monospace",
-              fontSize:9,color:'var(--ink-faint)',letterSpacing:'0.06em',
+              fontSize:9,color:'#14241f',letterSpacing:'0.06em',
               fontStyle:'italic',
             }}>{card.zeroMsg}</div>
           )}
@@ -8025,7 +8025,7 @@ function rg_PressureProfilePage({data,accent,pageNum}){
           <div style={{
             fontFamily:"'Barlow',system-ui",
             fontSize:10.5,lineHeight:1.55,
-            color:'var(--ink-soft)',
+            color:'#14241f',
           }}>{card.description}</div>
         </div>
       </div>
@@ -8038,7 +8038,7 @@ function rg_PressureProfilePage({data,accent,pageNum}){
       <div style={{
         fontFamily:"'Barlow',system-ui",
         fontSize:11,lineHeight:1.5,
-        color:'var(--ink-dim)',
+        color:'#fffdf7',
         marginBottom:20,
         maxWidth:580,
       }}>
