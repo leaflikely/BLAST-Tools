@@ -3811,6 +3811,8 @@ function cs_buildComboProfile(comboName) {
 }
 
 // Renders the full combo profile into #cs-profile-area.
+// All conditional HTML sections are built as plain string variables BEFORE
+// the main innerHTML assignment so there are no nested backtick literals.
 function cs_renderComboProfile() {
   const name = cs_PROFILE_COMBO;
   const d = cs_buildComboProfile(name);
@@ -3824,35 +3826,69 @@ function cs_renderComboProfile() {
     const n = d.finishes[key] || 0;
     if (!n) return '';
     const pct = (n / maxF * 100).toFixed(1);
-    return `<div class="cs-fin-bar-row">
-      <span class="cs-fin-bar-label">${label}</span>
-      <div class="cs-fin-bar-track"><div class="cs-fin-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-      <span class="cs-fin-bar-count">×${n}</span>
-    </div>`;
+    return '<div class="cs-fin-bar-row">'
+      + '<span class="cs-fin-bar-label">' + label + '</span>'
+      + '<div class="cs-fin-bar-track"><div class="cs-fin-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>'
+      + '<span class="cs-fin-bar-count">×' + n + '</span>'
+      + '</div>';
   };
 
   const mkSideCard = (sd, lbl, cls) => {
     const wpc = sd.winPct >= 60 ? 'var(--success)' : sd.winPct >= 40 ? 'var(--accent)' : 'var(--danger)';
-    return `<div class="cs-side-card ${cls}">
-      <div class="cs-side-bg-letter">${lbl}</div>
-      <div class="cs-side-lbl">${lbl} SIDE</div>
-      <div class="cs-side-big" style="color:${wpc}">${sd.battles > 0 ? sd.winPct.toFixed(1) + '%' : '—'}</div>
-      <div class="cs-side-small">${sd.battles} battles${sd.battles > 0 ? ' · PPB ' + (sd.ppb >= 0 ? '+' : '') + sd.ppb.toFixed(2) : ''}</div>
-    </div>`;
+    return '<div class="cs-side-card ' + cls + '">'
+      + '<div class="cs-side-bg-letter">' + lbl + '</div>'
+      + '<div class="cs-side-lbl">' + lbl + ' SIDE</div>'
+      + '<div class="cs-side-big" style="color:' + wpc + '">' + (sd.battles > 0 ? sd.winPct.toFixed(1) + '%' : '—') + '</div>'
+      + '<div class="cs-side-small">' + sd.battles + ' battles' + (sd.battles > 0 ? ' · PPB ' + (sd.ppb >= 0 ? '+' : '') + sd.ppb.toFixed(2) : '') + '</div>'
+      + '</div>';
   };
 
+  // Build finish section HTML strings (no backticks)
+  const scoredFinHTML =
+    (finBar('X',      '#f6d335',             'X')  || '') +
+    (finBar('O',      'var(--teal)',         'O')  || '') +
+    (finBar('B',      'var(--success)',      'B')  || '') +
+    (finBar('S',      '#a2b0ab',             'S')  || '') +
+    (finBar('OX_won', 'rgba(46,168,157,.6)', 'OX→') || '') +
+    (finBar('OO_won', 'rgba(46,168,157,.6)', 'OO→') || '') +
+    (!d.finishes.X && !d.finishes.O && !d.finishes.B && !d.finishes.S && !d.finishes.OX_won && !d.finishes.OO_won
+      ? '<span style="font-size:10px;font-family:monospace;color:var(--muted)">none</span>' : '');
+
+  const allowedFinHTML =
+    (finBar('OX', 'var(--danger)', 'OX') || '') +
+    (finBar('OO', '#d46855',       'OO') || '') +
+    (finBar('OB', '#c08070',       'OB') || '') +
+    (finBar('OS', '#8a9e97',       'OS') || '') +
+    (!d.finishes.OX && !d.finishes.OO && !d.finishes.OB && !d.finishes.OS
+      ? '<span style="font-size:10px;font-family:monospace;color:var(--muted)">none</span>' : '');
+
+  // Build matchup table HTML string (no backticks)
   const matchupRows = d.matchupList.map(m => {
     const wc = m.winPct >= 60 ? 'var(--success)' : m.winPct >= 40 ? 'var(--accent)' : 'var(--danger)';
     const pc = m.ppb > 0 ? 'var(--teal)' : m.ppb < 0 ? 'var(--danger)' : 'var(--muted)';
-    return `<tr>
-      <td style="text-align:left;font-weight:600;font-family:'Barlow',sans-serif;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cs_escHTML(m.oppCombo)}</td>
-      <td>${m.battles}</td>
-      <td style="color:var(--muted)">${m.w}–${m.l}</td>
-      <td style="color:${wc};font-weight:600">${m.winPct.toFixed(1)}%</td>
-      <td style="color:${pc};font-weight:700">${m.ppb >= 0 ? '+' : ''}${m.ppb.toFixed(2)}</td>
-    </tr>`;
+    return '<tr>'
+      + '<td style="text-align:left;font-weight:600;font-family:Barlow,sans-serif;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + cs_escHTML(m.oppCombo) + '</td>'
+      + '<td>' + m.battles + '</td>'
+      + '<td style="color:var(--muted)">' + m.w + '–' + m.l + '</td>'
+      + '<td style="color:' + wc + ';font-weight:600">' + m.winPct.toFixed(1) + '%</td>'
+      + '<td style="color:' + pc + ';font-weight:700">' + (m.ppb >= 0 ? '+' : '') + m.ppb.toFixed(2) + '</td>'
+      + '</tr>';
   }).join('');
 
+  const matchupSectionHTML = d.matchupList.length > 0
+    ? '<div class="cs-profile-card full">'
+      + '<div class="cs-card-title">Matchups vs Opponent Combos'
+      + (!cs_FILE_HAS_BOTH_COMBOS ? ' — <span style="color:var(--muted);font-weight:400">TSV: limited data available</span>' : '')
+      + '</div>'
+      + '<div class="cs-matchup-tbl-wrap">'
+      + '<table class="cs-matchup-tbl"><thead><tr>'
+      + '<th style="text-align:left">OPPONENT COMBO</th>'
+      + '<th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>'
+      + '</tr></thead><tbody>' + matchupRows + '</tbody></table>'
+      + '</div></div>'
+    : '';
+
+  // Build users table HTML string (no backticks)
   const filteredUsers = d.userList.filter(u => u.battles >= cs_PROFILE_USERS_MIN);
   const shownUsers    = cs_PROFILE_USERS_EXPANDED ? filteredUsers : filteredUsers.slice(0, 5);
   const hiddenUsers   = filteredUsers.length - shownUsers.length;
@@ -3860,24 +3896,35 @@ function cs_renderComboProfile() {
   const userRows = shownUsers.map((u, i) => {
     const wc = u.winPct >= 60 ? 'var(--success)' : u.winPct >= 40 ? 'var(--accent)' : 'var(--danger)';
     const pc = u.ppb > 0 ? 'var(--teal)' : u.ppb < 0 ? 'var(--danger)' : 'var(--muted)';
-    return `<tr>
-      <td style="text-align:left;color:var(--muted);width:28px;font-family:'IBM Plex Mono',monospace;font-size:11px">${i + 1}</td>
-      <td style="text-align:left;font-weight:600;font-family:'Barlow',sans-serif">${cs_escHTML(u.name)}</td>
-      <td>${u.battles}</td>
-      <td style="color:var(--muted)">${u.w}–${u.l}</td>
-      <td style="color:${wc};font-weight:600">${u.winPct.toFixed(1)}%</td>
-      <td style="color:${pc};font-weight:700">${u.ppb >= 0 ? '+' : ''}${u.ppb.toFixed(2)}</td>
-    </tr>`;
+    return '<tr>'
+      + '<td style="text-align:left;color:var(--muted);width:28px;font-family:monospace;font-size:11px">' + (i + 1) + '</td>'
+      + '<td style="text-align:left;font-weight:600;font-family:Barlow,sans-serif">' + cs_escHTML(u.name) + '</td>'
+      + '<td>' + u.battles + '</td>'
+      + '<td style="color:var(--muted)">' + u.w + '–' + u.l + '</td>'
+      + '<td style="color:' + wc + ';font-weight:600">' + u.winPct.toFixed(1) + '%</td>'
+      + '<td style="color:' + pc + ';font-weight:700">' + (u.ppb >= 0 ? '+' : '') + u.ppb.toFixed(2) + '</td>'
+      + '</tr>';
   }).join('');
 
   const expandBtnHtml = hiddenUsers > 0
-    ? `<button class="cs-expand-users-btn" onclick="cs_PROFILE_USERS_EXPANDED=true;cs_renderComboProfile()">Show ${hiddenUsers} more ▾</button>`
+    ? '<button class="cs-expand-users-btn" onclick="cs_PROFILE_USERS_EXPANDED=true;cs_renderComboProfile()">Show ' + hiddenUsers + ' more ▾</button>'
     : (cs_PROFILE_USERS_EXPANDED && filteredUsers.length > 5)
-      ? `<button class="cs-expand-users-btn" onclick="cs_PROFILE_USERS_EXPANDED=false;cs_renderComboProfile()">Show fewer ▴</button>`
+      ? '<button class="cs-expand-users-btn" onclick="cs_PROFILE_USERS_EXPANDED=false;cs_renderComboProfile()">Show fewer ▴</button>'
       : '';
+
+  const usersSectionHTML = filteredUsers.length === 0
+    ? '<div style="font-size:11px;font-family:monospace;color:var(--muted);padding:16px 0">No players meet the minimum battles threshold (' + cs_PROFILE_USERS_MIN + ').</div>'
+    : '<div class="cs-matchup-tbl-wrap">'
+      + '<table class="cs-matchup-tbl"><thead><tr>'
+      + '<th style="text-align:left;width:28px">#</th>'
+      + '<th style="text-align:left">PLAYER</th>'
+      + '<th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>'
+      + '</tr></thead><tbody>' + userRows + '</tbody></table>'
+      + '</div>';
 
   const backLabel = (cs_PREV_VIEW || 'build') === 'matchup' ? 'Matchup Stats' : 'Build Stats';
 
+  // Now the main template has no nested backticks — only plain ${variable} interpolations
   area.innerHTML = `
     <button class="cs-back-btn" onclick="cs_showView(cs_PREV_VIEW||'build')">← Back to ${backLabel}</button>
 
@@ -3908,7 +3955,6 @@ function cs_renderComboProfile() {
     </div>
 
     <div class="cs-profile-grid">
-
       <div class="cs-profile-card">
         <div class="cs-card-title">Stadium Side Split</div>
         <div class="cs-sides">
@@ -3916,46 +3962,20 @@ function cs_renderComboProfile() {
           ${mkSideCard(d.sideX, 'X', 'x')}
         </div>
       </div>
-
       <div class="cs-profile-card">
         <div class="cs-card-title">Finish Type Breakdown</div>
         <div class="cs-fin-cols">
           <div>
             <div class="cs-fin-section-lbl">SCORED</div>
-            ${finBar('X',      '#f6d335',              'X')   || ''}
-            ${finBar('O',      'var(--teal)',          'O')   || ''}
-            ${finBar('B',      'var(--success)',       'B')   || ''}
-            ${finBar('S',      '#a2b0ab',              'S')   || ''}
-            ${finBar('OX_won', 'rgba(46,168,157,.6)',  'OX→') || ''}
-            ${finBar('OO_won', 'rgba(46,168,157,.6)',  'OO→') || ''}
-            ${!d.finishes.X && !d.finishes.O && !d.finishes.B && !d.finishes.S && !d.finishes.OX_won && !d.finishes.OO_won
-              ? '<span style="font-size:10px;font-family:monospace;color:var(--muted)">none</span>' : ''}
+            ${scoredFinHTML}
           </div>
           <div>
             <div class="cs-fin-section-lbl">ALLOWED</div>
-            ${finBar('OX', 'var(--danger)', 'OX') || ''}
-            ${finBar('OO', '#d46855',       'OO') || ''}
-            ${finBar('OB', '#c08070',       'OB') || ''}
-            ${finBar('OS', '#8a9e97',       'OS') || ''}
-            ${!d.finishes.OX && !d.finishes.OO && !d.finishes.OB && !d.finishes.OS
-              ? '<span style="font-size:10px;font-family:monospace;color:var(--muted)">none</span>' : ''}
+            ${allowedFinHTML}
           </div>
         </div>
       </div>
-
-      ${d.matchupList.length > 0 ? `<div class="cs-profile-card full">
-        <div class="cs-card-title">Matchups vs Opponent Combos${!cs_FILE_HAS_BOTH_COMBOS ? ' — <span style="color:var(--muted);font-weight:400">TSV: limited data available</span>' : ''}</div>
-        <div class="cs-matchup-tbl-wrap">
-          <table class="cs-matchup-tbl">
-            <thead><tr>
-              <th style="text-align:left">OPPONENT COMBO</th>
-              <th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>
-            </tr></thead>
-            <tbody>${matchupRows}</tbody>
-          </table>
-        </div>
-      </div>` : ''}
-
+      ${matchupSectionHTML}
     </div>
 
     <div class="cs-users-section">
@@ -3969,18 +3989,7 @@ function cs_renderComboProfile() {
           ${expandBtnHtml}
         </div>
       </div>
-      ${filteredUsers.length === 0
-        ? `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);padding:16px 0">No players meet the minimum battles threshold (${cs_PROFILE_USERS_MIN}).</div>`
-        : `<div class="cs-matchup-tbl-wrap">
-            <table class="cs-matchup-tbl">
-              <thead><tr>
-                <th style="text-align:left;width:28px">#</th>
-                <th style="text-align:left">PLAYER</th>
-                <th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>
-              </tr></thead>
-              <tbody>${userRows}</tbody>
-            </table>
-          </div>`}
+      ${usersSectionHTML}
     </div>
   `;
 }
