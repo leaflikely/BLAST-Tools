@@ -823,6 +823,187 @@
       border-bottom: 1px solid var(--border);
       background: var(--surface2);
     }
+
+    /* ── COMBO PROFILE ───────────────────────────────────────────────── */
+    #tool-combostats .cs-back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: none; border: 1px solid var(--border2);
+      border-radius: 6px; padding: 7px 14px; margin-bottom: 20px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+      letter-spacing: 0.08em; color: var(--muted); cursor: pointer;
+      transition: all .15s;
+    }
+    #tool-combostats .cs-back-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+    #tool-combostats .cs-profile-header {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    #tool-combostats .cs-profile-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 30px;
+      letter-spacing: -0.01em; color: #fff; line-height: 1.1;
+      margin-bottom: 14px;
+    }
+    #tool-combostats .cs-profile-chips {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    #tool-combostats .cs-profile-chip {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 16px;
+    }
+    #tool-combostats .cs-profile-chip-lbl {
+      font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+      letter-spacing: 0.18em; color: var(--muted); margin-bottom: 3px;
+      text-transform: uppercase;
+    }
+    #tool-combostats .cs-profile-chip-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 22px; color: #fff; line-height: 1;
+    }
+    #tool-combostats .cs-profile-chip-val.pos { color: var(--teal); }
+    #tool-combostats .cs-profile-chip-val.neg { color: var(--danger); }
+    #tool-combostats .cs-profile-chip-val.hi  { color: var(--success); }
+    #tool-combostats .cs-profile-chip-val.lo  { color: var(--danger); }
+    #tool-combostats .cs-profile-chip-val.mid { color: var(--accent); }
+
+    #tool-combostats .cs-profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    #tool-combostats .cs-profile-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 18px;
+    }
+    #tool-combostats .cs-profile-card.full { grid-column: 1 / -1; }
+    #tool-combostats .cs-card-title {
+      font-family: 'IBM Plex Mono', monospace; font-weight: 700;
+      font-size: 9px; letter-spacing: 0.14em; color: var(--muted);
+      text-transform: uppercase; margin-bottom: 14px;
+      border-bottom: 1px solid var(--border); padding-bottom: 8px;
+    }
+
+    /* Side split cards inside combo profile */
+    #tool-combostats .cs-sides {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    #tool-combostats .cs-side-card {
+      position: relative; overflow: hidden;
+      border-radius: 6px; padding: 12px 14px;
+      border: 1px solid var(--border);
+    }
+    #tool-combostats .cs-side-card.b { background: rgba(46,168,157,0.07); }
+    #tool-combostats .cs-side-card.x { background: rgba(246,211,53,0.06); }
+    #tool-combostats .cs-side-bg-letter {
+      position: absolute; right: -4px; bottom: -8px;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+      font-size: 64px; line-height: 1; opacity: 0.07; pointer-events: none;
+    }
+    #tool-combostats .cs-side-lbl {
+      font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+      letter-spacing: 0.18em; color: var(--muted); margin-bottom: 6px;
+    }
+    #tool-combostats .cs-side-big {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 28px; line-height: 1; margin-bottom: 4px;
+    }
+    #tool-combostats .cs-side-small {
+      font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted);
+    }
+
+    /* Finish bar chart inside combo profile */
+    #tool-combostats .cs-fin-section-lbl {
+      font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+      letter-spacing: 0.16em; color: var(--muted); margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    #tool-combostats .cs-fin-cols {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
+    #tool-combostats .cs-fin-bar-row {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 5px;
+    }
+    #tool-combostats .cs-fin-bar-label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+      color: var(--text); width: 32px; flex-shrink: 0;
+    }
+    #tool-combostats .cs-fin-bar-track {
+      flex: 1; height: 7px; background: var(--surface3);
+      border-radius: 4px; overflow: hidden;
+    }
+    #tool-combostats .cs-fin-bar-fill { height: 100%; border-radius: 4px; }
+    #tool-combostats .cs-fin-bar-count {
+      font-family: 'IBM Plex Mono', monospace; font-size: 9.5px;
+      color: var(--muted); width: 24px; text-align: right; flex-shrink: 0;
+    }
+
+    /* Matchup table inside combo profile */
+    #tool-combostats .cs-matchup-tbl-wrap {
+      border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    }
+    #tool-combostats table.cs-matchup-tbl {
+      width: 100%; border-collapse: collapse;
+      font-family: 'Barlow', sans-serif; font-size: 13px;
+    }
+    #tool-combostats table.cs-matchup-tbl thead {
+      background: var(--surface2);
+    }
+    #tool-combostats table.cs-matchup-tbl th {
+      padding: 9px 12px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 8.5px;
+      letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase;
+      font-weight: 600; white-space: nowrap;
+      border-bottom: 1px solid var(--border); text-align: right;
+    }
+    #tool-combostats table.cs-matchup-tbl th:first-child { text-align: left; }
+    #tool-combostats table.cs-matchup-tbl td {
+      padding: 8px 12px; border-bottom: 1px solid rgba(36,53,48,0.5);
+      vertical-align: middle; font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    #tool-combostats table.cs-matchup-tbl td:first-child { text-align: left; }
+    #tool-combostats table.cs-matchup-tbl tr:last-child td { border-bottom: none; }
+    #tool-combostats table.cs-matchup-tbl tr:hover td { background: rgba(46,168,157,0.04); }
+
+    /* Top users section inside combo profile */
+    #tool-combostats .cs-users-section { margin-top: 20px; }
+    #tool-combostats .cs-users-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px; gap: 12px; flex-wrap: wrap;
+    }
+    #tool-combostats .cs-users-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 15px; letter-spacing: 0.04em; color: #fff;
+    }
+    #tool-combostats .cs-users-controls {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    #tool-combostats .cs-users-min-label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+      letter-spacing: 0.1em; color: var(--muted);
+    }
+    #tool-combostats .cs-users-min-input {
+      width: 52px; text-align: center;
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 4px 2px;
+    }
+    #tool-combostats .cs-expand-users-btn {
+      background: none; border: 1px solid var(--border2); border-radius: 5px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.08em;
+      color: var(--teal); padding: 5px 10px; cursor: pointer; transition: all .15s;
+    }
+    #tool-combostats .cs-expand-users-btn:hover { border-color: var(--teal); background: rgba(46,168,157,0.08); }
+
+    /* clickable combo name in build table */
+    #tool-combostats .combo-cell-link {
+      cursor: pointer; color: #fff; text-decoration: none;
+    }
+    #tool-combostats .combo-cell-link:hover { color: var(--teal-soft); text-decoration: underline; }
   
 
     /* ── TOOL CONTAINERS ── */
@@ -2478,6 +2659,9 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
       <div id="cs-view-matchup" style="display:none">
         <div id="cs-results-area" style="display:none"></div>
       </div>
+      <div id="cs-view-profile" style="display:none">
+        <div id="cs-profile-area"></div>
+      </div>
     </div>
 
   </div>
@@ -2769,8 +2953,11 @@ let cs_EXPANDED_ROWS_MATCHUP = new Set();
 let cs_EXPANDED_ROWS_BUILD = new Set();
 let cs_LAST_RESULTS = [];
 let cs_LAST_BUILD_RESULTS = [];
-let cs_CURRENT_VIEW = 'build'; // 'build' | 'matchup'
+let cs_CURRENT_VIEW = 'build'; // 'build' | 'matchup' | 'profile'
 let cs_LAST_BLADE = '', cs_LAST_RATCHET = '', cs_LAST_BIT = '';
+let cs_PROFILE_COMBO = ''; // the combo name currently shown in the profile view
+let cs_PROFILE_USERS_EXPANDED = false; // whether the top-users list is fully expanded
+let cs_PROFILE_USERS_MIN = 10; // minimum battles threshold for the users list
 
 // ══════════════════════════════════════════════════════════════════════════
 //  FILE HANDLING — data always arrives from the app's shared CSV
@@ -3027,8 +3214,11 @@ function cs_showView(view) {
   cs_CURRENT_VIEW = view;
   document.getElementById('cs-tab-build').classList.toggle('active', view === 'build');
   document.getElementById('cs-tab-matchup').classList.toggle('active', view === 'matchup');
-  document.getElementById('cs-view-build').style.display   = view === 'build'   ? '' : 'none';
-  document.getElementById('cs-view-matchup').style.display = view === 'matchup' ? '' : 'none';
+  document.getElementById('cs-view-build').style.display    = view === 'build'   ? '' : 'none';
+  document.getElementById('cs-view-matchup').style.display  = view === 'matchup' ? '' : 'none';
+  document.getElementById('cs-view-profile').style.display  = view === 'profile' ? '' : 'none';
+  // Hide subnav tabs when showing a profile so the back button is the only nav
+  document.getElementById('cs-subnav').style.display = view === 'profile' ? 'none' : '';
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -3330,7 +3520,7 @@ function cs_renderTable(rows, oppColLabel, mode) {
         <td style="width:28px;padding-right:4px">
           <button class="expand-btn ${isExp?'open':''}" onclick="cs_toggleRow(${idx},'${mode}')">${isExp?'▾':'▸'}</button>
         </td>
-        <td class="combo-cell" title="${cs_escAttr(m.oppCombo)}">${cs_escHTML(m.oppCombo)}</td>
+        <td class="combo-cell" title="${cs_escAttr(m.oppCombo)}">${mode === 'build' ? `<span class="combo-cell-link" onclick="cs_openComboProfile(${JSON.stringify(m.oppCombo)})">${cs_escHTML(m.oppCombo)}</span>` : cs_escHTML(m.oppCombo)}</td>
         <td class="num-cell" style="width:90px">
           <div class="winbar-wrap">
             <div class="winbar"><div class="winbar-fill" style="width:${barPct.toFixed(1)}%;background:var(--border2)"></div></div>
@@ -3489,6 +3679,305 @@ function cs_toggleRow(idx, mode) {
   if (set.has(idx)) set.delete(idx);
   else set.add(idx);
   cs_refreshTableView(mode);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  COMBO PROFILE
+// ══════════════════════════════════════════════════════════════════════════
+let cs_PREV_VIEW = 'build'; // the view to go back to when leaving a profile
+
+function cs_openComboProfile(comboName) {
+  cs_PREV_VIEW = cs_CURRENT_VIEW;
+  cs_PROFILE_COMBO = comboName;
+  cs_PROFILE_USERS_EXPANDED = false;
+  cs_PROFILE_USERS_MIN = cs_MIN_SAMPLE;
+  cs_showView('profile');
+  cs_renderComboProfile();
+}
+
+// Compute all stats for a specific combo name across selected tournaments.
+function cs_buildComboProfile(comboName) {
+  const battleRows = cs_ALL_ROWS.filter(r => {
+    if (!cs_SELECTED_TOURNAMENTS.has((r.tournament || '').trim())) return false;
+    const ft = r.finishType;
+    if ((ft === 'LER Strike' || ft === 'Launch Error') && r.points === 0) return false;
+    return true;
+  });
+
+  let w = 0, l = 0, ptsW = 0, ptsL = 0;
+  const sideB = { w:0, l:0, ptsW:0, ptsL:0 };
+  const sideX = { w:0, l:0, ptsW:0, ptsL:0 };
+  const finishes = { X:0, O:0, B:0, S:0, OX_won:0, OO_won:0, OX:0, OO:0, OB:0, OS:0 };
+  const users = {};
+  const opps  = {};
+
+  const wonMap  = { 'Xtreme Finish':'X',  'Over Finish':'O',  'Burst Finish':'B',  'Spin Finish':'S'  };
+  const lostMap = { 'Xtreme Finish':'OX', 'Over Finish':'OO', 'Burst Finish':'OB', 'Spin Finish':'OS' };
+
+  function tallyUser(player, won, pts) {
+    if (!player) return;
+    if (!users[player]) users[player] = { w:0, l:0, ptsW:0, ptsL:0 };
+    if (won) { users[player].w++; users[player].ptsW += pts; }
+    else     { users[player].l++; users[player].ptsL += pts; }
+  }
+
+  function tallyOpp(oppCombo, won, pts) {
+    const key = oppCombo || '(unknown)';
+    if (!opps[key]) opps[key] = { w:0, l:0, ptsW:0, ptsL:0 };
+    if (won) { opps[key].w++; opps[key].ptsW += pts; }
+    else     { opps[key].l++; opps[key].ptsL += pts; }
+  }
+
+  function tallyFinish(ft, won, pts) {
+    if (ft === 'Own Finish') {
+      if (won) finishes[pts === 3 ? 'OX_won' : 'OO_won']++;
+      else     finishes[pts === 3 ? 'OX'     : 'OO'    ]++;
+      return;
+    }
+    if (won) { const k = wonMap[ft];  if (k) finishes[k]++; }
+    else     { const k = lostMap[ft]; if (k) finishes[k]++; }
+  }
+
+  function tallyBattle(won, pts, ft, player, side, oppCombo) {
+    if (won) { w++; ptsW += pts; } else { l++; ptsL += pts; }
+    const sideKey = (side || '').toUpperCase().startsWith('B') ? 'B' : 'X';
+    const sd = sideKey === 'B' ? sideB : sideX;
+    if (won) { sd.w++; sd.ptsW += pts; } else { sd.l++; sd.ptsL += pts; }
+    tallyFinish(ft, won, pts);
+    tallyUser(player, won, pts);
+    tallyOpp(oppCombo, won, pts);
+  }
+
+  battleRows.forEach(r => {
+    const ft  = r.finishType;
+    const pts = r.points;
+    if (cs_FILE_HAS_BOTH_COMBOS) {
+      const p1match = r.p1combo === comboName;
+      const p2match = r.p2combo === comboName;
+      if (p1match && !p2match) {
+        const won = r.winner.toLowerCase() === r.p1.toLowerCase();
+        tallyBattle(won, pts, ft, r.p1, r.p1side, r.p2combo);
+      } else if (p2match && !p1match) {
+        const won = r.winner.toLowerCase() === r.p2.toLowerCase();
+        tallyBattle(won, pts, ft, r.p2, r.p2side, r.p1combo);
+      } else if (p1match && p2match) {
+        // Mirror matchup: count from the winner's perspective only
+        const winnerIsP1 = r.winner.toLowerCase() === r.p1.toLowerCase();
+        tallyBattle(true, pts, ft,
+          winnerIsP1 ? r.p1 : r.p2,
+          winnerIsP1 ? r.p1side : r.p2side,
+          comboName);
+      }
+    } else {
+      // Format B (TSV): only winner combo is known
+      if (r.winnerCombo === comboName) {
+        tallyBattle(true, pts, ft, r.winner, '', '(field — limited data)');
+      }
+    }
+  });
+
+  const battles = w + l;
+  const winPct  = battles > 0 ? w / battles * 100 : 0;
+  const ppb     = battles > 0 ? (ptsW - ptsL) / battles : 0;
+
+  const mkSide = sd => {
+    const b = sd.w + sd.l;
+    return { ...sd, battles: b, winPct: b > 0 ? sd.w / b * 100 : 0, ppb: b > 0 ? (sd.ptsW - sd.ptsL) / b : 0 };
+  };
+
+  const userList = Object.entries(users).map(([name, d]) => {
+    const b = d.w + d.l;
+    return { name, battles: b, w: d.w, l: d.l,
+      winPct: b > 0 ? d.w / b * 100 : 0,
+      ppb:    b > 0 ? (d.ptsW - d.ptsL) / b : 0 };
+  }).sort((a, b) => b.ppb - a.ppb || b.battles - a.battles);
+
+  const matchupList = Object.entries(opps).map(([oppCombo, d]) => {
+    const b = d.w + d.l;
+    return { oppCombo, battles: b, w: d.w, l: d.l,
+      winPct: b > 0 ? d.w / b * 100 : 0,
+      ppb:    b > 0 ? (d.ptsW - d.ptsL) / b : 0 };
+  }).filter(m => m.battles > 0).sort((a, b) => b.battles - a.battles);
+
+  return { battles, w, l, winPct, ppb,
+    sideB: mkSide(sideB), sideX: mkSide(sideX),
+    finishes, userList, matchupList,
+    uniqueUsers: Object.keys(users).length };
+}
+
+// Renders the full combo profile into #cs-profile-area.
+function cs_renderComboProfile() {
+  const name = cs_PROFILE_COMBO;
+  const d = cs_buildComboProfile(name);
+  const area = document.getElementById('cs-profile-area');
+
+  const ppbCls = d.ppb > 0 ? 'pos' : d.ppb < 0 ? 'neg' : '';
+  const wpCls  = d.winPct >= 60 ? 'hi' : d.winPct >= 40 ? 'mid' : 'lo';
+
+  const maxF = Math.max(1, ...Object.values(d.finishes));
+  const finBar = (key, color, label) => {
+    const n = d.finishes[key] || 0;
+    if (!n) return '';
+    const pct = (n / maxF * 100).toFixed(1);
+    return `<div class="cs-fin-bar-row">
+      <span class="cs-fin-bar-label">${label}</span>
+      <div class="cs-fin-bar-track"><div class="cs-fin-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="cs-fin-bar-count">×${n}</span>
+    </div>`;
+  };
+
+  const mkSideCard = (sd, lbl, cls) => {
+    const wpc = sd.winPct >= 60 ? 'var(--success)' : sd.winPct >= 40 ? 'var(--accent)' : 'var(--danger)';
+    return `<div class="cs-side-card ${cls}">
+      <div class="cs-side-bg-letter">${lbl}</div>
+      <div class="cs-side-lbl">${lbl} SIDE</div>
+      <div class="cs-side-big" style="color:${wpc}">${sd.battles > 0 ? sd.winPct.toFixed(1) + '%' : '—'}</div>
+      <div class="cs-side-small">${sd.battles} battles${sd.battles > 0 ? ' · PPB ' + (sd.ppb >= 0 ? '+' : '') + sd.ppb.toFixed(2) : ''}</div>
+    </div>`;
+  };
+
+  const matchupRows = d.matchupList.map(m => {
+    const wc = m.winPct >= 60 ? 'var(--success)' : m.winPct >= 40 ? 'var(--accent)' : 'var(--danger)';
+    const pc = m.ppb > 0 ? 'var(--teal)' : m.ppb < 0 ? 'var(--danger)' : 'var(--muted)';
+    return `<tr>
+      <td style="text-align:left;font-weight:600;font-family:'Barlow',sans-serif;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cs_escHTML(m.oppCombo)}</td>
+      <td>${m.battles}</td>
+      <td style="color:var(--muted)">${m.w}–${m.l}</td>
+      <td style="color:${wc};font-weight:600">${m.winPct.toFixed(1)}%</td>
+      <td style="color:${pc};font-weight:700">${m.ppb >= 0 ? '+' : ''}${m.ppb.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  const filteredUsers = d.userList.filter(u => u.battles >= cs_PROFILE_USERS_MIN);
+  const shownUsers    = cs_PROFILE_USERS_EXPANDED ? filteredUsers : filteredUsers.slice(0, 5);
+  const hiddenUsers   = filteredUsers.length - shownUsers.length;
+
+  const userRows = shownUsers.map((u, i) => {
+    const wc = u.winPct >= 60 ? 'var(--success)' : u.winPct >= 40 ? 'var(--accent)' : 'var(--danger)';
+    const pc = u.ppb > 0 ? 'var(--teal)' : u.ppb < 0 ? 'var(--danger)' : 'var(--muted)';
+    return `<tr>
+      <td style="text-align:left;color:var(--muted);width:28px;font-family:'IBM Plex Mono',monospace;font-size:11px">${i + 1}</td>
+      <td style="text-align:left;font-weight:600;font-family:'Barlow',sans-serif">${cs_escHTML(u.name)}</td>
+      <td>${u.battles}</td>
+      <td style="color:var(--muted)">${u.w}–${u.l}</td>
+      <td style="color:${wc};font-weight:600">${u.winPct.toFixed(1)}%</td>
+      <td style="color:${pc};font-weight:700">${u.ppb >= 0 ? '+' : ''}${u.ppb.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  const expandBtnHtml = hiddenUsers > 0
+    ? `<button class="cs-expand-users-btn" onclick="cs_PROFILE_USERS_EXPANDED=true;cs_renderComboProfile()">Show ${hiddenUsers} more ▾</button>`
+    : (cs_PROFILE_USERS_EXPANDED && filteredUsers.length > 5)
+      ? `<button class="cs-expand-users-btn" onclick="cs_PROFILE_USERS_EXPANDED=false;cs_renderComboProfile()">Show fewer ▴</button>`
+      : '';
+
+  const backLabel = (cs_PREV_VIEW || 'build') === 'matchup' ? 'Matchup Stats' : 'Build Stats';
+
+  area.innerHTML = `
+    <button class="cs-back-btn" onclick="cs_showView(cs_PREV_VIEW||'build')">← Back to ${backLabel}</button>
+
+    <div class="cs-profile-header">
+      <div class="cs-profile-name">${cs_escHTML(name)}</div>
+      <div class="cs-profile-chips">
+        <div class="cs-profile-chip">
+          <div class="cs-profile-chip-lbl">BATTLES</div>
+          <div class="cs-profile-chip-val">${d.battles}</div>
+        </div>
+        <div class="cs-profile-chip">
+          <div class="cs-profile-chip-lbl">UNIQUE USERS</div>
+          <div class="cs-profile-chip-val">${d.uniqueUsers}</div>
+        </div>
+        <div class="cs-profile-chip">
+          <div class="cs-profile-chip-lbl">WIN %</div>
+          <div class="cs-profile-chip-val ${wpCls}">${d.winPct.toFixed(1)}%</div>
+        </div>
+        <div class="cs-profile-chip">
+          <div class="cs-profile-chip-lbl">PPB</div>
+          <div class="cs-profile-chip-val ${ppbCls}">${d.ppb >= 0 ? '+' : ''}${d.ppb.toFixed(2)}</div>
+        </div>
+        <div class="cs-profile-chip">
+          <div class="cs-profile-chip-lbl">W – L</div>
+          <div class="cs-profile-chip-val">${d.w}–${d.l}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cs-profile-grid">
+
+      <div class="cs-profile-card">
+        <div class="cs-card-title">Stadium Side Split</div>
+        <div class="cs-sides">
+          ${mkSideCard(d.sideB, 'B', 'b')}
+          ${mkSideCard(d.sideX, 'X', 'x')}
+        </div>
+      </div>
+
+      <div class="cs-profile-card">
+        <div class="cs-card-title">Finish Type Breakdown</div>
+        <div class="cs-fin-cols">
+          <div>
+            <div class="cs-fin-section-lbl">SCORED</div>
+            ${finBar('X',      '#f6d335',              'X')   || ''}
+            ${finBar('O',      'var(--teal)',          'O')   || ''}
+            ${finBar('B',      'var(--success)',       'B')   || ''}
+            ${finBar('S',      '#a2b0ab',              'S')   || ''}
+            ${finBar('OX_won', 'rgba(46,168,157,.6)',  'OX→') || ''}
+            ${finBar('OO_won', 'rgba(46,168,157,.6)',  'OO→') || ''}
+            ${!d.finishes.X && !d.finishes.O && !d.finishes.B && !d.finishes.S && !d.finishes.OX_won && !d.finishes.OO_won
+              ? '<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">none</span>' : ''}
+          </div>
+          <div>
+            <div class="cs-fin-section-lbl">ALLOWED</div>
+            ${finBar('OX', 'var(--danger)', 'OX') || ''}
+            ${finBar('OO', '#d46855',       'OO') || ''}
+            ${finBar('OB', '#c08070',       'OB') || ''}
+            ${finBar('OS', '#8a9e97',       'OS') || ''}
+            ${!d.finishes.OX && !d.finishes.OO && !d.finishes.OB && !d.finishes.OS
+              ? '<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">none</span>' : ''}
+          </div>
+        </div>
+      </div>
+
+      ${d.matchupList.length > 0 ? `<div class="cs-profile-card full">
+        <div class="cs-card-title">Matchups vs Opponent Combos${!cs_FILE_HAS_BOTH_COMBOS ? ' — <span style="color:var(--muted);font-weight:400">TSV: limited data available</span>' : ''}</div>
+        <div class="cs-matchup-tbl-wrap">
+          <table class="cs-matchup-tbl">
+            <thead><tr>
+              <th style="text-align:left">OPPONENT COMBO</th>
+              <th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>
+            </tr></thead>
+            <tbody>${matchupRows}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+
+    </div>
+
+    <div class="cs-users-section">
+      <div class="cs-users-header">
+        <div class="cs-users-title">Top Users — ranked by PPB</div>
+        <div class="cs-users-controls">
+          <span class="cs-users-min-label">MIN BATTLES</span>
+          <input type="number" class="cs-users-min-input" min="0" step="1"
+            value="${cs_PROFILE_USERS_MIN}"
+            onchange="cs_PROFILE_USERS_MIN=Math.max(0,parseInt(this.value)||0);cs_renderComboProfile()" />
+          ${expandBtnHtml}
+        </div>
+      </div>
+      ${filteredUsers.length === 0
+        ? `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);padding:16px 0">No players meet the minimum battles threshold (${cs_PROFILE_USERS_MIN}).</div>`
+        : `<div class="cs-matchup-tbl-wrap">
+            <table class="cs-matchup-tbl">
+              <thead><tr>
+                <th style="text-align:left;width:28px">#</th>
+                <th style="text-align:left">PLAYER</th>
+                <th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>
+              </tr></thead>
+              <tbody>${userRows}</tbody>
+            </table>
+          </div>`}
+    </div>
+  `;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -4367,25 +4856,8 @@ function ph_renderProfile(name){
         </tbody></table>
       </div>
 
-      <!-- Shuffle Slots -->
-      <div class="profile-card">
-        <div class="profile-card-title">Shuffle Slot Performance</div>
-        <div class="slot-grid">
-          ${s.slotStats.map(sl=>{
-            const wpc=sl.winPct>=60?'var(--win)':sl.winPct>=40?'var(--warn)':'var(--loss)';
-            const ppbc=sl.ppb>0?'var(--teal)':sl.ppb<0?'var(--loss)':'var(--muted)';
-            return`<div class="slot-cell">
-              <div class="slot-num">SLOT ${sl.slot}</div>
-              <div class="slot-big" style="color:${wpc}">${sl.winPct.toFixed(1)}<span style="font-size:14px;color:var(--muted)">%</span></div>
-              <div class="slot-ppb" style="color:${ppbc}">${sl.ppb>=0?'+':''}${sl.ppb.toFixed(2)} PPB</div>
-              <div class="slot-wl">${sl.w}W–${sl.l}L · ${sl.battles} battles</div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>
-
       <!-- Stadium Sides -->
-      <div class="profile-card">
+      <div class="profile-card" style="grid-column:1/-1">
         <div class="profile-card-title">Stadium Side Split</div>
         <div class="sides">
           ${[{key:'sideB',lbl:'B',cls:'b'},{key:'sideX',lbl:'X',cls:'x'}].map(({key,lbl,cls})=>{
