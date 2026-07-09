@@ -5765,16 +5765,32 @@ function rg_formatPlacement(rank) {
 // ── POPULATE TOURNAMENT LIST ──────────────────────────────────────────────────
 function rg_populateTournaments() {
   const counts = {};
-  rg_ALL_ROWS.forEach(r => { const t=(r.Tournament||'').trim(); if(t) counts[t]=(counts[t]||0)+1; });
+  // Track the earliest Timestamp seen for each tournament so the list can be
+  // sorted by when the event actually happened, not just by row order. A
+  // missing/unparseable Timestamp falls back to 0 (oldest), same convention
+  // used elsewhere in this file (e.g. rg_getMatchKey), so it sorts to the
+  // bottom rather than crashing the sort.
+  const earliestTs = {};
+  rg_ALL_ROWS.forEach(r => {
+    const t = (r.Tournament||'').trim();
+    if (!t) return;
+    counts[t] = (counts[t]||0) + 1;
+    const ts = new Date(r.Timestamp||0).getTime();
+    const validTs = isNaN(ts) ? 0 : ts;
+    if (earliestTs[t] === undefined || validTs < earliestTs[t]) earliestTs[t] = validTs;
+  });
   const list = document.getElementById('rg-tournament-list');
   list.innerHTML = '';
-  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t, n]) => {
+  // Newest event on top, oldest on bottom.
+  Object.entries(counts).sort((a,b)=>(earliestTs[b[0]]||0)-(earliestTs[a[0]]||0)).forEach(([t, n]) => {
     const btn = document.createElement('button');
     btn.className = 'option-btn' + (t === rg_SELECTED_TOURNAMENT ? ' selected' : '');
     const rec = rg_CHALLONGE_LINKS[t];
     const hasLink = !!(rec && Array.isArray(rec.placements) && rec.placements.length > 0);
     const notifier = hasLink ? '' : '<span class="rg-no-link-dot" title="No Challonge link set yet \u2014 add one on the next step so placements auto-fill"></span>';
-    btn.innerHTML = '<span>'+t+notifier+'</span><span class="option-meta">'+n+' battles</span>';
+    const swissRounds = (rec && typeof rec.swissRounds === 'number' && rec.swissRounds > 0) ? rec.swissRounds : null;
+    const swissLabel = swissRounds ? ' \u00b7 ' + swissRounds + ' Swiss rounds' : '';
+    btn.innerHTML = '<span>'+t+notifier+'</span><span class="option-meta">'+n+' battles'+swissLabel+'</span>';
     btn.onclick = () => {
       document.querySelectorAll('#rg-tournament-list .option-btn').forEach(b=>b.classList.remove('selected'));
       btn.classList.add('selected');
