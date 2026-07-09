@@ -2957,7 +2957,8 @@ let cs_CURRENT_VIEW = 'build'; // 'build' | 'matchup' | 'profile'
 let cs_LAST_BLADE = '', cs_LAST_RATCHET = '', cs_LAST_BIT = '';
 let cs_PROFILE_COMBO = ''; // the combo name currently shown in the profile view
 let cs_PROFILE_USERS_EXPANDED = false; // whether the top-users list is fully expanded
-let cs_PROFILE_USERS_MIN = 10; // minimum battles threshold for the users list
+let cs_PROFILE_USERS_MIN = 10;    // minimum battles threshold for the users list
+let cs_PROFILE_MATCHUP_MIN = 0;   // minimum battles threshold for the matchup table
 
 // ══════════════════════════════════════════════════════════════════════════
 //  FILE HANDLING — data always arrives from the app's shared CSV
@@ -3455,10 +3456,17 @@ function cs_renderResultsView(mode) {
   const metaNoun = mode === 'build' ? 'combo' : 'opponent combo';
   const countNoun = mode === 'build' ? 'combo' : 'matchup';
 
+  const titleLabel = mode === 'build'
+    ? (cs_escHTML(comboLabel) || 'All Combos')
+    : (cs_escHTML(comboLabel) || 'All Combos');
+  const modeTag = mode === 'build'
+    ? '<span style="font-family:monospace;font-size:10px;letter-spacing:.14em;color:var(--muted);font-weight:400;margin-left:10px;vertical-align:middle">BUILD STATS</span>'
+    : '<span style="font-family:monospace;font-size:10px;letter-spacing:.14em;color:var(--muted);font-weight:400;margin-left:10px;vertical-align:middle">MATCHUP STATS</span>';
+
   area.innerHTML = `
     <div class="results-header">
       <div>
-        <div class="results-title">${cs_escHTML(comboLabel) || 'All Combos'}</div>
+        <div class="results-title">${titleLabel}${modeTag}</div>
         <div class="results-combo" style="margin-top:5px">${filterDesc}${wildcardNote}</div>
         <div class="results-meta">${data.length} ${metaNoun}${data.length===1?'':'s'} · ${tournsLabel}</div>
         ${formatBNote}
@@ -3696,6 +3704,7 @@ function cs_openComboProfile(comboName) {
   cs_PROFILE_COMBO = comboName;
   cs_PROFILE_USERS_EXPANDED = false;
   cs_PROFILE_USERS_MIN = cs_MIN_SAMPLE;
+  cs_PROFILE_MATCHUP_MIN = 0;
   cs_showView('profile');
   cs_renderComboProfile();
 }
@@ -3863,7 +3872,8 @@ function cs_renderComboProfile() {
       ? '<span style="font-size:10px;font-family:monospace;color:var(--muted)">none</span>' : '');
 
   // Build matchup table HTML string (no backticks)
-  const matchupRows = d.matchupList.map(m => {
+  const filteredMatchups = d.matchupList.filter(m => m.battles >= cs_PROFILE_MATCHUP_MIN);
+  const matchupRows = filteredMatchups.map(m => {
     const wc = m.winPct >= 60 ? 'var(--success)' : m.winPct >= 40 ? 'var(--accent)' : 'var(--danger)';
     const pc = m.ppb > 0 ? 'var(--teal)' : m.ppb < 0 ? 'var(--danger)' : 'var(--muted)';
     return '<tr>'
@@ -3874,18 +3884,31 @@ function cs_renderComboProfile() {
       + '<td style="color:' + pc + ';font-weight:700">' + (m.ppb >= 0 ? '+' : '') + m.ppb.toFixed(2) + '</td>'
       + '</tr>';
   }).join('');
+  const matchupHiddenCount = d.matchupList.length - filteredMatchups.length;
 
   const matchupSectionHTML = d.matchupList.length > 0
     ? '<div class="cs-profile-card full">'
-      + '<div class="cs-card-title">Matchups vs Opponent Combos'
-      + (!cs_FILE_HAS_BOTH_COMBOS ? ' — <span style="color:var(--muted);font-weight:400">TSV: limited data available</span>' : '')
+      + '<div class="cs-card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+      + '<span>Matchups vs Opponent Combos'
+      + (!cs_FILE_HAS_BOTH_COMBOS ? ' — <span style="color:var(--muted);font-weight:400">TSV: limited data</span>' : '')
+      + '</span>'
+      + '<span style="display:flex;align-items:center;gap:6px">'
+      + '<span style="font-family:monospace;font-size:8px;letter-spacing:.1em;color:var(--muted)">MIN BATTLES</span>'
+      + '<input type="number" class="cs-users-min-input" min="0" step="1" value="' + cs_PROFILE_MATCHUP_MIN + '"'
+      + ' onchange="cs_PROFILE_MATCHUP_MIN=Math.max(0,parseInt(this.value)||0);cs_renderComboProfile()"'
+      + ' style="width:46px" />'
+      + (matchupHiddenCount > 0 ? '<span style="font-family:monospace;font-size:9px;color:var(--muted)">(' + matchupHiddenCount + ' hidden)</span>' : '')
+      + '</span>'
       + '</div>'
-      + '<div class="cs-matchup-tbl-wrap">'
-      + '<table class="cs-matchup-tbl"><thead><tr>'
-      + '<th style="text-align:left">OPPONENT COMBO</th>'
-      + '<th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>'
-      + '</tr></thead><tbody>' + matchupRows + '</tbody></table>'
-      + '</div></div>'
+      + (filteredMatchups.length === 0
+        ? '<div style="font-size:11px;font-family:monospace;color:var(--muted);padding:14px 0">No matchups meet the minimum battles threshold (' + cs_PROFILE_MATCHUP_MIN + ').</div>'
+        : '<div class="cs-matchup-tbl-wrap">'
+          + '<table class="cs-matchup-tbl"><thead><tr>'
+          + '<th style="text-align:left">OPPONENT COMBO</th>'
+          + '<th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>'
+          + '</tr></thead><tbody>' + matchupRows + '</tbody></table>'
+          + '</div>')
+      + '</div>'
     : '';
 
   // Build users table HTML string (no backticks)
