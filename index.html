@@ -3514,13 +3514,18 @@ function cs_renderTable(rows, oppColLabel, mode) {
     const ppbColor = m.ppb > 0 ? 'var(--win-col)' : m.ppb < 0 ? 'var(--loss-col)' : 'var(--muted)';
     const ppbStr   = (m.ppb > 0 ? '+' : '') + m.ppb.toFixed(2);
     const isExp    = expandedSet.has(idx);
+    // Build combo cell separately to avoid nested backtick literals.
+    // cs_escAttr on the JSON-stringified name makes it safe inside an HTML attribute.
+    const comboCell = mode === 'build'
+      ? '<span class="combo-cell-link" onclick="cs_openComboProfile(' + cs_escAttr(JSON.stringify(m.oppCombo)) + ')">' + cs_escHTML(m.oppCombo) + '</span>'
+      : cs_escHTML(m.oppCombo);
 
     return `
       <tr class="${isExp?'expanded':''}" id="mrow-${mode}-${idx}">
         <td style="width:28px;padding-right:4px">
           <button class="expand-btn ${isExp?'open':''}" onclick="cs_toggleRow(${idx},'${mode}')">${isExp?'▾':'▸'}</button>
         </td>
-        <td class="combo-cell" title="${cs_escAttr(m.oppCombo)}">${mode === 'build' ? `<span class="combo-cell-link" onclick="cs_openComboProfile(${JSON.stringify(m.oppCombo)})">${cs_escHTML(m.oppCombo)}</span>` : cs_escHTML(m.oppCombo)}</td>
+        <td class="combo-cell" title="${cs_escAttr(m.oppCombo)}">${comboCell}</td>
         <td class="num-cell" style="width:90px">
           <div class="winbar-wrap">
             <div class="winbar"><div class="winbar-fill" style="width:${barPct.toFixed(1)}%;background:var(--border2)"></div></div>
