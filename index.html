@@ -2260,8 +2260,8 @@ print-color-adjust: exact;
 background: #d0d0d0 }
 #tool-reportgen .report-pages { display: flex;
 flex-direction: column;
-gap: 20px;
-padding: 20px 0 60px;
+gap: 32px;
+padding: 24px 0 60px;
 align-items: center }
 @media print {
   #tool-reportgen .report-wrapper { background: transparent }
@@ -6414,7 +6414,7 @@ function rg_openInlinePreview(player) {
   scaler.style.transform = 'scale('+scale+')';
   scaler.style.width = '816px';
   scaler.style.height = 'auto';
-  document.querySelector('.preview-scroll-box').style.maxHeight = Math.round(700*scale)+'px';
+  document.querySelector('.preview-scroll-box').style.maxHeight = Math.round(1056*scale + 48)+'px';
   const container = document.getElementById('rg-inline-report-pages');
   if (!rg_inlineReportRoot) rg_inlineReportRoot = ReactDOM.createRoot(container);
   renderReportInto(rg_inlineReportRoot, rg_COMPUTED_STATS[player]);
@@ -7397,19 +7397,20 @@ function rg_SL({children,style}){return <div style={{fontFamily:"'IBM Plex Mono'
 function rg_SV({children,size='lg',style}){const sz={xl:72,lg:44,md:28,sm:20};return <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:sz[size],fontWeight:700,lineHeight:0.95,letterSpacing:'-0.02em',color:'var(--ink)',fontVariantNumeric:'tabular-nums',...style}}>{children}</div>;}
 function rg_ST({num,title,sub}){return(<div style={{display:'flex',alignItems:'baseline',gap:16,borderBottom:'2px solid var(--ink)',paddingBottom:10,marginBottom:20}}><div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.2em',color:'var(--accent)',fontWeight:700}}>&sect;{num}</div><h2 style={{margin:0,fontFamily:"'Space Grotesk',system-ui",fontSize:22,fontWeight:700,letterSpacing:'-0.01em',color:'var(--ink)'}}>{title}</h2>{sub&&<div style={{marginLeft:'auto',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.1em',color:'var(--ink-faint)',textTransform:'uppercase'}}>{sub}</div>}</div>);}
 
-function rg_Page({children,num,total,label,footer}){
-  return(<div style={{width:816,height:1056,background:'var(--paper)',padding:'44px 56px 36px',display:'flex',flexDirection:'column',color:'var(--ink)',fontFamily:"'Barlow',system-ui",position:'relative',boxShadow:'0 2px 4px rgba(0,0,0,0.08),0 20px 60px -20px rgba(0,0,0,0.2)',margin:'0 auto',pageBreakAfter:'always',breakAfter:'page',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
-    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,letterSpacing:'0.18em',color:'var(--ink-faint)',textTransform:'uppercase',marginBottom:20}}>
-      <div>NCBL &middot; Tournament Report</div>
-      <div>{String(num).padStart(2,'0')} / {String(total).padStart(2,'0')} &mdash; {label}</div>
+function rg_Page({children,num,total,label,footer,noHeader}){
+  return(<div style={{width:816,height:1056,background:'var(--paper)',padding:0,display:'flex',flexDirection:'column',color:'var(--ink)',fontFamily:"'Barlow',system-ui",position:'relative',boxShadow:'0 2px 4px rgba(0,0,0,0.08),0 20px 60px -20px rgba(0,0,0,0.2)',margin:'0 auto',pageBreakAfter:'always',breakAfter:'page',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
+    {!noHeader&&<div style={{width:'100%',background:'var(--teal-deep)',padding:'0 56px',height:36,display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
+      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.2em',color:'rgba(255,255,255,0.75)',textTransform:'uppercase',fontWeight:500}}>NCBL &middot; Tournament Report</div>
+      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.2em',color:'rgba(255,255,255,0.75)',textTransform:'uppercase',fontWeight:500}}>{String(num).padStart(2,'0')} / {String(total).padStart(2,'0')} &mdash; {label}</div>
+    </div>}
+    <div style={{flex:1,display:'flex',flexDirection:'column',padding:noHeader?'44px 56px 24px':'32px 56px 24px',minHeight:0,overflow:'hidden'}}>
+      {children}
     </div>
-    <div style={{flex:1,display:'flex',flexDirection:'column',minHeight:0}}>{children}</div>
-    <div style={{marginTop:14,paddingTop:10,borderTop:'1px solid var(--rule)',display:'flex',justifyContent:'space-between',fontFamily:"'IBM Plex Mono',monospace",fontSize:9,letterSpacing:'0.14em',color:'var(--ink-faint)',textTransform:'uppercase'}}>
-      <div>{footer||'NorCal Beyblade League \u00b7 NCBLAST'}</div><div>ncblast.pages.dev</div>
+    <div style={{padding:'8px 56px 16px',borderTop:'1px solid var(--rule)',display:'flex',justifyContent:'space-between',fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.14em',color:'var(--ink-faint)',textTransform:'uppercase',flexShrink:0}}>
+      <div>{footer||'NorCal Beyblade League · NCBLAST'}</div><div>ncblast.pages.dev</div>
     </div>
   </div>);
 }
-
 function rg_Avatar({name,size=100}){
   const initials=(name||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
   return(<div style={{width:size,height:size,borderRadius:size,background:'conic-gradient(from 140deg,var(--teal-deep),var(--teal),var(--teal-deep))',border:'3px solid var(--paper)',boxShadow:'0 0 0 3px var(--accent),0 12px 32px -8px rgba(0,0,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -7428,8 +7429,8 @@ function rg_CoverPage({data,accent,logoSrc}){
     return <div style={{padding:'5px 10px',borderRadius:5,background:m.result==='win'?accent:'#c23a2a',color:m.result==='win'?'#0e1512':'white',fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:700,letterSpacing:'0.04em',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>{m.w}-{m.l}</div>;
   }
 
-  return(<rg_Page num={1} total={rg_TOTAL_PAGES} label="Cover">
-    <div style={{position:'absolute',top:0,left:0,right:0,height:14,background:'repeating-linear-gradient(115deg,var(--teal-deep) 0 16px,var(--teal) 16px 34px,var(--accent) 34px 42px,var(--teal) 42px 58px)'}}/>
+  return(<rg_Page num={1} total={rg_TOTAL_PAGES} label="Cover" noHeader={true}>
+    <div style={{position:'absolute',top:0,left:0,right:0,height:10,background:'repeating-linear-gradient(115deg,var(--teal-deep) 0 16px,var(--teal) 16px 34px,var(--accent) 34px 42px,var(--teal) 42px 58px)',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}/>
     <div style={{display:'flex',alignItems:'center',gap:16,marginTop:8,marginBottom:22}}>
       <img src={logoSrc} alt="NCBL" style={{width:52,height:52,objectFit:'contain'}}/>
       <div>
