@@ -6412,9 +6412,14 @@ function rg_openInlinePreview(player) {
   const scale = Math.min(1, (panelWidth - 2) / 816);
   const scaler = document.getElementById('rg-inline-preview-scaler');
   scaler.style.transform = 'scale('+scale+')';
+  scaler.style.transformOrigin = 'top left';
   scaler.style.width = '816px';
   scaler.style.height = 'auto';
-  document.querySelector('.preview-scroll-box').style.maxHeight = Math.round(1056*scale + 48)+'px';
+  // The scroll box clips the scaled pages. Since transform:scale doesn't affect
+  // layout dimensions, the scroll box sees pages at their natural 1056px height.
+  // We set maxHeight slightly taller than one natural page so one full page is
+  // always visible and the grey gap below it hints at the next page.
+  document.querySelector('.preview-scroll-box').style.maxHeight = '1100px';
   const container = document.getElementById('rg-inline-report-pages');
   if (!rg_inlineReportRoot) rg_inlineReportRoot = ReactDOM.createRoot(container);
   renderReportInto(rg_inlineReportRoot, rg_COMPUTED_STATS[player]);
