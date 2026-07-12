@@ -5209,7 +5209,7 @@ function tr_downloadHTML() {
 body{background:#223834!important;}
 #generator,#toolbar{display:none!important;}
 #report-output{display:block!important;}
-@media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;background:transparent!important;}.report-pages>div{box-shadow:none!important;break-after:page;page-break-after:always;}.report-pages>div:last-child{break-after:auto;page-break-after:auto;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}}
+@media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;background:transparent!important;}.rg-page-div{box-shadow:none!important;margin:0!important;break-after:page;page-break-after:always;}.rg-page-div:last-child{break-after:auto;page-break-after:auto;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}}
 @page{size:letter;margin:0;}
 </style></head><body>
 <div class="report-wrapper"><div class="report-pages">${pagesHTML}</div></div>
@@ -6501,7 +6501,20 @@ function rg_backToTournament() {
 
 function rg_downloadReportHTML() {
   const pagesEl = document.getElementById('rg-report-pages');
-  const pagesHTML = pagesEl.innerHTML;
+  // React renders JSX component names as lowercase custom HTML elements.
+  // These are display:inline by default and have no size constraints.
+  // Replace them with divs/spans so the downloaded file lays out correctly.
+  let pagesHTML = pagesEl.innerHTML
+    .replace(/<rg_page /g,  '<div class="rg-page-div" ')
+    .replace(/<\/rg_page>/g, '</div>')
+    .replace(/<rg_st /g,    '<div class="rg-st-div" ')
+    .replace(/<\/rg_st>/g,  '</div>')
+    .replace(/<rg_sv /g,    '<div class="rg-sv-div" ')
+    .replace(/<\/rg_sv>/g,  '</div>')
+    .replace(/<rg_sl /g,    '<div class="rg-sl-div" ')
+    .replace(/<\/rg_sl>/g,  '</div>')
+    .replace(/<rg_avatar /g,'<div class="rg-avatar-div" ')
+    .replace(/<\/rg_avatar>/g,'</div>');
 
   const players = Array.from(rg_SELECTED_PLAYERS);
   const stem = rg_buildFileStem(players[0] || 'Player', rg_SELECTED_TOURNAMENT);
@@ -6534,10 +6547,17 @@ function rg_downloadReportHTML() {
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
 ${allStyles}
-    body{background:#223834!important;}
+    body{background:#d0d0d0!important;}
+    /* React custom elements replaced with divs — restore their display/layout */
+    .rg-page-div{width:816px;height:1056px;background:var(--paper);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;margin:0 auto 32px;break-after:page;page-break-after:always;box-shadow:0 2px 4px rgba(0,0,0,0.1),0 20px 60px -20px rgba(0,0,0,0.2);}
+    .rg-page-div:last-child{break-after:auto;page-break-after:auto;}
+    .rg-st-div{display:flex;align-items:baseline;}
+    .rg-sv-div{display:block;font-family:'Space Grotesk',system-ui;font-size:44px;font-weight:700;line-height:0.95;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;}
+    .rg-sl-div{display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;font-weight:500;}
+    .rg-avatar-div{display:flex;align-items:center;justify-content:center;border-radius:50%;}
     #generator,#toolbar{display:none!important;}
     #report-output{display:block!important;}
-    @media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;background:transparent!important;}.report-pages>div{box-shadow:none!important;break-after:page;page-break-after:always;}.report-pages>div:last-child{break-after:auto;page-break-after:auto;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}}
+    @media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;background:transparent!important;}.rg-page-div{box-shadow:none!important;margin:0!important;break-after:page;page-break-after:always;}.rg-page-div:last-child{break-after:auto;page-break-after:auto;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}}
     @page{size:letter;margin:0;}
   </style>
 </head>
