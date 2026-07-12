@@ -2143,8 +2143,8 @@ color: var(--g-text) }
 #tool-reportgen .preview-scroll-box { border: 1px solid var(--g-border);
 border-radius: 0 0 8px 8px;
 overflow: auto;
-max-height: 520px;
-background: #223834 }
+max-height: 600px;
+background: #d0d0d0 }
 #tool-reportgen .preview-scaler { transform-origin: top left }
 #tool-reportgen #rg-preview-modal { display: none;
 position: fixed;
@@ -2183,8 +2183,10 @@ padding: 28px 0;
 background: #223834 }
 #tool-reportgen .modal-inner { display: flex;
 flex-direction: column;
-gap: 28px;
+gap: 20px;
 align-items: center;
+background: #d0d0d0;
+padding: 20px;
 --accent: #f6d335;
 --teal-deep: #0f6b67;
 --teal: #2ea89d;
@@ -2255,16 +2257,17 @@ line-height: 1.5 }
 font-family: "Barlow", system-ui, sans-serif;
 -webkit-print-color-adjust: exact;
 print-color-adjust: exact;
-background: #223834 }
+background: #d0d0d0 }
 #tool-reportgen .report-pages { display: flex;
 flex-direction: column;
-gap: 28px;
-padding: 40px 0 80px;
+gap: 20px;
+padding: 20px 0 60px;
 align-items: center }
 @media print {
-  #tool-reportgen .report-wrapper { background: white }
+  #tool-reportgen .report-wrapper { background: transparent }
   #tool-reportgen .report-pages { gap: 0;
-padding: 0 }
+padding: 0;
+background: transparent }
   #tool-reportgen .report-pages > div { box-shadow: none !important;
 margin: 0 !important;
 break-after: page;
@@ -2394,7 +2397,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
           </div>
           <div class="preview-scroll-box">
             <div id="rg-inline-preview-scaler" class="preview-scaler">
-              <div id="rg-inline-report-pages" style="display:flex;flex-direction:column;gap:28px;padding:28px;align-items:center;--accent:#f6d335;--teal-deep:#0f6b67;--teal:#2ea89d;--teal-soft:#a8d9d2;--paper:#fffdf7;--paper-soft:#f3efde;--ink:#14241f;--ink-soft:#3c4f4a;--ink-dim:#14241f;--ink-faint:#14241f;--ink-faintest:#14241f;--rule:#c8d5d0;--rule-soft:#e4ebe7;--danger:#c23a2a;--danger-soft:#e89a90;-webkit-print-color-adjust:exact;print-color-adjust:exact;"></div>
+              <div id="rg-inline-report-pages" style="display:flex;flex-direction:column;gap:20px;padding:20px;align-items:center;background:#d0d0d0;--accent:#f6d335;--teal-deep:#0f6b67;--teal:#2ea89d;--teal-soft:#a8d9d2;--paper:#fffdf7;--paper-soft:#f3efde;--ink:#14241f;--ink-soft:#3c4f4a;--ink-dim:#14241f;--ink-faint:#14241f;--ink-faintest:#14241f;--rule:#c8d5d0;--rule-soft:#e4ebe7;--danger:#c23a2a;--danger-soft:#e89a90;-webkit-print-color-adjust:exact;print-color-adjust:exact;"></div>
             </div>
           </div>
         </div>
@@ -5206,7 +5209,7 @@ function tr_downloadHTML() {
 body{background:#223834!important;}
 #generator,#toolbar{display:none!important;}
 #report-output{display:block!important;}
-@media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;}.report-pages>div{box-shadow:none!important;break-after:page;page-break-after:always;}.report-pages>div:last-child{break-after:auto;page-break-after:auto;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}}
+@media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;background:transparent!important;}.report-pages>div{box-shadow:none!important;break-after:page;page-break-after:always;}.report-pages>div:last-child{break-after:auto;page-break-after:auto;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}}
 @page{size:letter;margin:0;}
 </style></head><body>
 <div class="report-wrapper"><div class="report-pages">${pagesHTML}</div></div>
@@ -6529,7 +6532,7 @@ ${allStyles}
     body{background:#223834!important;}
     #generator,#toolbar{display:none!important;}
     #report-output{display:block!important;}
-    @media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;}.report-pages>div{box-shadow:none!important;break-after:page;page-break-after:always;}.report-pages>div:last-child{break-after:auto;page-break-after:auto;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}}
+    @media print{body{background:white!important;}.report-pages{gap:0!important;padding:0!important;background:transparent!important;}.report-pages>div{box-shadow:none!important;break-after:page;page-break-after:always;}.report-pages>div:last-child{break-after:auto;page-break-after:auto;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}}
     @page{size:letter;margin:0;}
   </style>
 </head>
@@ -7395,7 +7398,7 @@ function rg_SV({children,size='lg',style}){const sz={xl:72,lg:44,md:28,sm:20};re
 function rg_ST({num,title,sub}){return(<div style={{display:'flex',alignItems:'baseline',gap:16,borderBottom:'2px solid var(--ink)',paddingBottom:10,marginBottom:20}}><div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.2em',color:'var(--accent)',fontWeight:700}}>&sect;{num}</div><h2 style={{margin:0,fontFamily:"'Space Grotesk',system-ui",fontSize:22,fontWeight:700,letterSpacing:'-0.01em',color:'var(--ink)'}}>{title}</h2>{sub&&<div style={{marginLeft:'auto',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.1em',color:'var(--ink-faint)',textTransform:'uppercase'}}>{sub}</div>}</div>);}
 
 function rg_Page({children,num,total,label,footer}){
-  return(<div style={{width:816,height:1056,background:'var(--paper)',padding:'44px 56px 36px',display:'flex',flexDirection:'column',color:'var(--ink)',fontFamily:"'Barlow',system-ui",position:'relative',boxShadow:'0 1px 0 rgba(0,0,0,0.04),0 20px 60px -20px rgba(0,0,0,0.25)',margin:'0 auto',pageBreakAfter:'always',breakAfter:'page',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
+  return(<div style={{width:816,minHeight:1056,background:'var(--paper)',padding:'52px 64px 44px',display:'flex',flexDirection:'column',color:'var(--ink)',fontFamily:"'Barlow',system-ui",position:'relative',boxShadow:'0 2px 4px rgba(0,0,0,0.08),0 20px 60px -20px rgba(0,0,0,0.2)',margin:'0 auto',pageBreakAfter:'always',breakAfter:'page',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,letterSpacing:'0.18em',color:'var(--ink-faint)',textTransform:'uppercase',marginBottom:20}}>
       <div>NCBL &middot; Tournament Report</div>
       <div>{String(num).padStart(2,'0')} / {String(total).padStart(2,'0')} &mdash; {label}</div>
@@ -7983,7 +7986,7 @@ function rg_MatchRecapPages({data,accent,startPageNum}){
             </div>}
             <div style={{border:'1px solid var(--rule)',borderRadius:5,overflow:'hidden'}}>
               <div style={{display:'flex',alignItems:'center',gap:10,padding:'7px 12px',background:'var(--paper-soft)',borderBottom:'1px solid var(--rule-soft)'}}>
-                <div style={{padding:'3px 8px',borderRadius:3,background:isWin?'var(--teal-deep)':'var(--danger)',color:'white',fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,fontWeight:700,letterSpacing:'0.1em',flexShrink:0}}>{m.result}</div>
+                <div style={{padding:'3px 8px',borderRadius:3,background:isWin?'var(--teal-deep)':'var(--danger)',color:'white',fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,fontWeight:700,letterSpacing:'0.1em',flexShrink:0,WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>{m.result}</div>
                 <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:700,color:'#14241f'}}>vs {m.opponent}</div>
                 <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,color:'#14241f',marginLeft:'auto'}}>{m.setW}-{m.setL} sets &middot; {m.battles} btl &middot; NET {m.net>=0?'+':''}{m.net} &middot; PPB <span style={{color:m.mPPB>=0?'var(--teal-deep)':'var(--danger)',fontWeight:700}}>{m.mPPB>=0?'+':''}{m.mPPB.toFixed(2)}</span></div>
               </div>
@@ -8120,7 +8123,7 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
 
       {/* ── ARCHETYPE CARD ─────────────────────────────────────────────────── */}
       <div style={{background:archetypeColor,borderRadius:8,padding:'12px 18px',marginBottom:10,
-        border:'2px solid var(--ink)',boxShadow:'4px 4px 0 var(--ink)',position:'relative',overflow:'hidden'}}>
+        border:'2px solid var(--ink)',boxShadow:'4px 4px 0 var(--ink)',position:'relative',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
         <div style={{position:'absolute',right:-16,top:-28,fontFamily:"'Space Grotesk',system-ui",
           fontSize:110,fontWeight:900,color:'rgba(255,255,255,0.07)',lineHeight:1,pointerEvents:'none',
           letterSpacing:'-0.06em',userSelect:'none'}}>★</div>
