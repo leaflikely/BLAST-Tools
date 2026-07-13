@@ -6501,20 +6501,9 @@ function rg_backToTournament() {
 
 function rg_downloadReportHTML() {
   const pagesEl = document.getElementById('rg-report-pages');
-  // React renders JSX component names as lowercase custom HTML elements.
-  // These are display:inline by default and have no size constraints.
-  // Replace them with divs/spans so the downloaded file lays out correctly.
-  let pagesHTML = pagesEl.innerHTML
-    .replace(/<rg_page /g,  '<div class="rg-page-div" ')
-    .replace(/<\/rg_page>/g, '</div>')
-    .replace(/<rg_st /g,    '<div class="rg-st-div" ')
-    .replace(/<\/rg_st>/g,  '</div>')
-    .replace(/<rg_sv /g,    '<div class="rg-sv-div" ')
-    .replace(/<\/rg_sv>/g,  '</div>')
-    .replace(/<rg_sl /g,    '<div class="rg-sl-div" ')
-    .replace(/<\/rg_sl>/g,  '</div>')
-    .replace(/<rg_avatar /g,'<div class="rg-avatar-div" ')
-    .replace(/<\/rg_avatar>/g,'</div>');
+  // Page components now render as proper React components (uppercase names),
+  // so no custom-element replacement is needed for the page structure.
+  let pagesHTML = pagesEl.innerHTML;
 
   const players = Array.from(rg_SELECTED_PLAYERS);
   const stem = rg_buildFileStem(players[0] || 'Player', rg_SELECTED_TOURNAMENT);
@@ -6536,13 +6525,9 @@ function rg_downloadReportHTML() {
       catch(e) { return ''; }
     }).join('\n');
 
-  // Extract individual page divs and wrap each in its own block context
-  // so CSS break-after:page works (page breaks don't fire inside flex containers)
-  const pageBlocks = pagesHTML
-    .split(/(?=<div class="rg-page-div" )/)
-    .filter(s => s.trim())
-    .map(s => '<div class="rg-page-wrapper">' + s + '</div>')
-    .join('\n');
+  // Pages render as real divs with inline height:1056 and break-after:page.
+  // No post-processing needed — use the HTML as-is.
+  const pageBlocks = pagesHTML;
 
   const html = `<!doctype html>
 <html lang="en">
@@ -6566,44 +6551,8 @@ ${allStyles}
       -webkit-print-color-adjust:exact;
       print-color-adjust:exact;
     }
-    /* React custom elements replaced with divs */
-    .rg-st-div{display:flex;align-items:baseline;}
-    .rg-sv-div{display:block;font-family:'Space Grotesk',system-ui;font-size:44px;font-weight:700;line-height:0.95;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;}
-    .rg-sl-div{display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;font-weight:500;}
-    .rg-avatar-div{display:flex;align-items:center;justify-content:center;border-radius:50%;}
-    /* Page wrapper: block context so break-after works */
-    .rg-page-wrapper{
-      display:block;
-      width:816px;
-      margin:0 auto 32px;
-      break-after:page;
-      page-break-after:always;
-    }
-    .rg-page-wrapper:last-child{break-after:auto;page-break-after:auto;}
-    /* The actual page card */
-    .rg-page-div{
-      width:816px;
-      min-height:1056px;
-      background:var(--paper);
-      display:flex;
-      flex-direction:column;
-      box-sizing:border-box;
-      box-shadow:0 2px 4px rgba(0,0,0,0.1),0 20px 60px -20px rgba(0,0,0,0.2);
-    }
     @media print{
       body{background:white!important;}
-      .rg-page-wrapper{
-        margin:0!important;
-        break-after:page!important;
-        page-break-after:always!important;
-      }
-      .rg-page-wrapper:last-child{break-after:auto!important;page-break-after:auto!important;}
-      .rg-page-div{
-        box-shadow:none!important;
-        height:1056px!important;
-        min-height:0!important;
-        overflow:hidden!important;
-      }
       *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
     }
     @page{size:letter;margin:0;}
@@ -7464,11 +7413,11 @@ let rg_TOTAL_PAGES = 7;
 const rg_thS=(w,align='right')=>({textAlign:align,padding:'7px 6px',fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--ink-dim)',width:typeof w==='number'?w:w});
 const rg_tdS={padding:'8px 6px',textAlign:'right',fontVariantNumeric:'tabular-nums',fontFamily:"'IBM Plex Mono',monospace",color:'var(--ink)',fontSize:10.5};
 
-function rg_SL({children,style}){return <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--ink-dim)',fontWeight:500,...style}}>{children}</div>;}
-function rg_SV({children,size='lg',style}){const sz={xl:72,lg:44,md:28,sm:20};return <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:sz[size],fontWeight:700,lineHeight:0.95,letterSpacing:'-0.02em',color:'var(--ink)',fontVariantNumeric:'tabular-nums',...style}}>{children}</div>;}
-function rg_ST({num,title,sub}){return(<div style={{display:'flex',alignItems:'baseline',gap:16,borderBottom:'2px solid var(--ink)',paddingBottom:10,marginBottom:20}}><div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.2em',color:'var(--accent)',fontWeight:700}}>&sect;{num}</div><h2 style={{margin:0,fontFamily:"'Space Grotesk',system-ui",fontSize:22,fontWeight:700,letterSpacing:'-0.01em',color:'var(--ink)'}}>{title}</h2>{sub&&<div style={{marginLeft:'auto',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.1em',color:'var(--ink-faint)',textTransform:'uppercase'}}>{sub}</div>}</div>);}
+function RgSL({children,style}){return <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--ink-dim)',fontWeight:500,...style}}>{children}</div>;}
+function RgSV({children,size='lg',style}){const sz={xl:72,lg:44,md:28,sm:20};return <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:sz[size],fontWeight:700,lineHeight:0.95,letterSpacing:'-0.02em',color:'var(--ink)',fontVariantNumeric:'tabular-nums',...style}}>{children}</div>;}
+function RgST({num,title,sub}){return(<div style={{display:'flex',alignItems:'baseline',gap:16,borderBottom:'2px solid var(--ink)',paddingBottom:10,marginBottom:20}}><div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.2em',color:'var(--accent)',fontWeight:700}}>&sect;{num}</div><h2 style={{margin:0,fontFamily:"'Space Grotesk',system-ui",fontSize:22,fontWeight:700,letterSpacing:'-0.01em',color:'var(--ink)'}}>{title}</h2>{sub&&<div style={{marginLeft:'auto',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.1em',color:'var(--ink-faint)',textTransform:'uppercase'}}>{sub}</div>}</div>);}
 
-function rg_Page({children,num,total,label,footer,noHeader}){
+function RgPage({children,num,total,label,footer,noHeader}){
   return(<div style={{width:816,height:1056,background:'var(--paper)',padding:0,display:'flex',flexDirection:'column',color:'var(--ink)',fontFamily:"'Barlow',system-ui",position:'relative',boxShadow:'0 2px 4px rgba(0,0,0,0.08),0 20px 60px -20px rgba(0,0,0,0.2)',margin:'0 auto',pageBreakAfter:'always',breakAfter:'page',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
     {/* Teal header bar for non-cover pages */}
     {!noHeader&&<div style={{width:'100%',background:'var(--teal-deep)',padding:'0 56px',height:36,display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
@@ -7488,7 +7437,7 @@ function rg_Page({children,num,total,label,footer,noHeader}){
     </div>
   </div>);
 }
-function rg_Avatar({name,size=100}){
+function RgAvatar({name,size=100}){
   const initials=(name||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
   return(<div style={{width:size,height:size,borderRadius:size,background:'conic-gradient(from 140deg,var(--teal-deep),var(--teal),var(--teal-deep))',border:'3px solid var(--paper)',boxShadow:'0 0 0 3px var(--accent),0 12px 32px -8px rgba(0,0,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
     <span style={{fontFamily:"'Space Grotesk',system-ui",fontWeight:800,fontSize:size*0.38,color:'white',letterSpacing:'-0.02em'}}>{initials}</span>
@@ -7506,7 +7455,7 @@ function rg_CoverPage({data,accent,logoSrc}){
     return <div style={{padding:'5px 10px',borderRadius:5,background:m.result==='win'?accent:'#c23a2a',color:m.result==='win'?'#0e1512':'white',fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:700,letterSpacing:'0.04em',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>{m.w}-{m.l}</div>;
   }
 
-  return(<rg_Page num={1} total={rg_TOTAL_PAGES} label="Cover" noHeader={true}>
+  return(<RgPage num={1} total={rg_TOTAL_PAGES} label="Cover" noHeader={true}>
     <div style={{position:'absolute',top:0,left:0,right:0,height:8,background:'repeating-linear-gradient(115deg,var(--teal-deep) 0 16px,var(--teal) 16px 34px,var(--accent) 34px 42px,var(--teal) 42px 58px)',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact',zIndex:2}}/>
     <div style={{display:'flex',alignItems:'center',gap:16,marginTop:0,marginBottom:20}}>
       <img src={logoSrc} alt="NCBL" style={{width:52,height:52,objectFit:'contain'}}/>
@@ -7518,7 +7467,7 @@ function rg_CoverPage({data,accent,logoSrc}){
     <div style={{background:'var(--teal-deep)',borderRadius:8,padding:'22px 26px 20px',position:'relative',overflow:'hidden',border:'3px solid var(--ink)',boxShadow:'6px 6px 0 var(--ink)',color:'var(--paper)',marginBottom:16,WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
       <svg style={{position:'absolute',right:-80,top:-40,opacity:0.35,pointerEvents:'none'}} width={300} height={300} viewBox="0 0 300 300">{[...Array(12)].map((_,i)=><circle key={i} cx={150} cy={150} r={18+i*11} fill="none" stroke="var(--teal)" strokeWidth={1.2}/>)}</svg>
       <div style={{display:'flex',alignItems:'center',gap:20,position:'relative',zIndex:1,marginBottom:14}}>
-        <rg_Avatar name={player.name} size={100}/>
+        <RgAvatar name={player.name} size={100}/>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,letterSpacing:'0.22em',color:accent,fontWeight:700}}>PLAYER</div>
           <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:54,fontWeight:800,lineHeight:0.9,letterSpacing:'-0.035em',marginTop:8,color:'var(--paper)'}}>{player.name}</div>
@@ -7556,9 +7505,9 @@ function rg_CoverPage({data,accent,logoSrc}){
       </div>
     </div>
     <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr',gap:16,padding:'14px 0',borderBottom:'1px solid var(--rule)',marginBottom:16}}>
-      <div><rg_SL style={{color:'#14241f'}}>Event</rg_SL><div style={{fontSize:15,fontWeight:700,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.name}</div><div style={{fontSize:11,color:'#14241f',marginTop:1}}>{event.location}</div></div>
-      <div><rg_SL style={{color:'#14241f'}}>Date</rg_SL><div style={{fontSize:13,fontWeight:500,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.date}</div></div>
-      <div><rg_SL style={{color:'#14241f'}}>Format</rg_SL><div style={{fontSize:12,fontWeight:500,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.format}</div></div>
+      <div><RgSL style={{color:'#14241f'}}>Event</RgSL><div style={{fontSize:15,fontWeight:700,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.name}</div><div style={{fontSize:11,color:'#14241f',marginTop:1}}>{event.location}</div></div>
+      <div><RgSL style={{color:'#14241f'}}>Date</RgSL><div style={{fontSize:13,fontWeight:500,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.date}</div></div>
+      <div><RgSL style={{color:'#14241f'}}>Format</RgSL><div style={{fontSize:12,fontWeight:500,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.format}</div></div>
     </div>
     <div style={{marginTop:'auto'}}>
       <div style={{padding:'12px 16px',background:'var(--accent)',color:'var(--ink)',borderRadius:6,border:'2px solid var(--ink)',boxShadow:'3px 3px 0 var(--ink)'}}>
@@ -7567,7 +7516,7 @@ function rg_CoverPage({data,accent,logoSrc}){
         <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:'rgba(0,0,0,.65)',marginTop:2,letterSpacing:'0.04em'}}>{highlight.sub}</div>
       </div>
     </div>
-  </rg_Page>);
+  </RgPage>);
 }
 
 // §02 OVERVIEW
@@ -7637,11 +7586,11 @@ function rg_OverviewPage({data,accent}){
       </table>
     </div>);
   }
-  return(<rg_Page num={2} total={rg_TOTAL_PAGES} label="Overview">
-    <rg_ST num="02" title="Overview" sub="Event totals"/>
+  return(<RgPage num={2} total={rg_TOTAL_PAGES} label="Overview">
+    <RgST num="02" title="Overview" sub="Event totals"/>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:18,marginBottom:20}}>
       {[{label:'Overall Win%',val:summary.overallWinPct.toFixed(1)+'%',sub:summary.swissRecord.wins+'W \u00b7 '+summary.swissRecord.losses+'L'},{label:'Overall PPB',val:(summary.overallPPB>=0?'+':'')+summary.overallPPB.toFixed(2),sub:'net pts \u00f7 battles',color:'var(--teal-deep)'},{label:'Points Per Win',val:summary.ppw.toFixed(2),sub:'field avg '+summary.fieldPPW.toFixed(2),color:summary.ppw>=summary.fieldPPW?'var(--teal-deep)':'var(--danger)'},{label:'Total Battles',val:summary.totalBattles,sub:summary.totalSets+' sets'}].map((s,i)=>(
-        <div key={i}><rg_SL style={{color:'#14241f'}}>{s.label}</rg_SL><rg_SV size="lg" style={{marginTop:6,color:s.color||'#14241f'}}>{s.val}</rg_SV><div style={{fontSize:9.5,color:'#14241f',marginTop:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'0.06em'}}>{s.sub}</div></div>
+        <div key={i}><RgSL style={{color:'#14241f'}}>{s.label}</RgSL><RgSV size="lg" style={{marginTop:6,color:s.color||'#14241f'}}>{s.val}</RgSV><div style={{fontSize:9.5,color:'#14241f',marginTop:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'0.06em'}}>{s.sub}</div></div>
       ))}
     </div>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:18,marginBottom:20,paddingTop:14,borderTop:'1px solid var(--rule-soft)'}}>
@@ -7650,7 +7599,7 @@ function rg_OverviewPage({data,accent}){
         {label:'B-Side Set Win%',val:sideB&&sideB.setsPlayed>0?sideB.setWinPct.toFixed(1)+'%':'—',sub:sideB&&sideB.setsPlayed>0?sideB.setsWon+'W \u00b7 '+(sideB.setsPlayed-sideB.setsWon)+'L \u00b7 '+sideB.setsPlayed+' sets':'No B-side sets',color:sideB&&sideB.setsPlayed>0?(sideB.setWinPct>=50?'var(--teal-deep)':'var(--danger)'):'#14241f'},
         {label:'X-Side Set Win%',val:sideX&&sideX.setsPlayed>0?sideX.setWinPct.toFixed(1)+'%':'—',sub:sideX&&sideX.setsPlayed>0?sideX.setsWon+'W \u00b7 '+(sideX.setsPlayed-sideX.setsWon)+'L \u00b7 '+sideX.setsPlayed+' sets':'No X-side sets',color:sideX&&sideX.setsPlayed>0?(sideX.setWinPct>=50?'var(--teal-deep)':'var(--danger)'):'#14241f'},
       ].map((s,i)=>(
-        <div key={i}><rg_SL style={{color:'#14241f'}}>{s.label}</rg_SL><rg_SV size="lg" style={{marginTop:6,color:s.color||'#14241f'}}>{s.val}</rg_SV><div style={{fontSize:9.5,color:'#14241f',marginTop:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'0.06em'}}>{s.sub}</div></div>
+        <div key={i}><RgSL style={{color:'#14241f'}}>{s.label}</RgSL><RgSV size="lg" style={{marginTop:6,color:s.color||'#14241f'}}>{s.val}</RgSV><div style={{fontSize:9.5,color:'#14241f',marginTop:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'0.06em'}}>{s.sub}</div></div>
       ))}
     </div>
     <div style={{marginBottom:18}}>
@@ -7673,15 +7622,15 @@ function rg_OverviewPage({data,accent}){
         <FT rows={allowed} title="Scored on Player" sub="LOSING FINISHES" tone="danger"/>
       </div>
     </div>
-  </rg_Page>);
+  </RgPage>);
 }
 
 // §03 COMBO PERFORMANCE
 function rg_ComboPage({data,accent}){
   const{deck,recurringMatchups,peerComparison}=data;
   const tColors={S:'#0f6b67',A:'#2ea89d',B:'#6b7d78',C:'#c27a2a',D:'#c23a2a'};
-  return(<rg_Page num={3} total={rg_TOTAL_PAGES} label="Combos">
-    <rg_ST num="03" title="Combo Performance" sub="Per-combo \u00b7 Field tier \u00b7 Matchups"/>
+  return(<RgPage num={3} total={rg_TOTAL_PAGES} label="Combos">
+    <RgST num="03" title="Combo Performance" sub="Per-combo \u00b7 Field tier \u00b7 Matchups"/>
     <div style={{marginBottom:20}}>
       <h3 style={{margin:'0 0 10px',fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:600,color:'#14241f'}}>Per-Combo Stats</h3>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
@@ -7720,9 +7669,9 @@ function rg_ComboPage({data,accent}){
             </div>
             <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:12,fontWeight:700,letterSpacing:'-0.005em',lineHeight:1.3,marginBottom:12,minHeight:30,color:'#14241f'}}>{c.name}</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:8}}>
-              <div><rg_SL style={{fontSize:8.5,color:'#14241f'}}>Win%</rg_SL><rg_SV size="md" style={{marginTop:3,color:'#14241f'}}>{c.winPct.toFixed(1)}<span style={{fontSize:14,color:'#14241f'}}>%</span></rg_SV></div>
-              <div><rg_SL style={{fontSize:8.5,color:'#14241f'}}>PPB</rg_SL><rg_SV size="md" style={{marginTop:3,color:c.ppb>=1?'var(--teal-deep)':c.ppb<0?'var(--danger)':'#14241f'}}>{c.ppb>0?'+':''}{c.ppb.toFixed(2)}</rg_SV></div>
-              {sideStrengthLabel&&<div style={{gridColumn:'1 / -1'}}><rg_SL style={{fontSize:8.5,color:'#14241f'}}>Side Strength</rg_SL><rg_SV size="sm" style={{marginTop:3,color:'#14241f',fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700}}>{sideStrengthLabel}</rg_SV>{sideStrengthSub&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#14241f',letterSpacing:'0.04em',marginTop:2}}>{sideStrengthSub}</div>}</div>}
+              <div><RgSL style={{fontSize:8.5,color:'#14241f'}}>Win%</RgSL><RgSV size="md" style={{marginTop:3,color:'#14241f'}}>{c.winPct.toFixed(1)}<span style={{fontSize:14,color:'#14241f'}}>%</span></RgSV></div>
+              <div><RgSL style={{fontSize:8.5,color:'#14241f'}}>PPB</RgSL><RgSV size="md" style={{marginTop:3,color:c.ppb>=1?'var(--teal-deep)':c.ppb<0?'var(--danger)':'#14241f'}}>{c.ppb>0?'+':''}{c.ppb.toFixed(2)}</RgSV></div>
+              {sideStrengthLabel&&<div style={{gridColumn:'1 / -1'}}><RgSL style={{fontSize:8.5,color:'#14241f'}}>Side Strength</RgSL><RgSV size="sm" style={{marginTop:3,color:'#14241f',fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700}}>{sideStrengthLabel}</RgSV>{sideStrengthSub&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#14241f',letterSpacing:'0.04em',marginTop:2}}>{sideStrengthSub}</div>}</div>}
             </div>
             <div style={{height:5,background:'var(--rule-soft)',borderRadius:2,overflow:'hidden',marginBottom:6}}><div style={{height:'100%',width:Math.min(100,c.winPct)+'%',background:'var(--teal-deep)'}}/></div>
             {fa!==null&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#14241f',letterSpacing:'0.06em'}}>Field {fa.toFixed(1)}% &middot; Gap {gap>=0?'+':''}{gap?.toFixed(1)}%{ro?' \u00b7 of '+ro+' peers':''}</div>}
@@ -7742,7 +7691,7 @@ function rg_ComboPage({data,accent}){
         <tbody>{recurringMatchups.map((m,i)=><tr key={i} style={{borderBottom:'1px solid var(--rule-soft)'}}><td style={{...rg_tdS,textAlign:'left',fontWeight:700,color:'var(--teal-deep)',fontFamily:"'Space Grotesk',system-ui",fontSize:10.5}}>{m.yourComboName.split('\u00b7')[0].trim()}</td><td style={{...rg_tdS,textAlign:'left',fontWeight:500,fontFamily:"'Space Grotesk',system-ui",fontSize:10.5,color:'#14241f'}}>{m.oppCombo}</td><td style={{...rg_tdS,color:'#14241f',fontSize:10}}>{m.times}</td><td style={{...rg_tdS,color:'#14241f',fontSize:10}}>{m.w}&ndash;{m.l}</td><td style={{...rg_tdS,fontWeight:600,color:m.winPct>=50?'var(--ink)':'var(--danger)',fontSize:10}}>{m.winPct.toFixed(1)}%</td><td style={{...rg_tdS,fontWeight:700,color:m.ppb>=0?'var(--teal-deep)':'var(--danger)',fontSize:10}}>{m.ppb>0?'+':''}{m.ppb.toFixed(2)}</td><td style={{...rg_tdS,fontWeight:700,color:m.net>=0?'var(--teal-deep)':'var(--danger)',fontSize:10}}>{m.net>0?'+':''}{m.net}</td></tr>)}</tbody>
       </table>}
     </div>
-  </rg_Page>);
+  </RgPage>);
 }
 
 // §03a COMBO FINISH BREAKDOWN — one donut+table pair per top-3 deck combo
@@ -7796,8 +7745,8 @@ function rg_ComboFinishPage({data,accent,pageNum}){
     </div>);
   }
 
-  return(<rg_Page num={pageNum} total={rg_TOTAL_PAGES} label="Combo Finishes">
-    <rg_ST num="03" title="Combo Finish Breakdown" sub="Top 3 combos \u00b7 Finish types"/>
+  return(<RgPage num={pageNum} total={rg_TOTAL_PAGES} label="Combo Finishes">
+    <RgST num="03" title="Combo Finish Breakdown" sub="Top 3 combos \u00b7 Finish types"/>
     <p style={{margin:'0 0 16px',fontSize:10.5,color:'#14241f',fontFamily:"'Barlow',system-ui",lineHeight:1.5}}>How each of your most-played combos wins and loses battles, broken down by finish type.</p>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16}}>
       {comboFinishes.map((c,i)=>(
@@ -7811,15 +7760,15 @@ function rg_ComboFinishPage({data,accent,pageNum}){
         </div>
       ))}
     </div>
-  </rg_Page>);
+  </RgPage>);
 }
 
 // §03b PEER COMPARISON (separate page to prevent overflow)
 function rg_PeerComparisonPage({data,accent,pageNum}){
   const{peerComparison}=data;
   if(!peerComparison||peerComparison.length===0) return null;
-  return(<rg_Page num={pageNum} total={rg_TOTAL_PAGES} label="Peer Comparison">
-    <rg_ST num="03" title="Shared-Combo Peer Comparison" sub="Same exact combo \u00b7 \u22653 battles"/>
+  return(<RgPage num={pageNum} total={rg_TOTAL_PAGES} label="Peer Comparison">
+    <RgST num="03" title="Shared-Combo Peer Comparison" sub="Same exact combo \u00b7 \u22653 battles"/>
     <p style={{margin:'0 0 14px',fontSize:10.5,color:'#14241f',fontFamily:"'Barlow',system-ui",lineHeight:1.5}}>How you performed with each of your deck combos compared to everyone else in the tournament who played the exact same combo.</p>
     <table style={{width:'100%',borderCollapse:'collapse',fontSize:10.5}}>
       <thead><tr style={{borderBottom:'1px solid var(--rule)'}}><th style={{...rg_thS(100,'left'),color:'#14241f'}}>Combo</th><th style={{...rg_thS('auto','left'),color:'#14241f'}}>Player</th><th style={{...rg_thS(60),color:'#14241f'}}>Win%</th><th style={{...rg_thS(60),color:'#14241f'}}>PPB</th><th style={{...rg_thS(60),color:'#14241f'}}>Battles</th></tr></thead>
@@ -7838,7 +7787,7 @@ function rg_PeerComparisonPage({data,accent,pageNum}){
       }))}
       </tbody>
     </table>
-  </rg_Page>);
+  </RgPage>);
 }
 
 // §04 BATTLE DYNAMICS
@@ -7878,8 +7827,8 @@ function rg_BattleDynamicsPage({data,accent,pageNum}){
       </div>
     </div>);
   }
-  return(<rg_Page num={pageNum||4} total={rg_TOTAL_PAGES} label="Battle Dynamics">
-    <rg_ST num="04" title="Battle Dynamics" sub="Slot \u00b7 Side \u00b7 Points"/>
+  return(<RgPage num={pageNum||4} total={rg_TOTAL_PAGES} label="Battle Dynamics">
+    <RgST num="04" title="Battle Dynamics" sub="Slot \u00b7 Side \u00b7 Points"/>
     <div style={{display:'grid',gridTemplateColumns:'1.6fr 1fr',gap:20,marginBottom:16}}>
       <div>
         <SlotTbl rows={shuffleInitial} slots={[1,2,3]} title="Initial Shuffle" sub="Slots 1–3 · first three battles of each set."/>
@@ -7892,7 +7841,7 @@ function rg_BattleDynamicsPage({data,accent,pageNum}){
             <div style={{position:'absolute',right:-6,top:-14,fontFamily:"'Space Grotesk',system-ui",fontSize:60,fontWeight:800,color:isB?'var(--rule)':'rgba(255,255,255,.12)',lineHeight:1,letterSpacing:'-0.06em',pointerEvents:'none'}}>{s.side}</div>
             <div style={{position:'relative'}}>
               <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.14em',color:isB?'#14241f':accent,fontWeight:700}}>{s.side} SIDE</div>
-              <rg_SV size="sm" style={{color:isB?'#14241f':'#fffdf7',marginTop:3}}>{s.battleWinPct.toFixed(1)}%</rg_SV>
+              <RgSV size="sm" style={{color:isB?'#14241f':'#fffdf7',marginTop:3}}>{s.battleWinPct.toFixed(1)}%</RgSV>
               <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,opacity:0.65,marginTop:2,color:isB?'#14241f':'#fffdf7'}}>{s.battles} btl &middot; PPB {s.ppb>=0?'+':''}{s.ppb.toFixed(2)}</div>
             </div>
           </div>);})}
@@ -8033,7 +7982,7 @@ function rg_BattleDynamicsPage({data,accent,pageNum}){
         </div>
       );
     })()}
-  </rg_Page>);
+  </RgPage>);
 }
 
 
@@ -8048,8 +7997,8 @@ function rg_MatchRecapPages({data,accent,startPageNum}){
   return React.createElement(React.Fragment,null,...chunks.map((pageMatches,pi)=>{
     const pageStartIdx=pi*MATCHES_PER_PAGE;
     return(
-    <rg_Page key={pi} num={startPageNum+pi} total={rg_TOTAL_PAGES} label={'Match Recap'+(chunks.length>1?' ('+(pi+1)+'/'+chunks.length+')':'')}>
-      <rg_ST num="06" title="Match Recap" sub={'Every match \u00b7 Numbers only'+(chunks.length>1?' \u00b7 '+(pi+1)+'/'+chunks.length:'')}/>
+    <RgPage key={pi} num={startPageNum+pi} total={rg_TOTAL_PAGES} label={'Match Recap'+(chunks.length>1?' ('+(pi+1)+'/'+chunks.length+')':'')}>
+      <RgST num="06" title="Match Recap" sub={'Every match \u00b7 Numbers only'+(chunks.length>1?' \u00b7 '+(pi+1)+'/'+chunks.length:'')}/>
       {pi===0&&<p style={{margin:'0 0 10px',fontSize:10,color:'#14241f',fontFamily:"'Barlow',system-ui",lineHeight:1.4}}>Opponent combos shown. W-L = that combo vs you this match. Combo PPB = that combo's efficiency against you in this match only.</p>}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {pageMatches.map((m,i)=>{
@@ -8085,7 +8034,7 @@ function rg_MatchRecapPages({data,accent,startPageNum}){
           </React.Fragment>);
         })}
       </div>
-    </rg_Page>
+    </RgPage>
     );
   }));
 }
@@ -8196,8 +8145,8 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
   ];
 
   return(
-    <rg_Page num={pageNum} total={rg_TOTAL_PAGES} label="Player Profile">
-      <rg_ST num="05" title="Player Profile" sub="Style fingerprint"/>
+    <RgPage num={pageNum} total={rg_TOTAL_PAGES} label="Player Profile">
+      <RgST num="05" title="Player Profile" sub="Style fingerprint"/>
 
       {/* ── ARCHETYPE CARD ─────────────────────────────────────────────────── */}
       <div style={{background:archetypeColor,borderRadius:8,padding:'12px 18px',marginBottom:10,
@@ -8416,7 +8365,7 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
           })}
         </div>
       </div>
-    </rg_Page>
+    </RgPage>
   );
 }
 
@@ -8640,8 +8589,8 @@ function rg_PressureProfilePage({data,accent,pageNum}){
   }
 
   return(
-    <rg_Page num={pageNum} total={rg_TOTAL_PAGES} label="Pressure Profile">
-      <rg_ST num="PP" title="Pressure Profile" sub="Set · Momentum · Resilience"/>
+    <RgPage num={pageNum} total={rg_TOTAL_PAGES} label="Pressure Profile">
+      <RgST num="PP" title="Pressure Profile" sub="Set · Momentum · Resilience"/>
       <div style={{
         fontFamily:"'Barlow',system-ui",
         fontSize:11,lineHeight:1.5,
@@ -8654,7 +8603,7 @@ function rg_PressureProfilePage({data,accent,pageNum}){
       <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
         {cards.map((card,i)=><StatCard key={i} card={card}/>)}
       </div>
-    </rg_Page>
+    </RgPage>
   );
 }
 
@@ -8671,7 +8620,7 @@ function rg_buildReportFragment(reportData, accent, key) {
   const recapCount = rg_matchRecapPageCount(reportData);
   const hasPeers = reportData.peerComparison && reportData.peerComparison.length > 0;
   const hasProfile = reportData.profile != null;
-  // rg_Page numbering: 1 Cover, 2 Overview, 3 Combos, 3a Combo Finishes, 4 Peer(if any), 5 Profile(if any), 6 Battle Dynamics, PP Pressure Profile, 7+ Match Recap
+  // RgPage numbering: 1 Cover, 2 Overview, 3 Combos, 3a Combo Finishes, 4 Peer(if any), 5 Profile(if any), 6 Battle Dynamics, PP Pressure Profile, 7+ Match Recap
   const hasComboFinishes = reportData.comboFinishes && reportData.comboFinishes.length > 0;
   let p = 3;
   const comboFinishPageNum = hasComboFinishes ? ++p : null;
