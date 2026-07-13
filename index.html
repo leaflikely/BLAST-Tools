@@ -7460,7 +7460,7 @@ function rg_computeAllArchetypes(allRows, tournament, allReportData) {
 <script type="text/babel">
 // ═══ PLAYER REPORT GENERATOR TOOL — REACT/JSX (namespaced with rg_ prefix) ═══
 
-const rg_TOTAL_PAGES = 7;
+let rg_TOTAL_PAGES = 7;
 const rg_thS=(w,align='right')=>({textAlign:align,padding:'7px 6px',fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--ink-dim)',width:typeof w==='number'?w:w});
 const rg_tdS={padding:'8px 6px',textAlign:'right',fontVariantNumeric:'tabular-nums',fontFamily:"'IBM Plex Mono',monospace",color:'var(--ink)',fontSize:10.5};
 
@@ -7842,7 +7842,7 @@ function rg_PeerComparisonPage({data,accent,pageNum}){
 }
 
 // §04 BATTLE DYNAMICS
-function rg_BattleDynamicsPage({data,accent}){
+function rg_BattleDynamicsPage({data,accent,pageNum}){
   const{shuffleInitial,shufflePost,sides,pointsDetail,deck,comboSidePPB}=data;
   const totalScored=pointsDetail.reduce((s,p)=>s+p.scored,0);
   const totalAllowed=pointsDetail.reduce((s,p)=>s+p.allowed,0);
@@ -7878,7 +7878,7 @@ function rg_BattleDynamicsPage({data,accent}){
       </div>
     </div>);
   }
-  return(<rg_Page num={4} total={rg_TOTAL_PAGES} label="Battle Dynamics">
+  return(<rg_Page num={pageNum||4} total={rg_TOTAL_PAGES} label="Battle Dynamics">
     <rg_ST num="04" title="Battle Dynamics" sub="Slot \u00b7 Side \u00b7 Points"/>
     <div style={{display:'grid',gridTemplateColumns:'1.6fr 1fr',gap:20,marginBottom:16}}>
       <div>
@@ -8684,6 +8684,8 @@ function rg_buildReportFragment(reportData, accent, key) {
   p += recapCount - 1;
   const total = p;
 
+  rg_TOTAL_PAGES = total;
+
   const children = [
     React.createElement(rg_CoverPage,          {data:reportData, accent, logoSrc:rg_LOGO}),
     React.createElement(rg_OverviewPage,       {data:reportData, accent}),
@@ -8692,7 +8694,7 @@ function rg_buildReportFragment(reportData, accent, key) {
   if (hasComboFinishes) children.push(React.createElement(rg_ComboFinishPage, {data:reportData, accent, pageNum:comboFinishPageNum}));
   if (hasPeers) children.push(React.createElement(rg_PeerComparisonPage, {data:reportData, accent, pageNum:peerPageNum}));
   if (hasProfile) children.push(React.createElement(rg_PlayerProfilePage, {data:reportData, accent, pageNum:profilePageNum}));
-  children.push(React.createElement(rg_BattleDynamicsPage, {data:reportData, accent}));
+  children.push(React.createElement(rg_BattleDynamicsPage, {data:reportData, accent, pageNum:battlePageNum}));
   children.push(React.createElement(rg_PressureProfilePage, {data:reportData, accent, pageNum:pressurePageNum}));
   children.push(React.createElement(rg_MatchRecapPages,    {data:reportData, accent, startPageNum:recapStartNum}));
 
