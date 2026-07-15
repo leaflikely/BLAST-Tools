@@ -1611,6 +1611,11 @@ color: #0e1512 }
 #tool-recapper .btn-primary:hover { background: #f8dc55 }
 #tool-recapper .btn-primary:disabled { opacity: 0.35;
 cursor: not-allowed }
+#tool-recapper #tr-challonge-link-input:focus { border-color: var(--g-teal); outline: none }
+#tool-recapper #tr-challonge-link-input::placeholder { color: var(--g-muted) }
+#tool-recapper #tr-link-status.success { color: var(--g-teal) }
+#tool-recapper #tr-link-status.warn { color: var(--g-accent) }
+#tool-recapper #tr-link-status.error { color: var(--g-danger) }
 #tool-recapper #tr-report-output { display: none }
 #tool-recapper .report-wrapper { background: #223834;
 -webkit-print-color-adjust: exact;
@@ -2473,13 +2478,23 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         <div class="select-label">TOURNAMENTS FOUND IN FILE</div>
         <div class="option-list" id="tr-tournament-list"></div>
         <div class="btn-row">
-          <button class="btn btn-primary" id="tr-btn-step2-next" disabled onclick="tr_goStep(2)" style="margin-left:auto">Next &#x2192;</button>
+          <button class="btn btn-primary" id="tr-btn-step2-next" disabled onclick="tr_advanceFromStep1()" style="margin-left:auto">Next &#x2192;</button>
         </div>
       </div>
       <div class="panel" id="tr-step2" style="display:none">
         <div class="panel-title">Select Winner</div>
-        <div class="panel-sub">Choose the tournament winner. Players are sorted by number of matches played, most to least.</div>
-        <div class="select-label">PLAYERS — SORTED BY MATCHES PLAYED</div>
+        <div class="panel-sub" id="tr-step2-sub">No Challonge link found for this event. Paste one below to auto-detect the winner, or select manually from the list.</div>
+        <!-- Link paste box -->
+        <div id="tr-link-paste-box" style="margin-bottom:16px;padding:14px 16px;background:var(--g-surface2);border:1px solid var(--g-border);border-radius:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.18em;color:var(--g-accent);font-weight:700;margin-bottom:6px;">PASTE CHALLONGE LINK</div>
+          <div style="font-size:12px;color:var(--g-muted);margin-bottom:10px;line-height:1.5;">This will also save the link to the Report tab so future events skip this step automatically.</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="tr-challonge-link-input" placeholder="https://challonge.com/your-tournament" style="flex:1;background:var(--g-bg);border:1px solid var(--g-border);border-radius:6px;padding:8px 12px;color:var(--g-text);font-family:'IBM Plex Mono',monospace;font-size:11px;outline:none;" />
+            <button class="btn btn-ghost" id="tr-fetch-link-btn" onclick="tr_fetchChallongeWinner()">Fetch &amp; Generate</button>
+          </div>
+          <div id="tr-link-status" style="font-family:'IBM Plex Mono',monospace;font-size:10px;margin-top:8px;"></div>
+        </div>
+        <div class="select-label">OR SELECT MANUALLY — SORTED BY MATCHES PLAYED</div>
         <div class="option-list" id="tr-winner-list"></div>
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="tr_goStep(1)">&#x2190; Back</button>
@@ -5075,6 +5090,31 @@ function tr_goStep(n) {
   if (n === 2) tr_populateWinnerList();
 }
 
+// Called when Next is clicked on Step 1.
+// If a Challonge link exists for the selected tournament and has a 1st-place
+// result, skip the winner step entirely and go straight to generate.
+// Otherwise fall through to Step 2.
+function tr_advanceFromStep1() {
+  const rec = window.rg_CHALLONGE_LINKS && window.rg_CHALLONGE_LINKS[tr_SELECTED_TOURNAMENT];
+  if (rec && Array.isArray(rec.placements) && rec.placements.length > 0) {
+    const first = rec.placements
+      .filter(p => p.finalRank === 1 || p.finalRank === '1')
+      .map(p => p.name)[0];
+    if (first) {
+      // Resolve against the actual player names in the CSV (case-insensitive)
+      const tRows = tr_ALL_ROWS.filter(r => (r.Tournament||'').trim() === tr_SELECTED_TOURNAMENT);
+      const playerNames = new Set();
+      tRows.forEach(r => { ['P1','P2'].forEach(f => { const p=(r[f]||'').trim(); if(p) playerNames.add(p); }); });
+      const match = Array.from(playerNames).find(n => n.toLowerCase() === first.toLowerCase()) || first;
+      tr_SELECTED_WINNER = match;
+      tr_generateAndShow();
+      return;
+    }
+  }
+  // No link or no 1st-place data — go to the manual winner step
+  tr_goStep(2);
+}
+
 // ── AUTO-LOAD FROM SHARED DATA SOURCE ───────────────────────────────────────
 // The file arrives from the shell's shared upload box at the top of the
 // page (one upload feeds every tab), so this tool has no file picker of
@@ -5102,13 +5142,24 @@ if (window.SHARED_CSV_LISTENERS) {
 // ── POPULATE TOURNAMENTS ──────────────────────────────────────────────────────
 function tr_populateTournaments() {
   const counts = {};
-  tr_ALL_ROWS.forEach(r => { const t=(r.Tournament||'').trim(); if(t) counts[t]=(counts[t]||0)+1; });
+  const earliestTs = {};
+  tr_ALL_ROWS.forEach(r => {
+    const t = (r.Tournament||'').trim();
+    if (!t) return;
+    counts[t] = (counts[t]||0) + 1;
+    const ts = new Date(r.Timestamp||0).getTime();
+    const validTs = isNaN(ts) ? 0 : ts;
+    if (earliestTs[t] === undefined || validTs < earliestTs[t]) earliestTs[t] = validTs;
+  });
   const list = document.getElementById('tr-tournament-list');
   list.innerHTML = '';
-  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t, n]) => {
+  // Newest event on top, oldest on bottom — same as rg_ tab.
+  Object.entries(counts).sort((a,b)=>(earliestTs[b[0]]||0)-(earliestTs[a[0]]||0)).forEach(([t, n]) => {
     const btn = document.createElement('button');
     btn.className = 'option-btn' + (t === tr_SELECTED_TOURNAMENT ? ' selected' : '');
-    btn.innerHTML = '<span>'+t+'</span><span class="option-meta">'+n+' rows</span>';
+    // Show a dot if no Challonge link is on file from the rg_ tab
+    const hasLink = !!(window.rg_CHALLONGE_LINKS && window.rg_CHALLONGE_LINKS[t] && Array.isArray(window.rg_CHALLONGE_LINKS[t].placements) && window.rg_CHALLONGE_LINKS[t].placements.length > 0);
+    btn.innerHTML = '<span>'+t+'</span><span class="option-meta">'+n+' battles'+(hasLink?' \u00b7 linked':'')+' </span>';
     btn.onclick = () => {
       document.querySelectorAll('#tr-tournament-list .option-btn').forEach(b=>b.classList.remove('selected'));
       btn.classList.add('selected');
@@ -5117,14 +5168,15 @@ function tr_populateTournaments() {
     };
     list.appendChild(btn);
   });
+  document.getElementById('tr-btn-step2-next').disabled = !tr_SELECTED_TOURNAMENT;
 }
 
 // ── POPULATE WINNER LIST ──────────────────────────────────────────────────────
+// Only reached when tr_advanceFromStep1 found no usable Challonge data.
 function tr_populateWinnerList() {
   const tRows = tr_ALL_ROWS.filter(r => (r.Tournament||'').trim() === tr_SELECTED_TOURNAMENT);
   const mkMap = tr_buildMatchKeyMap(tRows);
 
-  // Count unique matches per player
   const playerMatches = {};
   tRows.forEach(r => {
     const mk = tr_getMatchKey(r, mkMap);
@@ -5136,7 +5188,6 @@ function tr_populateWinnerList() {
     });
   });
 
-  // Sort players by match count descending, then alphabetically
   const sorted = Object.entries(playerMatches)
     .map(([name, keys]) => ({ name, matchCount: keys.size }))
     .sort((a, b) => b.matchCount - a.matchCount || a.name.localeCompare(b.name));
@@ -5145,6 +5196,17 @@ function tr_populateWinnerList() {
   list.innerHTML = '';
   tr_SELECTED_WINNER = null;
   document.getElementById('tr-btn-step3-next').disabled = true;
+
+  // Reset UI boxes
+  const autoBox = document.getElementById('tr-auto-winner-box');
+  const linkBox = document.getElementById('tr-link-paste-box');
+  if (autoBox) autoBox.style.display = 'none';
+  if (linkBox) {
+    linkBox.style.display = '';
+    document.getElementById('tr-challonge-link-input').value = '';
+    document.getElementById('tr-link-status').textContent = '';
+    document.getElementById('tr-link-status').className = '';
+  }
 
   sorted.forEach(({ name, matchCount }) => {
     const btn = document.createElement('button');
@@ -5160,6 +5222,76 @@ function tr_populateWinnerList() {
   });
 }
 
+// ── FETCH WINNER FROM PASTED LINK ─────────────────────────────────────────────
+// Used on Step 2 when the user pastes a Challonge link manually.
+// On success, saves the link to both tabs and goes straight to generate.
+const TR_WORKER_URL = 'https://ncblast-data.danny61734.workers.dev';
+
+async function tr_fetchChallongeWinner() {
+  const input = document.getElementById('tr-challonge-link-input');
+  const statusEl = document.getElementById('tr-link-status');
+  const btn = document.getElementById('tr-fetch-link-btn');
+  const link = input.value.trim();
+
+  if (!link) {
+    statusEl.textContent = 'Paste a Challonge link first.';
+    statusEl.className = 'error';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Fetching\u2026';
+  statusEl.textContent = 'Asking Challonge for results\u2026';
+  statusEl.className = '';
+
+  try {
+    const res = await fetch(TR_WORKER_URL + '/challonge-placements?tournament=' + encodeURIComponent(link));
+    let data;
+    try { data = await res.json(); } catch(e) { data = null; }
+
+    if (!res.ok || !data || data.error) {
+      statusEl.textContent = (data && data.error) ? data.error : 'Could not read that link (server said ' + res.status + '). Check the URL and try again.';
+      statusEl.className = 'error';
+      btn.disabled = false; btn.textContent = 'Fetch Winner';
+      return;
+    }
+
+    const placements = Array.isArray(data.placements) ? data.placements : [];
+    const swissRounds = (typeof data.swissRounds === 'number' && data.swissRounds > 0) ? data.swissRounds : null;
+    const first = placements.filter(p => p.finalRank === 1 || p.finalRank === '1').map(p => p.name)[0];
+
+    if (!first) {
+      statusEl.textContent = 'Found the bracket but no 1st-place result yet \u2014 finalize it on Challonge and try again.';
+      statusEl.className = 'warn';
+      btn.disabled = false; btn.textContent = 'Fetch Winner';
+      return;
+    }
+
+    // Save to shared Challonge links (both tabs)
+    if (!window.rg_CHALLONGE_LINKS) window.rg_CHALLONGE_LINKS = {};
+    window.rg_CHALLONGE_LINKS[tr_SELECTED_TOURNAMENT] = { link, placements, swissRounds, fetchedAt: new Date().toISOString() };
+    fetch(TR_WORKER_URL + '/challonge-links', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tournament: tr_SELECTED_TOURNAMENT, link, placements, swissRounds }),
+    }).catch(() => {});
+    if (typeof rg_loadChallongeLinks === 'function') rg_loadChallongeLinks();
+
+    // Resolve the winner name against CSV players, then generate immediately
+    const tRows = tr_ALL_ROWS.filter(r => (r.Tournament||'').trim() === tr_SELECTED_TOURNAMENT);
+    const playerNames = new Set();
+    tRows.forEach(r => { ['P1','P2'].forEach(f => { const p=(r[f]||'').trim(); if(p) playerNames.add(p); }); });
+    const match = Array.from(playerNames).find(n => n.toLowerCase() === first.toLowerCase()) || first;
+    tr_SELECTED_WINNER = match;
+    tr_generateAndShow();
+
+  } catch(err) {
+    statusEl.textContent = 'Connection error. Check your internet and try again.';
+    statusEl.className = 'error';
+    btn.disabled = false; btn.textContent = 'Fetch Winner';
+  }
+}
+
 // ── GENERATE ──────────────────────────────────────────────────────────────────
 function tr_generateAndShow() {
   tr_goStep(3);
@@ -5170,7 +5302,7 @@ function tr_generateAndShow() {
     document.getElementById('tr-toolbar').style.display = 'flex';
     const pagesEl = document.getElementById('tr-report-pages');
     if (!tr_reportRoot) tr_reportRoot = ReactDOM.createRoot(pagesEl);
-    tr_reportRoot.render(React.createElement(tr_TournamentBreakdown, { data }));
+    tr_reportRoot.render(React.createElement(TrTournamentBreakdown, { data }));
   }, 50);
 }
 
@@ -5510,7 +5642,7 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
 
 // ── SHARED COMPONENTS ─────────────────────────────────────────────────────────
 
-function tr_Page({children}) {
+function TrPage({children}) {
   return (
     <div style={{
       width:816, minHeight:1056, background:'#fffdf7', color:'#14241f',
@@ -5524,7 +5656,7 @@ function tr_Page({children}) {
   );
 }
 
-function tr_PageHeader({title, subtitle, pageNum}) {
+function TrPageHeader({title, subtitle, pageNum}) {
   return (
     <div style={{padding:'28px 40px 20px',borderBottom:'1px solid #c8d5d0',display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
       <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -5539,7 +5671,7 @@ function tr_PageHeader({title, subtitle, pageNum}) {
   );
 }
 
-function tr_PageFooter({pageNum, total}) {
+function TrPageFooter({pageNum, total}) {
   return (
     <div style={{padding:'12px 40px',borderTop:'1px solid #e4ebe7',display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:'auto'}}>
       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.12em',color:'#a2b0ab'}}>NCBLAST · NORCAL BEYBLADE LEAGUE · TOURNAMENT BREAKDOWN</div>
@@ -5548,7 +5680,7 @@ function tr_PageFooter({pageNum, total}) {
   );
 }
 
-function tr_SectionHead({num, title, sub}) {
+function TrSectionHead({num, title, sub}) {
   return (
     <div style={{marginBottom:12}}>
       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.2em',color:'#2ea89d',fontWeight:600,marginBottom:3}}>{num}</div>
@@ -5558,12 +5690,12 @@ function tr_SectionHead({num, title, sub}) {
   );
 }
 
-function tr_Rule() {
+function TrRule() {
   return <div style={{height:1,background:'#c8d5d0'}}/>;
 }
 
 // Stat tile used on page 1 — stronger text colours for cream background
-function tr_Tile({label, val, sub, teal}) {
+function TrTile({label, val, sub, teal}) {
   return (
     <div style={{background:'#f3efde',border:'1px solid #c8d5d0',borderRadius:5,padding:'11px 13px'}}>
       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.14em',color:'#3c4f4a',marginBottom:4}}>{label}</div>
@@ -5574,7 +5706,7 @@ function tr_Tile({label, val, sub, teal}) {
 }
 
 // ── PAGE 1: COVER ─────────────────────────────────────────────────────────────
-function tr_CoverPage({data}) {
+function TrCoverPage({data}) {
   const {tournament, winner, players, totalBattles, totalSets, uniqueCombos,
          avgBattles, minBattles, maxBattles, medWinPct, medPPB,
          finishData, finishTotal, metaTag, sides} = data;
@@ -5583,7 +5715,7 @@ function tr_CoverPage({data}) {
   const sideX = sides.find(s=>s.side==='X')||{battleWinPct:0,ppb:0,setWinPct:0,battles:0};
 
   return (
-    <tr_Page>
+    <TrPage>
       {/* DARK HERO */}
       <div style={{background:'#14241f',padding:'36px 40px 32px',color:'#d4e8e0',position:'relative',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
         <div style={{position:'absolute',top:-40,right:-40,width:220,height:220,borderRadius:'50%',background:'rgba(46,168,157,0.07)'}}/>
@@ -5638,19 +5770,19 @@ function tr_CoverPage({data}) {
 
         {/* §01 Participation Snapshot */}
         <div>
-          <tr_SectionHead num="§01" title="Participation Snapshot" sub="EVENT-WIDE AVERAGES · ALL PLAYERS"/>
+          <TrSectionHead num="§01" title="Participation Snapshot" sub="EVENT-WIDE AVERAGES · ALL PLAYERS"/>
           <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:12}}>
-            <tr_Tile label="AVG BATTLES / PLAYER" val={avgBattles.toFixed(1)}/>
-            <tr_Tile label="UNIQUE COMBOS"        val={uniqueCombos} sub="used this event"/>
+            <TrTile label="AVG BATTLES / PLAYER" val={avgBattles.toFixed(1)}/>
+            <TrTile label="UNIQUE COMBOS"        val={uniqueCombos} sub="used this event"/>
           </div>
         </div>
 
-        <tr_Rule/>
+        <TrRule/>
 
         {/* §02 Finish Type Distribution */}
         <div>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:10}}>
-            <tr_SectionHead num="§02" title="Finish Type Distribution" sub={`ALL ${finishTotal} BATTLES · EVENT-WIDE`}/>
+            <TrSectionHead num="§02" title="Finish Type Distribution" sub={`ALL ${finishTotal} BATTLES · EVENT-WIDE`}/>
             <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#2ea89d',letterSpacing:'0.1em',fontWeight:600,marginBottom:1}}>{metaTag}</div>
           </div>
           <div style={{height:20,borderRadius:3,overflow:'hidden',display:'flex',marginBottom:8}}>
@@ -5673,11 +5805,11 @@ function tr_CoverPage({data}) {
           </div>
         </div>
 
-        <tr_Rule/>
+        <TrRule/>
 
         {/* §03 Stadium Side Performance */}
         <div>
-          <tr_SectionHead num="§03" title="Stadium Side Performance" sub="B-SIDE VS X-SIDE · EVENT-WIDE ACROSS ALL SETS"/>
+          <TrSectionHead num="§03" title="Stadium Side Performance" sub="B-SIDE VS X-SIDE · EVENT-WIDE ACROSS ALL SETS"/>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
             {/* B-SIDE — light card */}
             <div style={{borderRadius:6,padding:'16px 18px',background:'#f3efde',border:'1.5px solid #c8d5d0',position:'relative',overflow:'hidden'}}>
@@ -5728,13 +5860,13 @@ function tr_CoverPage({data}) {
 
       </div>
 
-      <tr_PageFooter pageNum={1} total={3}/>
-    </tr_Page>
+      <TrPageFooter pageNum={1} total={3}/>
+    </TrPage>
   );
 }
 
 // ── PAGE 2: COMBO CARDS ───────────────────────────────────────────────────────
-function tr_ComboCardsPage({data}) {
+function TrComboCardsPage({data}) {
   const {tournament, combos} = data;
   const topCombos = combos.slice(0,6);
 
@@ -5752,42 +5884,42 @@ function tr_ComboCardsPage({data}) {
   }
 
   return (
-    <tr_Page>
-      <tr_PageHeader
+    <TrPage>
+      <TrPageHeader
         title={`${tournament} — META BREAKDOWN`}
         subtitle="NORCAL BEYBLADE LEAGUE"
         pageNum="PAGE 2 OF 3"
       />
       <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:16}}>
-        <tr_SectionHead num="§04" title="Most-Used Combos — Event Meta" sub="RANKED BY USAGE · FIELD STATS ACROSS ALL PLAYERS · TOP PILOTS (10 BATTLES MIN)"/>
+        <TrSectionHead num="§04" title="Most-Used Combos — Event Meta" sub="RANKED BY USAGE · FIELD STATS ACROSS ALL PLAYERS · TOP PILOTS (10 BATTLES MIN)"/>
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:11}}>
           {topCombos.map((c,i) => (
-            <tr_ComboCard key={i} combo={c} rank={i} accent={cardAccent(i,c.winPct)} barColor={winBarColor(c.winPct)}/>
+            <TrComboCard key={i} combo={c} rank={i} accent={cardAccent(i,c.winPct)} barColor={winBarColor(c.winPct)}/>
           ))}
           {topCombos.length === 0 && (
             <div style={{gridColumn:'1/-1',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:'#a2b0ab',padding:'20px 0'}}>No combo data found for this tournament.</div>
           )}
         </div>
       </div>
-      <tr_PageFooter pageNum={2} total={3}/>
-    </tr_Page>
+      <TrPageFooter pageNum={2} total={3}/>
+    </TrPage>
   );
 }
 
 // ── PAGE 3: FULL TABLE ────────────────────────────────────────────────────────
-function tr_ComboTablePage({data}) {
+function TrComboTablePage({data}) {
   const {tournament, combos, comboTableRows} = data;
 
   return (
-    <tr_Page>
-      <tr_PageHeader
+    <TrPage>
+      <TrPageHeader
         title={`${tournament} — COMBO USAGE`}
         subtitle="NORCAL BEYBLADE LEAGUE"
         pageNum="PAGE 3 OF 3"
       />
       <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:16}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
-          <tr_SectionHead num="§05" title="Full Combo Usage Table" sub={'COMBOS WITH ≥10 BATTLES EVENT-WIDE · RANKED BY USAGE'}/>
+          <TrSectionHead num="§05" title="Full Combo Usage Table" sub={'COMBOS WITH ≥10 BATTLES EVENT-WIDE · RANKED BY USAGE'}/>
           <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#6b7d78',letterSpacing:'0.08em',marginBottom:1}}>PPB = NET PTS ÷ BATTLES</div>
         </div>
         <table style={{width:'100%',borderCollapse:'collapse'}}>
@@ -5831,13 +5963,13 @@ function tr_ComboTablePage({data}) {
           </tbody>
         </table>
       </div>
-      <tr_PageFooter pageNum={3} total={3}/>
-    </tr_Page>
+      <TrPageFooter pageNum={3} total={3}/>
+    </TrPage>
   );
 }
 
 // ── COMBO CARD ────────────────────────────────────────────────────────────────
-function tr_ComboCard({combo, rank, accent, barColor}) {
+function TrComboCard({combo, rank, accent, barColor}) {
   const {name, battles, users, winPct, ppb, pilots} = combo;
   return (
     <div style={{border:'1.5px solid #c8d5d0',borderRadius:6,padding:13,background:'#f3efde',position:'relative',overflow:'hidden'}}>
@@ -5891,12 +6023,12 @@ function tr_ComboCard({combo, rank, accent, barColor}) {
 }
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
-function tr_TournamentBreakdown({data}) {
+function TrTournamentBreakdown({data}) {
   return (
     <>
-      <tr_CoverPage data={data}/>
-      <tr_ComboCardsPage data={data}/>
-      <tr_ComboTablePage data={data}/>
+      <TrCoverPage data={data}/>
+      <TrComboCardsPage data={data}/>
+      <TrComboTablePage data={data}/>
     </>
   );
 }
@@ -5949,6 +6081,7 @@ let rg_CURRENT_STEP = 1;
 // a new link, so every tournament is only ever fetched from Challonge once,
 // by whoever links it first.
 let rg_CHALLONGE_LINKS = {};
+window.rg_CHALLONGE_LINKS = rg_CHALLONGE_LINKS; // shared with tr_ tab
 let rg_CHALLONGE_LINKS_LOADED = false;
 let rg_CHALLONGE_BOX_EDITING = false; // true while the "change link" input is open on Step 2
 // TEMPORARY DEBUG — holds the raw Challonge data from the last fetch, so it
@@ -6014,6 +6147,7 @@ async function rg_loadChallongeLinks() {
   } catch (e) {
     rg_CHALLONGE_LINKS = {};
   }
+  window.rg_CHALLONGE_LINKS = rg_CHALLONGE_LINKS; // keep tr_ tab in sync
   rg_CHALLONGE_LINKS_LOADED = true;
   // Whichever step is on screen right now, refresh it so the "no link yet"
   // notifiers, the Step 2 link box, and the Swiss toggle all reflect what's
