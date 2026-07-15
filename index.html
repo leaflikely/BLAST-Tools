@@ -5515,7 +5515,7 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
   const xtremeCount = finishCounts['Xtreme Finish']||0;
   const burstCount  = finishCounts['Burst Finish']||0;
   const hardFinishPct = finishTotal>0 ? ((xtremeCount+burstCount)/finishTotal*100) : 0;
-  const metaTag = hardFinishPct >= 55 ? 'AGGRESSIVE META' : hardFinishPct <= 35 ? 'DEFENSIVE META' : 'BALANCED META';
+
 
   const sideStats = {B:{battles:0,wins:0,ptsS:0,ptsA:0,sets:0,setWins:0}, X:{battles:0,wins:0,ptsS:0,ptsA:0,sets:0,setWins:0}};
   const setMap = {};
@@ -5628,7 +5628,7 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
     uniqueCombos: uniqueCombosSet.size,
     avgBattles, minBattles, maxBattles,
     medWinPct, medPPB,
-    finishData, finishTotal, metaTag,
+    finishData, finishTotal,
     sides,
     combos,
     comboTableRows,
@@ -5709,7 +5709,7 @@ function TrTile({label, val, sub, teal}) {
 function TrCoverPage({data}) {
   const {tournament, winner, players, totalBattles, totalSets, uniqueCombos,
          avgBattles, minBattles, maxBattles, medWinPct, medPPB,
-         finishData, finishTotal, metaTag, sides} = data;
+         finishData, finishTotal, sides} = data;
 
   const sideB = sides.find(s=>s.side==='B')||{battleWinPct:0,ppb:0,setWinPct:0,battles:0};
   const sideX = sides.find(s=>s.side==='X')||{battleWinPct:0,ppb:0,setWinPct:0,battles:0};
@@ -5781,9 +5781,8 @@ function TrCoverPage({data}) {
 
         {/* §02 Finish Type Distribution */}
         <div>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:10}}>
+          <div style={{marginBottom:10}}>
             <TrSectionHead num="§02" title="Finish Type Distribution" sub={`ALL ${finishTotal} BATTLES · EVENT-WIDE`}/>
-            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#2ea89d',letterSpacing:'0.1em',fontWeight:600,marginBottom:1}}>{metaTag}</div>
           </div>
           <div style={{height:20,borderRadius:3,overflow:'hidden',display:'flex',marginBottom:8}}>
             {finishData.map((f,i) => {
