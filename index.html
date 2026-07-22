@@ -6530,32 +6530,38 @@ function rg_backToTournament() {
   rg_goStep(1);
 }
 
-function rg_downloadReportHTML() {
+// ── EXPORT HTML BUILDER ───────────────────────────────────────────────────────
+// Single source of truth for standalone HTML report output. Used by both
+// "Download HTML" and "Get Link" — never duplicate this logic.
+//
+// HOW PAGE SEPARATION WORKS (important — read before editing):
+//
+//   rg_Page is a React component that renders each page as a plain <div>
+//   with all its layout via inline styles. Those divs land as direct children
+//   of #rg-report-pages with NO class name on them. Past versions tried to
+//   split the HTML string on class="rg-page-div" — that class never exists
+//   on the actual rendered nodes, so the split always failed and collapsed
+//   all pages into one wrapper, breaking the spacing.
+//
+//   The correct approach: iterate pagesEl.children in the DOM (before
+//   serialising to a string), wrap each child's outerHTML individually, then
+//   join them. This is immune to class-name assumptions and will not break
+//   if rg_Page's internals ever change.
+//
+function rg_buildReportHTML() {
   const pagesEl = document.getElementById('rg-report-pages');
-  // React renders JSX component names as lowercase custom HTML elements.
-  // These are display:inline by default and have no size constraints.
-  // Replace them with divs/spans so the downloaded file lays out correctly.
-  let pagesHTML = pagesEl.innerHTML
-    .replace(/<rg_page /g,  '<div class="rg-page-div" ')
-    .replace(/<\/rg_page>/g, '</div>')
-    .replace(/<rg_st /g,    '<div class="rg-st-div" ')
-    .replace(/<\/rg_st>/g,  '</div>')
-    .replace(/<rg_sv /g,    '<div class="rg-sv-div" ')
-    .replace(/<\/rg_sv>/g,  '</div>')
-    .replace(/<rg_sl /g,    '<div class="rg-sl-div" ')
-    .replace(/<\/rg_sl>/g,  '</div>')
-    .replace(/<rg_avatar /g,'<div class="rg-avatar-div" ')
-    .replace(/<\/rg_avatar>/g,'</div>');
-
   const players = Array.from(rg_SELECTED_PLAYERS);
   const stem = rg_buildFileStem(players[0] || 'Player', rg_SELECTED_TOURNAMENT);
-  const filename = stem + '.html';
 
-  // Only keep CSS rules that belong to this tool (marked with the
-  // #tool-reportgen scope prefix used throughout the unified app), so the
-  // downloaded standalone report file doesn't carry unrelated styling from
-  // the other tools sharing this page. The prefix itself is stripped since
-  // the downloaded file has no other tools to avoid colliding with.
+  // Wrap each direct child (one per report page) in its own block-level
+  // wrapper. break-after:page only fires reliably on block-display elements
+  // that are NOT inside a flex container — the wrapper provides that context.
+  const pageBlocks = Array.from(pagesEl.children)
+    .map(child => '<div class="rg-page-wrapper">' + child.outerHTML + '</div>')
+    .join('\n');
+
+  // Only keep CSS from this tool's scoped rules; strip the #tool-reportgen
+  // prefix since the exported file has no other tools to scope against.
   const allStyles = Array.from(document.styleSheets)
     .map(sheet => {
       try {
@@ -6566,14 +6572,6 @@ function rg_downloadReportHTML() {
       }
       catch(e) { return ''; }
     }).join('\n');
-
-  // Extract individual page divs and wrap each in its own block context
-  // so CSS break-after:page works (page breaks don't fire inside flex containers)
-  const pageBlocks = pagesHTML
-    .split(/(?=<div class="rg-page-div" )/)
-    .filter(s => s.trim())
-    .map(s => '<div class="rg-page-wrapper">' + s + '</div>')
-    .join('\n');
 
   const html = `<!doctype html>
 <html lang="en">
@@ -6586,7 +6584,6 @@ function rg_downloadReportHTML() {
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
 ${allStyles}
-    /* CSS variables for the report */
     body{
       --accent:#f6d335;--teal-deep:#0f6b67;--teal:#2ea89d;--teal-soft:#a8d9d2;
       --paper:#fffdf7;--paper-soft:#f3efde;--ink:#14241f;--ink-soft:#3c4f4a;
@@ -6597,12 +6594,7 @@ ${allStyles}
       -webkit-print-color-adjust:exact;
       print-color-adjust:exact;
     }
-    /* React custom elements replaced with divs */
-    .rg-st-div{display:flex;align-items:baseline;}
-    .rg-sv-div{display:block;font-family:'Space Grotesk',system-ui;font-size:44px;font-weight:700;line-height:0.95;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;}
-    .rg-sl-div{display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;font-weight:500;}
-    .rg-avatar-div{display:flex;align-items:center;justify-content:center;border-radius:50%;}
-    /* Page wrapper: block context so break-after works */
+    /* Block wrapper per page — provides the block context break-after:page needs */
     .rg-page-wrapper{
       display:block;
       width:816px;
@@ -6611,122 +6603,13 @@ ${allStyles}
       page-break-after:always;
     }
     .rg-page-wrapper:last-child{break-after:auto;page-break-after:auto;}
-    /* The actual page card */
-    .rg-page-div{
-      width:816px;
-      min-height:1056px;
-      background:var(--paper);
-      display:flex;
-      flex-direction:column;
-      box-sizing:border-box;
-      box-shadow:0 2px 4px rgba(0,0,0,0.1),0 20px 60px -20px rgba(0,0,0,0.2);
-    }
-    @media print{
-      body{background:white!important;}
-      .rg-page-wrapper{
-        margin:0!important;
-        break-after:page!important;
-        page-break-after:always!important;
-      }
-      .rg-page-wrapper:last-child{break-after:auto!important;page-break-after:auto!important;}
-      .rg-page-div{
-        box-shadow:none!important;
-        height:1056px!important;
-        min-height:0!important;
-        overflow:hidden!important;
-      }
-      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
-    }
-    @page{size:letter;margin:0;}
-  </style>
-</head>
-<body>
-  ${pageBlocks}
-</body>
-</html>`;
-
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-}
-
-// ── SHAREABLE LINK ────────────────────────────────────────────────────────────
-// Builds the same self-contained HTML as rg_downloadReportHTML, uploads it
-// to the Worker's /report-link endpoint, then shows the returned URL in a
-// small overlay so you can copy and send it from anywhere.
-
-// Shared HTML builder — produces the same standalone HTML string used by
-// both Download HTML and Get Link, so the two outputs are always identical.
-function rg_buildReportHTML() {
-  const pagesEl = document.getElementById('rg-report-pages');
-  let pagesHTML = pagesEl.innerHTML
-    .replace(/<rg_page /g,  '<div class="rg-page-div" ')
-    .replace(/<\/rg_page>/g, '</div>')
-    .replace(/<rg_st /g,    '<div class="rg-st-div" ')
-    .replace(/<\/rg_st>/g,  '</div>')
-    .replace(/<rg_sv /g,    '<div class="rg-sv-div" ')
-    .replace(/<\/rg_sv>/g,  '</div>')
-    .replace(/<rg_sl /g,    '<div class="rg-sl-div" ')
-    .replace(/<\/rg_sl>/g,  '</div>')
-    .replace(/<rg_avatar /g,'<div class="rg-avatar-div" ')
-    .replace(/<\/rg_avatar>/g,'</div>');
-
-  const players = Array.from(rg_SELECTED_PLAYERS);
-  const stem = rg_buildFileStem(players[0] || 'Player', rg_SELECTED_TOURNAMENT);
-
-  const allStyles = Array.from(document.styleSheets)
-    .map(sheet => {
-      try {
-        return Array.from(sheet.cssRules)
-          .filter(r => r.cssText.includes('#tool-reportgen'))
-          .map(r => r.cssText.split('#tool-reportgen').join(''))
-          .join('\n');
-      }
-      catch(e) { return ''; }
-    }).join('\n');
-
-  const pageBlocks = pagesHTML
-    .split(/(?=<div class="rg-page-div" )/)
-    .filter(s => s.trim())
-    .map(s => '<div class="rg-page-wrapper">' + s + '</div>')
-    .join('\n');
-
-  const html = `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=1100,initial-scale=1"/>
-  <title>${stem}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-${allStyles}
-    body{
-      --accent:#f6d335;--teal-deep:#0f6b67;--teal:#2ea89d;--teal-soft:#a8d9d2;
-      --paper:#fffdf7;--paper-soft:#f3efde;--ink:#14241f;--ink-soft:#3c4f4a;
-      --ink-dim:#14241f;--ink-faint:#14241f;--ink-faintest:#14241f;
-      --rule:#c8d5d0;--rule-soft:#e4ebe7;--danger:#c23a2a;--danger-soft:#e89a90;
-      background:#d0d0d0;
-      font-family:'Barlow',system-ui,sans-serif;
-      -webkit-print-color-adjust:exact;
-      print-color-adjust:exact;
-    }
-    .rg-st-div{display:flex;align-items:baseline;}
-    .rg-sv-div{display:block;font-family:'Space Grotesk',system-ui;font-size:44px;font-weight:700;line-height:0.95;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;}
-    .rg-sl-div{display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;font-weight:500;}
-    .rg-avatar-div{display:flex;align-items:center;justify-content:center;border-radius:50%;}
-    .rg-page-wrapper{display:block;width:816px;margin:0 auto 32px;break-after:page;page-break-after:always;}
-    .rg-page-wrapper:last-child{break-after:auto;page-break-after:auto;}
-    .rg-page-div{width:816px;min-height:1056px;background:var(--paper);display:flex;flex-direction:column;box-sizing:border-box;box-shadow:0 2px 4px rgba(0,0,0,0.1),0 20px 60px -20px rgba(0,0,0,0.2);}
     @media print{
       body{background:white!important;}
       .rg-page-wrapper{margin:0!important;break-after:page!important;page-break-after:always!important;}
       .rg-page-wrapper:last-child{break-after:auto!important;page-break-after:auto!important;}
-      .rg-page-div{box-shadow:none!important;height:1056px!important;min-height:0!important;overflow:hidden!important;}
+      /* Page divs carry all their own inline styles from React —
+         only override shadow and lock the height for print */
+      .rg-page-wrapper > div{box-shadow:none!important;height:1056px!important;min-height:0!important;overflow:hidden!important;}
       *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
     }
     @page{size:letter;margin:0;}
@@ -6740,10 +6623,22 @@ ${allStyles}
   return { html, stem };
 }
 
+function rg_downloadReportHTML() {
+  const { html, stem } = rg_buildReportHTML();
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = stem + '.html';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ── SHAREABLE LINK ────────────────────────────────────────────────────────────
+
 async function rg_getShareableLink() {
   const btn = document.getElementById('rg-btn-get-link');
   const originalLabel = btn.textContent;
-  btn.textContent = 'Uploading…';
+  btn.textContent = 'Uploading\u2026';
   btn.disabled = true;
 
   try {
@@ -6762,8 +6657,6 @@ async function rg_getShareableLink() {
     }
 
     const data = await res.json();
-
-    // Show the overlay with the link
     document.getElementById('rg-link-display').value = data.url;
     document.getElementById('rg-link-copy-btn').textContent = 'COPY';
     document.getElementById('rg-link-overlay').style.display = 'flex';
@@ -6780,13 +6673,12 @@ function rg_copyReportLink() {
   const input = document.getElementById('rg-link-display');
   const btn = document.getElementById('rg-link-copy-btn');
   navigator.clipboard.writeText(input.value).then(() => {
-    btn.textContent = '✓ COPIED';
+    btn.textContent = '\u2713 COPIED';
     setTimeout(() => { btn.textContent = 'COPY'; }, 2000);
   }).catch(() => {
-    // Fallback for older mobile browsers that block clipboard API
     input.select();
     document.execCommand('copy');
-    btn.textContent = '✓ COPIED';
+    btn.textContent = '\u2713 COPIED';
     setTimeout(() => { btn.textContent = 'COPY'; }, 2000);
   });
 }
