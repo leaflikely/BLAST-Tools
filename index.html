@@ -6530,35 +6530,23 @@ function rg_backToTournament() {
   rg_goStep(1);
 }
 
-// ── EXPORT HTML BUILDER ───────────────────────────────────────────────────────
-// Single source of truth for standalone HTML report output. Used by both
-// "Download HTML" and "Get Link" — never duplicate this logic.
+// ── REPORT HTML EXPORT ───────────────────────────────────────────────────────
+// rg_buildReportHTML is the single source of truth for standalone HTML output.
+// Used by both "Download HTML" and "Get Link" — never duplicate this logic.
 //
-// HOW PAGE SEPARATION WORKS (important — read before editing):
-//
-//   rg_Page is a React component that renders each page as a plain <div>
-//   with all its layout via inline styles. Those divs land as direct children
-//   of #rg-report-pages with NO class name on them. Past versions tried to
-//   split the HTML string on class="rg-page-div" — that class never exists
-//   on the actual rendered nodes, so the split always failed and collapsed
-//   all pages into one wrapper, breaking the spacing.
-//
-//   The correct approach: iterate pagesEl.children in the DOM (before
-//   serialising to a string), wrap each child's outerHTML individually, then
-//   join them. This is immune to class-name assumptions and will not break
-//   if rg_Page's internals ever change.
+// HOW THIS WORKS (do not add page-wrapping logic here):
+//   rg_Page renders each page as a <div> with height:1056px, break-after:page,
+//   and all other layout set via inline styles. Those divs go directly into
+//   #rg-report-pages. The exported HTML just needs to dump that innerHTML
+//   as-is — the inline styles already handle page sizing and breaks.
+//   Do NOT add wrapper divs, do NOT split/rejoin on class names.
 //
 function rg_buildReportHTML() {
   const pagesEl = document.getElementById('rg-report-pages');
+  const pagesHTML = pagesEl.innerHTML;
+
   const players = Array.from(rg_SELECTED_PLAYERS);
   const stem = rg_buildFileStem(players[0] || 'Player', rg_SELECTED_TOURNAMENT);
-
-  // Wrap each direct child (one per report page) in its own block-level
-  // wrapper. break-after:page only fires reliably on block-display elements
-  // that are NOT inside a flex container — the wrapper provides that context.
-  const pageBlocks = Array.from(pagesEl.children)
-    .map(child => '<div class="rg-page-wrapper">' + child.outerHTML + '</div>')
-    .join('\n');
 
   // Only keep CSS from this tool's scoped rules; strip the #tool-reportgen
   // prefix since the exported file has no other tools to scope against.
@@ -6594,29 +6582,15 @@ ${allStyles}
       -webkit-print-color-adjust:exact;
       print-color-adjust:exact;
     }
-    /* Block wrapper per page — provides the block context break-after:page needs */
-    .rg-page-wrapper{
-      display:block;
-      width:816px;
-      margin:0 auto 32px;
-      break-after:page;
-      page-break-after:always;
-    }
-    .rg-page-wrapper:last-child{break-after:auto;page-break-after:auto;}
     @media print{
       body{background:white!important;}
-      .rg-page-wrapper{margin:0!important;break-after:page!important;page-break-after:always!important;}
-      .rg-page-wrapper:last-child{break-after:auto!important;page-break-after:auto!important;}
-      /* Page divs carry all their own inline styles from React —
-         only override shadow and lock the height for print */
-      .rg-page-wrapper > div{box-shadow:none!important;height:1056px!important;min-height:0!important;overflow:hidden!important;}
       *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
     }
     @page{size:letter;margin:0;}
   </style>
 </head>
 <body>
-  ${pageBlocks}
+  ${pagesHTML}
 </body>
 </html>`;
 
@@ -6686,7 +6660,6 @@ function rg_copyReportLink() {
 function rg_closeLinkOverlay() {
   document.getElementById('rg-link-overlay').style.display = 'none';
 }
-
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
 // Canonical filename stem: [PlayerName][EventAbbreviation]
