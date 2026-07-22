@@ -1611,11 +1611,6 @@ color: #0e1512 }
 #tool-recapper .btn-primary:hover { background: #f8dc55 }
 #tool-recapper .btn-primary:disabled { opacity: 0.35;
 cursor: not-allowed }
-#tool-recapper #tr-challonge-link-input:focus { border-color: var(--g-teal); outline: none }
-#tool-recapper #tr-challonge-link-input::placeholder { color: var(--g-muted) }
-#tool-recapper #tr-link-status.success { color: var(--g-teal) }
-#tool-recapper #tr-link-status.warn { color: var(--g-accent) }
-#tool-recapper #tr-link-status.error { color: var(--g-danger) }
 #tool-recapper #tr-report-output { display: none }
 #tool-recapper .report-wrapper { background: #223834;
 -webkit-print-color-adjust: exact;
@@ -2449,7 +2444,23 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 <div id="rg-toolbar">
   <button class="toolbar-btn" style="background:#2a3d35;color:#d4e8e0;border:1px solid #4a6358;" onclick="rg_backToTournament()">← New Report</button>
   <button class="toolbar-btn" style="background:#2ea89d;color:#fff;" onclick="rg_downloadReportHTML()">Download HTML</button>
+  <button class="toolbar-btn" id="rg-btn-get-link" style="background:#6c47c9;color:#fff;" onclick="rg_getShareableLink()">🔗 Get Link</button>
   <button class="toolbar-btn" id="rg-btn-print-pdf" style="background:#f6d335;color:#0e1512;" onclick="window.print()">Print / Save PDF</button>
+</div>
+
+<!-- Share link overlay (shown after "Get Link" succeeds) -->
+<div id="rg-link-overlay" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.72);align-items:center;justify-content:center;">
+  <div style="background:#1a2e28;border:1px solid #2ea89d;border-radius:12px;padding:32px 28px;max-width:520px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.5);">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;color:#fff;letter-spacing:0.04em;margin-bottom:8px;">📋 Shareable Link Ready</div>
+    <div style="font-size:13px;color:#8aada5;margin-bottom:20px;line-height:1.5;">Anyone with this link can open the report in their browser — no app needed. Works great for sending via text or DM.</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input id="rg-link-display" readonly style="flex:1;background:#0e1a17;border:1px solid #2ea89d;border-radius:6px;padding:10px 12px;color:#d4e8e0;font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;min-width:0;" />
+      <button id="rg-link-copy-btn" onclick="rg_copyReportLink()" style="background:#2ea89d;color:#fff;border:none;border-radius:6px;padding:10px 16px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.08em;white-space:nowrap;flex-shrink:0;">COPY</button>
+    </div>
+    <div style="margin-top:24px;text-align:right;">
+      <button onclick="rg_closeLinkOverlay()" style="background:none;border:1px solid #3c5048;border-radius:6px;color:#8aada5;font-size:13px;padding:8px 18px;cursor:pointer;font-family:'IBM Plex Mono',monospace;letter-spacing:0.08em;">CLOSE</button>
+    </div>
+  </div>
 </div>
   </div>
   <div class="tool-view" id="tool-recapper">
@@ -2478,23 +2489,13 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         <div class="select-label">TOURNAMENTS FOUND IN FILE</div>
         <div class="option-list" id="tr-tournament-list"></div>
         <div class="btn-row">
-          <button class="btn btn-primary" id="tr-btn-step2-next" disabled onclick="tr_advanceFromStep1()" style="margin-left:auto">Next &#x2192;</button>
+          <button class="btn btn-primary" id="tr-btn-step2-next" disabled onclick="tr_goStep(2)" style="margin-left:auto">Next &#x2192;</button>
         </div>
       </div>
       <div class="panel" id="tr-step2" style="display:none">
         <div class="panel-title">Select Winner</div>
-        <div class="panel-sub" id="tr-step2-sub">No Challonge link found for this event. Paste one below to auto-detect the winner, or select manually from the list.</div>
-        <!-- Link paste box -->
-        <div id="tr-link-paste-box" style="margin-bottom:16px;padding:14px 16px;background:var(--g-surface2);border:1px solid var(--g-border);border-radius:8px;">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.18em;color:var(--g-accent);font-weight:700;margin-bottom:6px;">PASTE CHALLONGE LINK</div>
-          <div style="font-size:12px;color:var(--g-muted);margin-bottom:10px;line-height:1.5;">This will also save the link to the Report tab so future events skip this step automatically.</div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="text" id="tr-challonge-link-input" placeholder="https://challonge.com/your-tournament" style="flex:1;background:var(--g-bg);border:1px solid var(--g-border);border-radius:6px;padding:8px 12px;color:var(--g-text);font-family:'IBM Plex Mono',monospace;font-size:11px;outline:none;" />
-            <button class="btn btn-ghost" id="tr-fetch-link-btn" onclick="tr_fetchChallongeWinner()">Fetch &amp; Generate</button>
-          </div>
-          <div id="tr-link-status" style="font-family:'IBM Plex Mono',monospace;font-size:10px;margin-top:8px;"></div>
-        </div>
-        <div class="select-label">OR SELECT MANUALLY — SORTED BY MATCHES PLAYED</div>
+        <div class="panel-sub">Choose the tournament winner. Players are sorted by number of matches played, most to least.</div>
+        <div class="select-label">PLAYERS — SORTED BY MATCHES PLAYED</div>
         <div class="option-list" id="tr-winner-list"></div>
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="tr_goStep(1)">&#x2190; Back</button>
@@ -5090,31 +5091,6 @@ function tr_goStep(n) {
   if (n === 2) tr_populateWinnerList();
 }
 
-// Called when Next is clicked on Step 1.
-// If a Challonge link exists for the selected tournament and has a 1st-place
-// result, skip the winner step entirely and go straight to generate.
-// Otherwise fall through to Step 2.
-function tr_advanceFromStep1() {
-  const rec = window.rg_CHALLONGE_LINKS && window.rg_CHALLONGE_LINKS[tr_SELECTED_TOURNAMENT];
-  if (rec && Array.isArray(rec.placements) && rec.placements.length > 0) {
-    const first = rec.placements
-      .filter(p => p.finalRank === 1 || p.finalRank === '1')
-      .map(p => p.name)[0];
-    if (first) {
-      // Resolve against the actual player names in the CSV (case-insensitive)
-      const tRows = tr_ALL_ROWS.filter(r => (r.Tournament||'').trim() === tr_SELECTED_TOURNAMENT);
-      const playerNames = new Set();
-      tRows.forEach(r => { ['P1','P2'].forEach(f => { const p=(r[f]||'').trim(); if(p) playerNames.add(p); }); });
-      const match = Array.from(playerNames).find(n => n.toLowerCase() === first.toLowerCase()) || first;
-      tr_SELECTED_WINNER = match;
-      tr_generateAndShow();
-      return;
-    }
-  }
-  // No link or no 1st-place data — go to the manual winner step
-  tr_goStep(2);
-}
-
 // ── AUTO-LOAD FROM SHARED DATA SOURCE ───────────────────────────────────────
 // The file arrives from the shell's shared upload box at the top of the
 // page (one upload feeds every tab), so this tool has no file picker of
@@ -5142,24 +5118,13 @@ if (window.SHARED_CSV_LISTENERS) {
 // ── POPULATE TOURNAMENTS ──────────────────────────────────────────────────────
 function tr_populateTournaments() {
   const counts = {};
-  const earliestTs = {};
-  tr_ALL_ROWS.forEach(r => {
-    const t = (r.Tournament||'').trim();
-    if (!t) return;
-    counts[t] = (counts[t]||0) + 1;
-    const ts = new Date(r.Timestamp||0).getTime();
-    const validTs = isNaN(ts) ? 0 : ts;
-    if (earliestTs[t] === undefined || validTs < earliestTs[t]) earliestTs[t] = validTs;
-  });
+  tr_ALL_ROWS.forEach(r => { const t=(r.Tournament||'').trim(); if(t) counts[t]=(counts[t]||0)+1; });
   const list = document.getElementById('tr-tournament-list');
   list.innerHTML = '';
-  // Newest event on top, oldest on bottom — same as rg_ tab.
-  Object.entries(counts).sort((a,b)=>(earliestTs[b[0]]||0)-(earliestTs[a[0]]||0)).forEach(([t, n]) => {
+  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t, n]) => {
     const btn = document.createElement('button');
     btn.className = 'option-btn' + (t === tr_SELECTED_TOURNAMENT ? ' selected' : '');
-    // Show a dot if no Challonge link is on file from the rg_ tab
-    const hasLink = !!(window.rg_CHALLONGE_LINKS && window.rg_CHALLONGE_LINKS[t] && Array.isArray(window.rg_CHALLONGE_LINKS[t].placements) && window.rg_CHALLONGE_LINKS[t].placements.length > 0);
-    btn.innerHTML = '<span>'+t+'</span><span class="option-meta">'+n+' battles'+(hasLink?' \u00b7 linked':'')+' </span>';
+    btn.innerHTML = '<span>'+t+'</span><span class="option-meta">'+n+' rows</span>';
     btn.onclick = () => {
       document.querySelectorAll('#tr-tournament-list .option-btn').forEach(b=>b.classList.remove('selected'));
       btn.classList.add('selected');
@@ -5168,15 +5133,14 @@ function tr_populateTournaments() {
     };
     list.appendChild(btn);
   });
-  document.getElementById('tr-btn-step2-next').disabled = !tr_SELECTED_TOURNAMENT;
 }
 
 // ── POPULATE WINNER LIST ──────────────────────────────────────────────────────
-// Only reached when tr_advanceFromStep1 found no usable Challonge data.
 function tr_populateWinnerList() {
   const tRows = tr_ALL_ROWS.filter(r => (r.Tournament||'').trim() === tr_SELECTED_TOURNAMENT);
   const mkMap = tr_buildMatchKeyMap(tRows);
 
+  // Count unique matches per player
   const playerMatches = {};
   tRows.forEach(r => {
     const mk = tr_getMatchKey(r, mkMap);
@@ -5188,6 +5152,7 @@ function tr_populateWinnerList() {
     });
   });
 
+  // Sort players by match count descending, then alphabetically
   const sorted = Object.entries(playerMatches)
     .map(([name, keys]) => ({ name, matchCount: keys.size }))
     .sort((a, b) => b.matchCount - a.matchCount || a.name.localeCompare(b.name));
@@ -5196,17 +5161,6 @@ function tr_populateWinnerList() {
   list.innerHTML = '';
   tr_SELECTED_WINNER = null;
   document.getElementById('tr-btn-step3-next').disabled = true;
-
-  // Reset UI boxes
-  const autoBox = document.getElementById('tr-auto-winner-box');
-  const linkBox = document.getElementById('tr-link-paste-box');
-  if (autoBox) autoBox.style.display = 'none';
-  if (linkBox) {
-    linkBox.style.display = '';
-    document.getElementById('tr-challonge-link-input').value = '';
-    document.getElementById('tr-link-status').textContent = '';
-    document.getElementById('tr-link-status').className = '';
-  }
 
   sorted.forEach(({ name, matchCount }) => {
     const btn = document.createElement('button');
@@ -5222,76 +5176,6 @@ function tr_populateWinnerList() {
   });
 }
 
-// ── FETCH WINNER FROM PASTED LINK ─────────────────────────────────────────────
-// Used on Step 2 when the user pastes a Challonge link manually.
-// On success, saves the link to both tabs and goes straight to generate.
-const TR_WORKER_URL = 'https://ncblast-data.danny61734.workers.dev';
-
-async function tr_fetchChallongeWinner() {
-  const input = document.getElementById('tr-challonge-link-input');
-  const statusEl = document.getElementById('tr-link-status');
-  const btn = document.getElementById('tr-fetch-link-btn');
-  const link = input.value.trim();
-
-  if (!link) {
-    statusEl.textContent = 'Paste a Challonge link first.';
-    statusEl.className = 'error';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Fetching\u2026';
-  statusEl.textContent = 'Asking Challonge for results\u2026';
-  statusEl.className = '';
-
-  try {
-    const res = await fetch(TR_WORKER_URL + '/challonge-placements?tournament=' + encodeURIComponent(link));
-    let data;
-    try { data = await res.json(); } catch(e) { data = null; }
-
-    if (!res.ok || !data || data.error) {
-      statusEl.textContent = (data && data.error) ? data.error : 'Could not read that link (server said ' + res.status + '). Check the URL and try again.';
-      statusEl.className = 'error';
-      btn.disabled = false; btn.textContent = 'Fetch Winner';
-      return;
-    }
-
-    const placements = Array.isArray(data.placements) ? data.placements : [];
-    const swissRounds = (typeof data.swissRounds === 'number' && data.swissRounds > 0) ? data.swissRounds : null;
-    const first = placements.filter(p => p.finalRank === 1 || p.finalRank === '1').map(p => p.name)[0];
-
-    if (!first) {
-      statusEl.textContent = 'Found the bracket but no 1st-place result yet \u2014 finalize it on Challonge and try again.';
-      statusEl.className = 'warn';
-      btn.disabled = false; btn.textContent = 'Fetch Winner';
-      return;
-    }
-
-    // Save to shared Challonge links (both tabs)
-    if (!window.rg_CHALLONGE_LINKS) window.rg_CHALLONGE_LINKS = {};
-    window.rg_CHALLONGE_LINKS[tr_SELECTED_TOURNAMENT] = { link, placements, swissRounds, fetchedAt: new Date().toISOString() };
-    fetch(TR_WORKER_URL + '/challonge-links', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tournament: tr_SELECTED_TOURNAMENT, link, placements, swissRounds }),
-    }).catch(() => {});
-    if (typeof rg_loadChallongeLinks === 'function') rg_loadChallongeLinks();
-
-    // Resolve the winner name against CSV players, then generate immediately
-    const tRows = tr_ALL_ROWS.filter(r => (r.Tournament||'').trim() === tr_SELECTED_TOURNAMENT);
-    const playerNames = new Set();
-    tRows.forEach(r => { ['P1','P2'].forEach(f => { const p=(r[f]||'').trim(); if(p) playerNames.add(p); }); });
-    const match = Array.from(playerNames).find(n => n.toLowerCase() === first.toLowerCase()) || first;
-    tr_SELECTED_WINNER = match;
-    tr_generateAndShow();
-
-  } catch(err) {
-    statusEl.textContent = 'Connection error. Check your internet and try again.';
-    statusEl.className = 'error';
-    btn.disabled = false; btn.textContent = 'Fetch Winner';
-  }
-}
-
 // ── GENERATE ──────────────────────────────────────────────────────────────────
 function tr_generateAndShow() {
   tr_goStep(3);
@@ -5302,7 +5186,7 @@ function tr_generateAndShow() {
     document.getElementById('tr-toolbar').style.display = 'flex';
     const pagesEl = document.getElementById('tr-report-pages');
     if (!tr_reportRoot) tr_reportRoot = ReactDOM.createRoot(pagesEl);
-    tr_reportRoot.render(React.createElement(TrTournamentBreakdown, { data }));
+    tr_reportRoot.render(React.createElement(tr_TournamentBreakdown, { data }));
   }, 50);
 }
 
@@ -5453,6 +5337,21 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
   });
   const allPlayers = [...playerSet];
 
+  // ATTENDEES count: use the date with the most unique players (the main tournament day).
+  // This prevents warmup sessions or casual rounds tagged under the same tournament name
+  // on different dates from inflating the count. All other stats still use allPlayers/tRows.
+  const _playersByDate = {};
+  tRows.forEach(r => {
+    const date = (r.Timestamp||'').slice(0, 10);
+    if (!date) return;
+    if (!_playersByDate[date]) _playersByDate[date] = new Set();
+    if ((r.P1||'').trim()) _playersByDate[date].add(r.P1.trim());
+    if ((r.P2||'').trim()) _playersByDate[date].add(r.P2.trim());
+  });
+  const mainEventPlayerCount = Object.values(_playersByDate).reduce(
+    (max, dateSet) => dateSet.size > max ? dateSet.size : max, 0
+  ) || allPlayers.length;
+
   function playerStats(player) {
     const pl = player.toLowerCase();
     function isP1(r){ return (r.P1||'').trim().toLowerCase()===pl; }
@@ -5515,7 +5414,7 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
   const xtremeCount = finishCounts['Xtreme Finish']||0;
   const burstCount  = finishCounts['Burst Finish']||0;
   const hardFinishPct = finishTotal>0 ? ((xtremeCount+burstCount)/finishTotal*100) : 0;
-
+  const metaTag = hardFinishPct >= 55 ? 'AGGRESSIVE META' : hardFinishPct <= 35 ? 'DEFENSIVE META' : 'BALANCED META';
 
   const sideStats = {B:{battles:0,wins:0,ptsS:0,ptsA:0,sets:0,setWins:0}, X:{battles:0,wins:0,ptsS:0,ptsA:0,sets:0,setWins:0}};
   const setMap = {};
@@ -5623,12 +5522,12 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
 
   return {
     tournament, winner,
-    players: allPlayers.length,
+    players: mainEventPlayerCount,
     totalBattles, totalSets,
     uniqueCombos: uniqueCombosSet.size,
     avgBattles, minBattles, maxBattles,
     medWinPct, medPPB,
-    finishData, finishTotal,
+    finishData, finishTotal, metaTag,
     sides,
     combos,
     comboTableRows,
@@ -5642,7 +5541,7 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
 
 // ── SHARED COMPONENTS ─────────────────────────────────────────────────────────
 
-function TrPage({children}) {
+function tr_Page({children}) {
   return (
     <div style={{
       width:816, minHeight:1056, background:'#fffdf7', color:'#14241f',
@@ -5656,7 +5555,7 @@ function TrPage({children}) {
   );
 }
 
-function TrPageHeader({title, subtitle, pageNum}) {
+function tr_PageHeader({title, subtitle, pageNum}) {
   return (
     <div style={{padding:'28px 40px 20px',borderBottom:'1px solid #c8d5d0',display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
       <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -5671,7 +5570,7 @@ function TrPageHeader({title, subtitle, pageNum}) {
   );
 }
 
-function TrPageFooter({pageNum, total}) {
+function tr_PageFooter({pageNum, total}) {
   return (
     <div style={{padding:'12px 40px',borderTop:'1px solid #e4ebe7',display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:'auto'}}>
       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.12em',color:'#a2b0ab'}}>NCBLAST · NORCAL BEYBLADE LEAGUE · TOURNAMENT BREAKDOWN</div>
@@ -5680,7 +5579,7 @@ function TrPageFooter({pageNum, total}) {
   );
 }
 
-function TrSectionHead({num, title, sub}) {
+function tr_SectionHead({num, title, sub}) {
   return (
     <div style={{marginBottom:12}}>
       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.2em',color:'#2ea89d',fontWeight:600,marginBottom:3}}>{num}</div>
@@ -5690,12 +5589,12 @@ function TrSectionHead({num, title, sub}) {
   );
 }
 
-function TrRule() {
+function tr_Rule() {
   return <div style={{height:1,background:'#c8d5d0'}}/>;
 }
 
 // Stat tile used on page 1 — stronger text colours for cream background
-function TrTile({label, val, sub, teal}) {
+function tr_Tile({label, val, sub, teal}) {
   return (
     <div style={{background:'#f3efde',border:'1px solid #c8d5d0',borderRadius:5,padding:'11px 13px'}}>
       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.14em',color:'#3c4f4a',marginBottom:4}}>{label}</div>
@@ -5706,16 +5605,16 @@ function TrTile({label, val, sub, teal}) {
 }
 
 // ── PAGE 1: COVER ─────────────────────────────────────────────────────────────
-function TrCoverPage({data}) {
+function tr_CoverPage({data}) {
   const {tournament, winner, players, totalBattles, totalSets, uniqueCombos,
          avgBattles, minBattles, maxBattles, medWinPct, medPPB,
-         finishData, finishTotal, sides} = data;
+         finishData, finishTotal, metaTag, sides} = data;
 
   const sideB = sides.find(s=>s.side==='B')||{battleWinPct:0,ppb:0,setWinPct:0,battles:0};
   const sideX = sides.find(s=>s.side==='X')||{battleWinPct:0,ppb:0,setWinPct:0,battles:0};
 
   return (
-    <TrPage>
+    <tr_Page>
       {/* DARK HERO */}
       <div style={{background:'#14241f',padding:'36px 40px 32px',color:'#d4e8e0',position:'relative',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
         <div style={{position:'absolute',top:-40,right:-40,width:220,height:220,borderRadius:'50%',background:'rgba(46,168,157,0.07)'}}/>
@@ -5770,19 +5669,20 @@ function TrCoverPage({data}) {
 
         {/* §01 Participation Snapshot */}
         <div>
-          <TrSectionHead num="§01" title="Participation Snapshot" sub="EVENT-WIDE AVERAGES · ALL PLAYERS"/>
+          <tr_SectionHead num="§01" title="Participation Snapshot" sub="EVENT-WIDE AVERAGES · ALL PLAYERS"/>
           <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:12}}>
-            <TrTile label="AVG BATTLES / PLAYER" val={avgBattles.toFixed(1)}/>
-            <TrTile label="UNIQUE COMBOS"        val={uniqueCombos} sub="used this event"/>
+            <tr_Tile label="AVG BATTLES / PLAYER" val={avgBattles.toFixed(1)}/>
+            <tr_Tile label="UNIQUE COMBOS"        val={uniqueCombos} sub="used this event"/>
           </div>
         </div>
 
-        <TrRule/>
+        <tr_Rule/>
 
         {/* §02 Finish Type Distribution */}
         <div>
-          <div style={{marginBottom:10}}>
-            <TrSectionHead num="§02" title="Finish Type Distribution" sub={`ALL ${finishTotal} BATTLES · EVENT-WIDE`}/>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:10}}>
+            <tr_SectionHead num="§02" title="Finish Type Distribution" sub={`ALL ${finishTotal} BATTLES · EVENT-WIDE`}/>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#2ea89d',letterSpacing:'0.1em',fontWeight:600,marginBottom:1}}>{metaTag}</div>
           </div>
           <div style={{height:20,borderRadius:3,overflow:'hidden',display:'flex',marginBottom:8}}>
             {finishData.map((f,i) => {
@@ -5804,11 +5704,11 @@ function TrCoverPage({data}) {
           </div>
         </div>
 
-        <TrRule/>
+        <tr_Rule/>
 
         {/* §03 Stadium Side Performance */}
         <div>
-          <TrSectionHead num="§03" title="Stadium Side Performance" sub="B-SIDE VS X-SIDE · EVENT-WIDE ACROSS ALL SETS"/>
+          <tr_SectionHead num="§03" title="Stadium Side Performance" sub="B-SIDE VS X-SIDE · EVENT-WIDE ACROSS ALL SETS"/>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
             {/* B-SIDE — light card */}
             <div style={{borderRadius:6,padding:'16px 18px',background:'#f3efde',border:'1.5px solid #c8d5d0',position:'relative',overflow:'hidden'}}>
@@ -5859,13 +5759,13 @@ function TrCoverPage({data}) {
 
       </div>
 
-      <TrPageFooter pageNum={1} total={3}/>
-    </TrPage>
+      <tr_PageFooter pageNum={1} total={3}/>
+    </tr_Page>
   );
 }
 
 // ── PAGE 2: COMBO CARDS ───────────────────────────────────────────────────────
-function TrComboCardsPage({data}) {
+function tr_ComboCardsPage({data}) {
   const {tournament, combos} = data;
   const topCombos = combos.slice(0,6);
 
@@ -5883,42 +5783,42 @@ function TrComboCardsPage({data}) {
   }
 
   return (
-    <TrPage>
-      <TrPageHeader
+    <tr_Page>
+      <tr_PageHeader
         title={`${tournament} — META BREAKDOWN`}
         subtitle="NORCAL BEYBLADE LEAGUE"
         pageNum="PAGE 2 OF 3"
       />
       <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:16}}>
-        <TrSectionHead num="§04" title="Most-Used Combos — Event Meta" sub="RANKED BY USAGE · FIELD STATS ACROSS ALL PLAYERS · TOP PILOTS (10 BATTLES MIN)"/>
+        <tr_SectionHead num="§04" title="Most-Used Combos — Event Meta" sub="RANKED BY USAGE · FIELD STATS ACROSS ALL PLAYERS · TOP PILOTS (10 BATTLES MIN)"/>
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:11}}>
           {topCombos.map((c,i) => (
-            <TrComboCard key={i} combo={c} rank={i} accent={cardAccent(i,c.winPct)} barColor={winBarColor(c.winPct)}/>
+            <tr_ComboCard key={i} combo={c} rank={i} accent={cardAccent(i,c.winPct)} barColor={winBarColor(c.winPct)}/>
           ))}
           {topCombos.length === 0 && (
             <div style={{gridColumn:'1/-1',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:'#a2b0ab',padding:'20px 0'}}>No combo data found for this tournament.</div>
           )}
         </div>
       </div>
-      <TrPageFooter pageNum={2} total={3}/>
-    </TrPage>
+      <tr_PageFooter pageNum={2} total={3}/>
+    </tr_Page>
   );
 }
 
 // ── PAGE 3: FULL TABLE ────────────────────────────────────────────────────────
-function TrComboTablePage({data}) {
+function tr_ComboTablePage({data}) {
   const {tournament, combos, comboTableRows} = data;
 
   return (
-    <TrPage>
-      <TrPageHeader
+    <tr_Page>
+      <tr_PageHeader
         title={`${tournament} — COMBO USAGE`}
         subtitle="NORCAL BEYBLADE LEAGUE"
         pageNum="PAGE 3 OF 3"
       />
       <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:16}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
-          <TrSectionHead num="§05" title="Full Combo Usage Table" sub={'COMBOS WITH ≥10 BATTLES EVENT-WIDE · RANKED BY USAGE'}/>
+          <tr_SectionHead num="§05" title="Full Combo Usage Table" sub={'COMBOS WITH ≥10 BATTLES EVENT-WIDE · RANKED BY USAGE'}/>
           <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#6b7d78',letterSpacing:'0.08em',marginBottom:1}}>PPB = NET PTS ÷ BATTLES</div>
         </div>
         <table style={{width:'100%',borderCollapse:'collapse'}}>
@@ -5962,13 +5862,13 @@ function TrComboTablePage({data}) {
           </tbody>
         </table>
       </div>
-      <TrPageFooter pageNum={3} total={3}/>
-    </TrPage>
+      <tr_PageFooter pageNum={3} total={3}/>
+    </tr_Page>
   );
 }
 
 // ── COMBO CARD ────────────────────────────────────────────────────────────────
-function TrComboCard({combo, rank, accent, barColor}) {
+function tr_ComboCard({combo, rank, accent, barColor}) {
   const {name, battles, users, winPct, ppb, pilots} = combo;
   return (
     <div style={{border:'1.5px solid #c8d5d0',borderRadius:6,padding:13,background:'#f3efde',position:'relative',overflow:'hidden'}}>
@@ -6022,12 +5922,12 @@ function TrComboCard({combo, rank, accent, barColor}) {
 }
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
-function TrTournamentBreakdown({data}) {
+function tr_TournamentBreakdown({data}) {
   return (
     <>
-      <TrCoverPage data={data}/>
-      <TrComboCardsPage data={data}/>
-      <TrComboTablePage data={data}/>
+      <tr_CoverPage data={data}/>
+      <tr_ComboCardsPage data={data}/>
+      <tr_ComboTablePage data={data}/>
     </>
   );
 }
@@ -6080,7 +5980,6 @@ let rg_CURRENT_STEP = 1;
 // a new link, so every tournament is only ever fetched from Challonge once,
 // by whoever links it first.
 let rg_CHALLONGE_LINKS = {};
-window.rg_CHALLONGE_LINKS = rg_CHALLONGE_LINKS; // shared with tr_ tab
 let rg_CHALLONGE_LINKS_LOADED = false;
 let rg_CHALLONGE_BOX_EDITING = false; // true while the "change link" input is open on Step 2
 // TEMPORARY DEBUG — holds the raw Challonge data from the last fetch, so it
@@ -6146,7 +6045,6 @@ async function rg_loadChallongeLinks() {
   } catch (e) {
     rg_CHALLONGE_LINKS = {};
   }
-  window.rg_CHALLONGE_LINKS = rg_CHALLONGE_LINKS; // keep tr_ tab in sync
   rg_CHALLONGE_LINKS_LOADED = true;
   // Whichever step is on screen right now, refresh it so the "no link yet"
   // notifiers, the Step 2 link box, and the Swiss toggle all reflect what's
@@ -6634,9 +6532,20 @@ function rg_backToTournament() {
 
 function rg_downloadReportHTML() {
   const pagesEl = document.getElementById('rg-report-pages');
-  // Page components now render as proper React components (uppercase names),
-  // so no custom-element replacement is needed for the page structure.
-  let pagesHTML = pagesEl.innerHTML;
+  // React renders JSX component names as lowercase custom HTML elements.
+  // These are display:inline by default and have no size constraints.
+  // Replace them with divs/spans so the downloaded file lays out correctly.
+  let pagesHTML = pagesEl.innerHTML
+    .replace(/<rg_page /g,  '<div class="rg-page-div" ')
+    .replace(/<\/rg_page>/g, '</div>')
+    .replace(/<rg_st /g,    '<div class="rg-st-div" ')
+    .replace(/<\/rg_st>/g,  '</div>')
+    .replace(/<rg_sv /g,    '<div class="rg-sv-div" ')
+    .replace(/<\/rg_sv>/g,  '</div>')
+    .replace(/<rg_sl /g,    '<div class="rg-sl-div" ')
+    .replace(/<\/rg_sl>/g,  '</div>')
+    .replace(/<rg_avatar /g,'<div class="rg-avatar-div" ')
+    .replace(/<\/rg_avatar>/g,'</div>');
 
   const players = Array.from(rg_SELECTED_PLAYERS);
   const stem = rg_buildFileStem(players[0] || 'Player', rg_SELECTED_TOURNAMENT);
@@ -6658,9 +6567,13 @@ function rg_downloadReportHTML() {
       catch(e) { return ''; }
     }).join('\n');
 
-  // Pages render as real divs with inline height:1056 and break-after:page.
-  // No post-processing needed — use the HTML as-is.
-  const pageBlocks = pagesHTML;
+  // Extract individual page divs and wrap each in its own block context
+  // so CSS break-after:page works (page breaks don't fire inside flex containers)
+  const pageBlocks = pagesHTML
+    .split(/(?=<div class="rg-page-div" )/)
+    .filter(s => s.trim())
+    .map(s => '<div class="rg-page-wrapper">' + s + '</div>')
+    .join('\n');
 
   const html = `<!doctype html>
 <html lang="en">
@@ -6684,8 +6597,44 @@ ${allStyles}
       -webkit-print-color-adjust:exact;
       print-color-adjust:exact;
     }
+    /* React custom elements replaced with divs */
+    .rg-st-div{display:flex;align-items:baseline;}
+    .rg-sv-div{display:block;font-family:'Space Grotesk',system-ui;font-size:44px;font-weight:700;line-height:0.95;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;}
+    .rg-sl-div{display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;font-weight:500;}
+    .rg-avatar-div{display:flex;align-items:center;justify-content:center;border-radius:50%;}
+    /* Page wrapper: block context so break-after works */
+    .rg-page-wrapper{
+      display:block;
+      width:816px;
+      margin:0 auto 32px;
+      break-after:page;
+      page-break-after:always;
+    }
+    .rg-page-wrapper:last-child{break-after:auto;page-break-after:auto;}
+    /* The actual page card */
+    .rg-page-div{
+      width:816px;
+      min-height:1056px;
+      background:var(--paper);
+      display:flex;
+      flex-direction:column;
+      box-sizing:border-box;
+      box-shadow:0 2px 4px rgba(0,0,0,0.1),0 20px 60px -20px rgba(0,0,0,0.2);
+    }
     @media print{
       body{background:white!important;}
+      .rg-page-wrapper{
+        margin:0!important;
+        break-after:page!important;
+        page-break-after:always!important;
+      }
+      .rg-page-wrapper:last-child{break-after:auto!important;page-break-after:auto!important;}
+      .rg-page-div{
+        box-shadow:none!important;
+        height:1056px!important;
+        min-height:0!important;
+        overflow:hidden!important;
+      }
       *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
     }
     @page{size:letter;margin:0;}
@@ -6702,6 +6651,148 @@ ${allStyles}
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ── SHAREABLE LINK ────────────────────────────────────────────────────────────
+// Builds the same self-contained HTML as rg_downloadReportHTML, uploads it
+// to the Worker's /report-link endpoint, then shows the returned URL in a
+// small overlay so you can copy and send it from anywhere.
+
+// Shared HTML builder — produces the same standalone HTML string used by
+// both Download HTML and Get Link, so the two outputs are always identical.
+function rg_buildReportHTML() {
+  const pagesEl = document.getElementById('rg-report-pages');
+  let pagesHTML = pagesEl.innerHTML
+    .replace(/<rg_page /g,  '<div class="rg-page-div" ')
+    .replace(/<\/rg_page>/g, '</div>')
+    .replace(/<rg_st /g,    '<div class="rg-st-div" ')
+    .replace(/<\/rg_st>/g,  '</div>')
+    .replace(/<rg_sv /g,    '<div class="rg-sv-div" ')
+    .replace(/<\/rg_sv>/g,  '</div>')
+    .replace(/<rg_sl /g,    '<div class="rg-sl-div" ')
+    .replace(/<\/rg_sl>/g,  '</div>')
+    .replace(/<rg_avatar /g,'<div class="rg-avatar-div" ')
+    .replace(/<\/rg_avatar>/g,'</div>');
+
+  const players = Array.from(rg_SELECTED_PLAYERS);
+  const stem = rg_buildFileStem(players[0] || 'Player', rg_SELECTED_TOURNAMENT);
+
+  const allStyles = Array.from(document.styleSheets)
+    .map(sheet => {
+      try {
+        return Array.from(sheet.cssRules)
+          .filter(r => r.cssText.includes('#tool-reportgen'))
+          .map(r => r.cssText.split('#tool-reportgen').join(''))
+          .join('\n');
+      }
+      catch(e) { return ''; }
+    }).join('\n');
+
+  const pageBlocks = pagesHTML
+    .split(/(?=<div class="rg-page-div" )/)
+    .filter(s => s.trim())
+    .map(s => '<div class="rg-page-wrapper">' + s + '</div>')
+    .join('\n');
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=1100,initial-scale=1"/>
+  <title>${stem}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+${allStyles}
+    body{
+      --accent:#f6d335;--teal-deep:#0f6b67;--teal:#2ea89d;--teal-soft:#a8d9d2;
+      --paper:#fffdf7;--paper-soft:#f3efde;--ink:#14241f;--ink-soft:#3c4f4a;
+      --ink-dim:#14241f;--ink-faint:#14241f;--ink-faintest:#14241f;
+      --rule:#c8d5d0;--rule-soft:#e4ebe7;--danger:#c23a2a;--danger-soft:#e89a90;
+      background:#d0d0d0;
+      font-family:'Barlow',system-ui,sans-serif;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+    .rg-st-div{display:flex;align-items:baseline;}
+    .rg-sv-div{display:block;font-family:'Space Grotesk',system-ui;font-size:44px;font-weight:700;line-height:0.95;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;}
+    .rg-sl-div{display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;font-weight:500;}
+    .rg-avatar-div{display:flex;align-items:center;justify-content:center;border-radius:50%;}
+    .rg-page-wrapper{display:block;width:816px;margin:0 auto 32px;break-after:page;page-break-after:always;}
+    .rg-page-wrapper:last-child{break-after:auto;page-break-after:auto;}
+    .rg-page-div{width:816px;min-height:1056px;background:var(--paper);display:flex;flex-direction:column;box-sizing:border-box;box-shadow:0 2px 4px rgba(0,0,0,0.1),0 20px 60px -20px rgba(0,0,0,0.2);}
+    @media print{
+      body{background:white!important;}
+      .rg-page-wrapper{margin:0!important;break-after:page!important;page-break-after:always!important;}
+      .rg-page-wrapper:last-child{break-after:auto!important;page-break-after:auto!important;}
+      .rg-page-div{box-shadow:none!important;height:1056px!important;min-height:0!important;overflow:hidden!important;}
+      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+    }
+    @page{size:letter;margin:0;}
+  </style>
+</head>
+<body>
+  ${pageBlocks}
+</body>
+</html>`;
+
+  return { html, stem };
+}
+
+async function rg_getShareableLink() {
+  const btn = document.getElementById('rg-btn-get-link');
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Uploading…';
+  btn.disabled = true;
+
+  try {
+    const { html, stem } = rg_buildReportHTML();
+
+    const res = await fetch('https://ncblast-data.danny61734.workers.dev/report-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: stem + '.html', html }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert('Could not create link: ' + (err.error || 'server error ' + res.status));
+      return;
+    }
+
+    const data = await res.json();
+
+    // Show the overlay with the link
+    document.getElementById('rg-link-display').value = data.url;
+    document.getElementById('rg-link-copy-btn').textContent = 'COPY';
+    document.getElementById('rg-link-overlay').style.display = 'flex';
+
+  } catch (err) {
+    alert('Could not reach the data server. Check your connection and try again.');
+  } finally {
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+  }
+}
+
+function rg_copyReportLink() {
+  const input = document.getElementById('rg-link-display');
+  const btn = document.getElementById('rg-link-copy-btn');
+  navigator.clipboard.writeText(input.value).then(() => {
+    btn.textContent = '✓ COPIED';
+    setTimeout(() => { btn.textContent = 'COPY'; }, 2000);
+  }).catch(() => {
+    // Fallback for older mobile browsers that block clipboard API
+    input.select();
+    document.execCommand('copy');
+    btn.textContent = '✓ COPIED';
+    setTimeout(() => { btn.textContent = 'COPY'; }, 2000);
+  });
+}
+
+function rg_closeLinkOverlay() {
+  document.getElementById('rg-link-overlay').style.display = 'none';
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -7542,15 +7633,15 @@ function rg_computeAllArchetypes(allRows, tournament, allReportData) {
 <script type="text/babel">
 // ═══ PLAYER REPORT GENERATOR TOOL — REACT/JSX (namespaced with rg_ prefix) ═══
 
-let rg_TOTAL_PAGES = 7;
+const rg_TOTAL_PAGES = 7;
 const rg_thS=(w,align='right')=>({textAlign:align,padding:'7px 6px',fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--ink-dim)',width:typeof w==='number'?w:w});
 const rg_tdS={padding:'8px 6px',textAlign:'right',fontVariantNumeric:'tabular-nums',fontFamily:"'IBM Plex Mono',monospace",color:'var(--ink)',fontSize:10.5};
 
-function RgSL({children,style}){return <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--ink-dim)',fontWeight:500,...style}}>{children}</div>;}
-function RgSV({children,size='lg',style}){const sz={xl:72,lg:44,md:28,sm:20};return <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:sz[size],fontWeight:700,lineHeight:0.95,letterSpacing:'-0.02em',color:'var(--ink)',fontVariantNumeric:'tabular-nums',...style}}>{children}</div>;}
-function RgST({num,title,sub}){return(<div style={{display:'flex',alignItems:'baseline',gap:16,borderBottom:'2px solid var(--ink)',paddingBottom:10,marginBottom:20}}><div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.2em',color:'var(--accent)',fontWeight:700}}>&sect;{num}</div><h2 style={{margin:0,fontFamily:"'Space Grotesk',system-ui",fontSize:22,fontWeight:700,letterSpacing:'-0.01em',color:'var(--ink)'}}>{title}</h2>{sub&&<div style={{marginLeft:'auto',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.1em',color:'var(--ink-faint)',textTransform:'uppercase'}}>{sub}</div>}</div>);}
+function rg_SL({children,style}){return <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,letterSpacing:'0.18em',textTransform:'uppercase',color:'var(--ink-dim)',fontWeight:500,...style}}>{children}</div>;}
+function rg_SV({children,size='lg',style}){const sz={xl:72,lg:44,md:28,sm:20};return <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:sz[size],fontWeight:700,lineHeight:0.95,letterSpacing:'-0.02em',color:'var(--ink)',fontVariantNumeric:'tabular-nums',...style}}>{children}</div>;}
+function rg_ST({num,title,sub}){return(<div style={{display:'flex',alignItems:'baseline',gap:16,borderBottom:'2px solid var(--ink)',paddingBottom:10,marginBottom:20}}><div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.2em',color:'var(--accent)',fontWeight:700}}>&sect;{num}</div><h2 style={{margin:0,fontFamily:"'Space Grotesk',system-ui",fontSize:22,fontWeight:700,letterSpacing:'-0.01em',color:'var(--ink)'}}>{title}</h2>{sub&&<div style={{marginLeft:'auto',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,letterSpacing:'0.1em',color:'var(--ink-faint)',textTransform:'uppercase'}}>{sub}</div>}</div>);}
 
-function RgPage({children,num,total,label,footer,noHeader}){
+function rg_Page({children,num,total,label,footer,noHeader}){
   return(<div style={{width:816,height:1056,background:'var(--paper)',padding:0,display:'flex',flexDirection:'column',color:'var(--ink)',fontFamily:"'Barlow',system-ui",position:'relative',boxShadow:'0 2px 4px rgba(0,0,0,0.08),0 20px 60px -20px rgba(0,0,0,0.2)',margin:'0 auto',pageBreakAfter:'always',breakAfter:'page',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
     {/* Teal header bar for non-cover pages */}
     {!noHeader&&<div style={{width:'100%',background:'var(--teal-deep)',padding:'0 56px',height:36,display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
@@ -7570,7 +7661,7 @@ function RgPage({children,num,total,label,footer,noHeader}){
     </div>
   </div>);
 }
-function RgAvatar({name,size=100}){
+function rg_Avatar({name,size=100}){
   const initials=(name||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
   return(<div style={{width:size,height:size,borderRadius:size,background:'conic-gradient(from 140deg,var(--teal-deep),var(--teal),var(--teal-deep))',border:'3px solid var(--paper)',boxShadow:'0 0 0 3px var(--accent),0 12px 32px -8px rgba(0,0,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
     <span style={{fontFamily:"'Space Grotesk',system-ui",fontWeight:800,fontSize:size*0.38,color:'white',letterSpacing:'-0.02em'}}>{initials}</span>
@@ -7588,7 +7679,7 @@ function rg_CoverPage({data,accent,logoSrc}){
     return <div style={{padding:'5px 10px',borderRadius:5,background:m.result==='win'?accent:'#c23a2a',color:m.result==='win'?'#0e1512':'white',fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:700,letterSpacing:'0.04em',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>{m.w}-{m.l}</div>;
   }
 
-  return(<RgPage num={1} total={rg_TOTAL_PAGES} label="Cover" noHeader={true}>
+  return(<rg_Page num={1} total={rg_TOTAL_PAGES} label="Cover" noHeader={true}>
     <div style={{position:'absolute',top:0,left:0,right:0,height:8,background:'repeating-linear-gradient(115deg,var(--teal-deep) 0 16px,var(--teal) 16px 34px,var(--accent) 34px 42px,var(--teal) 42px 58px)',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact',zIndex:2}}/>
     <div style={{display:'flex',alignItems:'center',gap:16,marginTop:0,marginBottom:20}}>
       <img src={logoSrc} alt="NCBL" style={{width:52,height:52,objectFit:'contain'}}/>
@@ -7600,7 +7691,7 @@ function rg_CoverPage({data,accent,logoSrc}){
     <div style={{background:'var(--teal-deep)',borderRadius:8,padding:'22px 26px 20px',position:'relative',overflow:'hidden',border:'3px solid var(--ink)',boxShadow:'6px 6px 0 var(--ink)',color:'var(--paper)',marginBottom:16,WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
       <svg style={{position:'absolute',right:-80,top:-40,opacity:0.35,pointerEvents:'none'}} width={300} height={300} viewBox="0 0 300 300">{[...Array(12)].map((_,i)=><circle key={i} cx={150} cy={150} r={18+i*11} fill="none" stroke="var(--teal)" strokeWidth={1.2}/>)}</svg>
       <div style={{display:'flex',alignItems:'center',gap:20,position:'relative',zIndex:1,marginBottom:14}}>
-        <RgAvatar name={player.name} size={100}/>
+        <rg_Avatar name={player.name} size={100}/>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,letterSpacing:'0.22em',color:accent,fontWeight:700}}>PLAYER</div>
           <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:54,fontWeight:800,lineHeight:0.9,letterSpacing:'-0.035em',marginTop:8,color:'var(--paper)'}}>{player.name}</div>
@@ -7638,9 +7729,9 @@ function rg_CoverPage({data,accent,logoSrc}){
       </div>
     </div>
     <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr',gap:16,padding:'14px 0',borderBottom:'1px solid var(--rule)',marginBottom:16}}>
-      <div><RgSL style={{color:'#14241f'}}>Event</RgSL><div style={{fontSize:15,fontWeight:700,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.name}</div><div style={{fontSize:11,color:'#14241f',marginTop:1}}>{event.location}</div></div>
-      <div><RgSL style={{color:'#14241f'}}>Date</RgSL><div style={{fontSize:13,fontWeight:500,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.date}</div></div>
-      <div><RgSL style={{color:'#14241f'}}>Format</RgSL><div style={{fontSize:12,fontWeight:500,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.format}</div></div>
+      <div><rg_SL style={{color:'#14241f'}}>Event</rg_SL><div style={{fontSize:15,fontWeight:700,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.name}</div><div style={{fontSize:11,color:'#14241f',marginTop:1}}>{event.location}</div></div>
+      <div><rg_SL style={{color:'#14241f'}}>Date</rg_SL><div style={{fontSize:13,fontWeight:500,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.date}</div></div>
+      <div><rg_SL style={{color:'#14241f'}}>Format</rg_SL><div style={{fontSize:12,fontWeight:500,marginTop:3,fontFamily:"'Space Grotesk',system-ui",color:'#14241f'}}>{event.format}</div></div>
     </div>
     <div style={{marginTop:'auto'}}>
       <div style={{padding:'12px 16px',background:'var(--accent)',color:'var(--ink)',borderRadius:6,border:'2px solid var(--ink)',boxShadow:'3px 3px 0 var(--ink)'}}>
@@ -7649,7 +7740,7 @@ function rg_CoverPage({data,accent,logoSrc}){
         <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:'rgba(0,0,0,.65)',marginTop:2,letterSpacing:'0.04em'}}>{highlight.sub}</div>
       </div>
     </div>
-  </RgPage>);
+  </rg_Page>);
 }
 
 // §02 OVERVIEW
@@ -7719,11 +7810,11 @@ function rg_OverviewPage({data,accent}){
       </table>
     </div>);
   }
-  return(<RgPage num={2} total={rg_TOTAL_PAGES} label="Overview">
-    <RgST num="02" title="Overview" sub="Event totals"/>
+  return(<rg_Page num={2} total={rg_TOTAL_PAGES} label="Overview">
+    <rg_ST num="02" title="Overview" sub="Event totals"/>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:18,marginBottom:20}}>
       {[{label:'Overall Win%',val:summary.overallWinPct.toFixed(1)+'%',sub:summary.swissRecord.wins+'W \u00b7 '+summary.swissRecord.losses+'L'},{label:'Overall PPB',val:(summary.overallPPB>=0?'+':'')+summary.overallPPB.toFixed(2),sub:'net pts \u00f7 battles',color:'var(--teal-deep)'},{label:'Points Per Win',val:summary.ppw.toFixed(2),sub:'field avg '+summary.fieldPPW.toFixed(2),color:summary.ppw>=summary.fieldPPW?'var(--teal-deep)':'var(--danger)'},{label:'Total Battles',val:summary.totalBattles,sub:summary.totalSets+' sets'}].map((s,i)=>(
-        <div key={i}><RgSL style={{color:'#14241f'}}>{s.label}</RgSL><RgSV size="lg" style={{marginTop:6,color:s.color||'#14241f'}}>{s.val}</RgSV><div style={{fontSize:9.5,color:'#14241f',marginTop:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'0.06em'}}>{s.sub}</div></div>
+        <div key={i}><rg_SL style={{color:'#14241f'}}>{s.label}</rg_SL><rg_SV size="lg" style={{marginTop:6,color:s.color||'#14241f'}}>{s.val}</rg_SV><div style={{fontSize:9.5,color:'#14241f',marginTop:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'0.06em'}}>{s.sub}</div></div>
       ))}
     </div>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:18,marginBottom:20,paddingTop:14,borderTop:'1px solid var(--rule-soft)'}}>
@@ -7732,7 +7823,7 @@ function rg_OverviewPage({data,accent}){
         {label:'B-Side Set Win%',val:sideB&&sideB.setsPlayed>0?sideB.setWinPct.toFixed(1)+'%':'—',sub:sideB&&sideB.setsPlayed>0?sideB.setsWon+'W \u00b7 '+(sideB.setsPlayed-sideB.setsWon)+'L \u00b7 '+sideB.setsPlayed+' sets':'No B-side sets',color:sideB&&sideB.setsPlayed>0?(sideB.setWinPct>=50?'var(--teal-deep)':'var(--danger)'):'#14241f'},
         {label:'X-Side Set Win%',val:sideX&&sideX.setsPlayed>0?sideX.setWinPct.toFixed(1)+'%':'—',sub:sideX&&sideX.setsPlayed>0?sideX.setsWon+'W \u00b7 '+(sideX.setsPlayed-sideX.setsWon)+'L \u00b7 '+sideX.setsPlayed+' sets':'No X-side sets',color:sideX&&sideX.setsPlayed>0?(sideX.setWinPct>=50?'var(--teal-deep)':'var(--danger)'):'#14241f'},
       ].map((s,i)=>(
-        <div key={i}><RgSL style={{color:'#14241f'}}>{s.label}</RgSL><RgSV size="lg" style={{marginTop:6,color:s.color||'#14241f'}}>{s.val}</RgSV><div style={{fontSize:9.5,color:'#14241f',marginTop:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'0.06em'}}>{s.sub}</div></div>
+        <div key={i}><rg_SL style={{color:'#14241f'}}>{s.label}</rg_SL><rg_SV size="lg" style={{marginTop:6,color:s.color||'#14241f'}}>{s.val}</rg_SV><div style={{fontSize:9.5,color:'#14241f',marginTop:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'0.06em'}}>{s.sub}</div></div>
       ))}
     </div>
     <div style={{marginBottom:18}}>
@@ -7755,15 +7846,15 @@ function rg_OverviewPage({data,accent}){
         <FT rows={allowed} title="Scored on Player" sub="LOSING FINISHES" tone="danger"/>
       </div>
     </div>
-  </RgPage>);
+  </rg_Page>);
 }
 
 // §03 COMBO PERFORMANCE
 function rg_ComboPage({data,accent}){
   const{deck,recurringMatchups,peerComparison}=data;
   const tColors={S:'#0f6b67',A:'#2ea89d',B:'#6b7d78',C:'#c27a2a',D:'#c23a2a'};
-  return(<RgPage num={3} total={rg_TOTAL_PAGES} label="Combos">
-    <RgST num="03" title="Combo Performance" sub="Per-combo \u00b7 Field tier \u00b7 Matchups"/>
+  return(<rg_Page num={3} total={rg_TOTAL_PAGES} label="Combos">
+    <rg_ST num="03" title="Combo Performance" sub="Per-combo \u00b7 Field tier \u00b7 Matchups"/>
     <div style={{marginBottom:20}}>
       <h3 style={{margin:'0 0 10px',fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:600,color:'#14241f'}}>Per-Combo Stats</h3>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
@@ -7802,9 +7893,9 @@ function rg_ComboPage({data,accent}){
             </div>
             <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:12,fontWeight:700,letterSpacing:'-0.005em',lineHeight:1.3,marginBottom:12,minHeight:30,color:'#14241f'}}>{c.name}</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:8}}>
-              <div><RgSL style={{fontSize:8.5,color:'#14241f'}}>Win%</RgSL><RgSV size="md" style={{marginTop:3,color:'#14241f'}}>{c.winPct.toFixed(1)}<span style={{fontSize:14,color:'#14241f'}}>%</span></RgSV></div>
-              <div><RgSL style={{fontSize:8.5,color:'#14241f'}}>PPB</RgSL><RgSV size="md" style={{marginTop:3,color:c.ppb>=1?'var(--teal-deep)':c.ppb<0?'var(--danger)':'#14241f'}}>{c.ppb>0?'+':''}{c.ppb.toFixed(2)}</RgSV></div>
-              {sideStrengthLabel&&<div style={{gridColumn:'1 / -1'}}><RgSL style={{fontSize:8.5,color:'#14241f'}}>Side Strength</RgSL><RgSV size="sm" style={{marginTop:3,color:'#14241f',fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700}}>{sideStrengthLabel}</RgSV>{sideStrengthSub&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#14241f',letterSpacing:'0.04em',marginTop:2}}>{sideStrengthSub}</div>}</div>}
+              <div><rg_SL style={{fontSize:8.5,color:'#14241f'}}>Win%</rg_SL><rg_SV size="md" style={{marginTop:3,color:'#14241f'}}>{c.winPct.toFixed(1)}<span style={{fontSize:14,color:'#14241f'}}>%</span></rg_SV></div>
+              <div><rg_SL style={{fontSize:8.5,color:'#14241f'}}>PPB</rg_SL><rg_SV size="md" style={{marginTop:3,color:c.ppb>=1?'var(--teal-deep)':c.ppb<0?'var(--danger)':'#14241f'}}>{c.ppb>0?'+':''}{c.ppb.toFixed(2)}</rg_SV></div>
+              {sideStrengthLabel&&<div style={{gridColumn:'1 / -1'}}><rg_SL style={{fontSize:8.5,color:'#14241f'}}>Side Strength</rg_SL><rg_SV size="sm" style={{marginTop:3,color:'#14241f',fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700}}>{sideStrengthLabel}</rg_SV>{sideStrengthSub&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#14241f',letterSpacing:'0.04em',marginTop:2}}>{sideStrengthSub}</div>}</div>}
             </div>
             <div style={{height:5,background:'var(--rule-soft)',borderRadius:2,overflow:'hidden',marginBottom:6}}><div style={{height:'100%',width:Math.min(100,c.winPct)+'%',background:'var(--teal-deep)'}}/></div>
             {fa!==null&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#14241f',letterSpacing:'0.06em'}}>Field {fa.toFixed(1)}% &middot; Gap {gap>=0?'+':''}{gap?.toFixed(1)}%{ro?' \u00b7 of '+ro+' peers':''}</div>}
@@ -7824,7 +7915,7 @@ function rg_ComboPage({data,accent}){
         <tbody>{recurringMatchups.map((m,i)=><tr key={i} style={{borderBottom:'1px solid var(--rule-soft)'}}><td style={{...rg_tdS,textAlign:'left',fontWeight:700,color:'var(--teal-deep)',fontFamily:"'Space Grotesk',system-ui",fontSize:10.5}}>{m.yourComboName.split('\u00b7')[0].trim()}</td><td style={{...rg_tdS,textAlign:'left',fontWeight:500,fontFamily:"'Space Grotesk',system-ui",fontSize:10.5,color:'#14241f'}}>{m.oppCombo}</td><td style={{...rg_tdS,color:'#14241f',fontSize:10}}>{m.times}</td><td style={{...rg_tdS,color:'#14241f',fontSize:10}}>{m.w}&ndash;{m.l}</td><td style={{...rg_tdS,fontWeight:600,color:m.winPct>=50?'var(--ink)':'var(--danger)',fontSize:10}}>{m.winPct.toFixed(1)}%</td><td style={{...rg_tdS,fontWeight:700,color:m.ppb>=0?'var(--teal-deep)':'var(--danger)',fontSize:10}}>{m.ppb>0?'+':''}{m.ppb.toFixed(2)}</td><td style={{...rg_tdS,fontWeight:700,color:m.net>=0?'var(--teal-deep)':'var(--danger)',fontSize:10}}>{m.net>0?'+':''}{m.net}</td></tr>)}</tbody>
       </table>}
     </div>
-  </RgPage>);
+  </rg_Page>);
 }
 
 // §03a COMBO FINISH BREAKDOWN — one donut+table pair per top-3 deck combo
@@ -7878,8 +7969,8 @@ function rg_ComboFinishPage({data,accent,pageNum}){
     </div>);
   }
 
-  return(<RgPage num={pageNum} total={rg_TOTAL_PAGES} label="Combo Finishes">
-    <RgST num="03" title="Combo Finish Breakdown" sub="Top 3 combos \u00b7 Finish types"/>
+  return(<rg_Page num={pageNum} total={rg_TOTAL_PAGES} label="Combo Finishes">
+    <rg_ST num="03" title="Combo Finish Breakdown" sub="Top 3 combos \u00b7 Finish types"/>
     <p style={{margin:'0 0 16px',fontSize:10.5,color:'#14241f',fontFamily:"'Barlow',system-ui",lineHeight:1.5}}>How each of your most-played combos wins and loses battles, broken down by finish type.</p>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16}}>
       {comboFinishes.map((c,i)=>(
@@ -7893,15 +7984,15 @@ function rg_ComboFinishPage({data,accent,pageNum}){
         </div>
       ))}
     </div>
-  </RgPage>);
+  </rg_Page>);
 }
 
 // §03b PEER COMPARISON (separate page to prevent overflow)
 function rg_PeerComparisonPage({data,accent,pageNum}){
   const{peerComparison}=data;
   if(!peerComparison||peerComparison.length===0) return null;
-  return(<RgPage num={pageNum} total={rg_TOTAL_PAGES} label="Peer Comparison">
-    <RgST num="03" title="Shared-Combo Peer Comparison" sub="Same exact combo \u00b7 \u22653 battles"/>
+  return(<rg_Page num={pageNum} total={rg_TOTAL_PAGES} label="Peer Comparison">
+    <rg_ST num="03" title="Shared-Combo Peer Comparison" sub="Same exact combo \u00b7 \u22653 battles"/>
     <p style={{margin:'0 0 14px',fontSize:10.5,color:'#14241f',fontFamily:"'Barlow',system-ui",lineHeight:1.5}}>How you performed with each of your deck combos compared to everyone else in the tournament who played the exact same combo.</p>
     <table style={{width:'100%',borderCollapse:'collapse',fontSize:10.5}}>
       <thead><tr style={{borderBottom:'1px solid var(--rule)'}}><th style={{...rg_thS(100,'left'),color:'#14241f'}}>Combo</th><th style={{...rg_thS('auto','left'),color:'#14241f'}}>Player</th><th style={{...rg_thS(60),color:'#14241f'}}>Win%</th><th style={{...rg_thS(60),color:'#14241f'}}>PPB</th><th style={{...rg_thS(60),color:'#14241f'}}>Battles</th></tr></thead>
@@ -7920,11 +8011,11 @@ function rg_PeerComparisonPage({data,accent,pageNum}){
       }))}
       </tbody>
     </table>
-  </RgPage>);
+  </rg_Page>);
 }
 
 // §04 BATTLE DYNAMICS
-function rg_BattleDynamicsPage({data,accent,pageNum}){
+function rg_BattleDynamicsPage({data,accent}){
   const{shuffleInitial,shufflePost,sides,pointsDetail,deck,comboSidePPB}=data;
   const totalScored=pointsDetail.reduce((s,p)=>s+p.scored,0);
   const totalAllowed=pointsDetail.reduce((s,p)=>s+p.allowed,0);
@@ -7960,8 +8051,8 @@ function rg_BattleDynamicsPage({data,accent,pageNum}){
       </div>
     </div>);
   }
-  return(<RgPage num={pageNum||4} total={rg_TOTAL_PAGES} label="Battle Dynamics">
-    <RgST num="04" title="Battle Dynamics" sub="Slot \u00b7 Side \u00b7 Points"/>
+  return(<rg_Page num={4} total={rg_TOTAL_PAGES} label="Battle Dynamics">
+    <rg_ST num="04" title="Battle Dynamics" sub="Slot \u00b7 Side \u00b7 Points"/>
     <div style={{display:'grid',gridTemplateColumns:'1.6fr 1fr',gap:20,marginBottom:16}}>
       <div>
         <SlotTbl rows={shuffleInitial} slots={[1,2,3]} title="Initial Shuffle" sub="Slots 1–3 · first three battles of each set."/>
@@ -7974,7 +8065,7 @@ function rg_BattleDynamicsPage({data,accent,pageNum}){
             <div style={{position:'absolute',right:-6,top:-14,fontFamily:"'Space Grotesk',system-ui",fontSize:60,fontWeight:800,color:isB?'var(--rule)':'rgba(255,255,255,.12)',lineHeight:1,letterSpacing:'-0.06em',pointerEvents:'none'}}>{s.side}</div>
             <div style={{position:'relative'}}>
               <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,letterSpacing:'0.14em',color:isB?'#14241f':accent,fontWeight:700}}>{s.side} SIDE</div>
-              <RgSV size="sm" style={{color:isB?'#14241f':'#fffdf7',marginTop:3}}>{s.battleWinPct.toFixed(1)}%</RgSV>
+              <rg_SV size="sm" style={{color:isB?'#14241f':'#fffdf7',marginTop:3}}>{s.battleWinPct.toFixed(1)}%</rg_SV>
               <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,opacity:0.65,marginTop:2,color:isB?'#14241f':'#fffdf7'}}>{s.battles} btl &middot; PPB {s.ppb>=0?'+':''}{s.ppb.toFixed(2)}</div>
             </div>
           </div>);})}
@@ -8115,7 +8206,7 @@ function rg_BattleDynamicsPage({data,accent,pageNum}){
         </div>
       );
     })()}
-  </RgPage>);
+  </rg_Page>);
 }
 
 
@@ -8130,8 +8221,8 @@ function rg_MatchRecapPages({data,accent,startPageNum}){
   return React.createElement(React.Fragment,null,...chunks.map((pageMatches,pi)=>{
     const pageStartIdx=pi*MATCHES_PER_PAGE;
     return(
-    <RgPage key={pi} num={startPageNum+pi} total={rg_TOTAL_PAGES} label={'Match Recap'+(chunks.length>1?' ('+(pi+1)+'/'+chunks.length+')':'')}>
-      <RgST num="06" title="Match Recap" sub={'Every match \u00b7 Numbers only'+(chunks.length>1?' \u00b7 '+(pi+1)+'/'+chunks.length:'')}/>
+    <rg_Page key={pi} num={startPageNum+pi} total={rg_TOTAL_PAGES} label={'Match Recap'+(chunks.length>1?' ('+(pi+1)+'/'+chunks.length+')':'')}>
+      <rg_ST num="06" title="Match Recap" sub={'Every match \u00b7 Numbers only'+(chunks.length>1?' \u00b7 '+(pi+1)+'/'+chunks.length:'')}/>
       {pi===0&&<p style={{margin:'0 0 10px',fontSize:10,color:'#14241f',fontFamily:"'Barlow',system-ui",lineHeight:1.4}}>Opponent combos shown. W-L = that combo vs you this match. Combo PPB = that combo's efficiency against you in this match only.</p>}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {pageMatches.map((m,i)=>{
@@ -8167,7 +8258,7 @@ function rg_MatchRecapPages({data,accent,startPageNum}){
           </React.Fragment>);
         })}
       </div>
-    </RgPage>
+    </rg_Page>
     );
   }));
 }
@@ -8278,8 +8369,8 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
   ];
 
   return(
-    <RgPage num={pageNum} total={rg_TOTAL_PAGES} label="Player Profile">
-      <RgST num="05" title="Player Profile" sub="Style fingerprint"/>
+    <rg_Page num={pageNum} total={rg_TOTAL_PAGES} label="Player Profile">
+      <rg_ST num="05" title="Player Profile" sub="Style fingerprint"/>
 
       {/* ── ARCHETYPE CARD ─────────────────────────────────────────────────── */}
       <div style={{background:archetypeColor,borderRadius:8,padding:'12px 18px',marginBottom:10,
@@ -8498,7 +8589,7 @@ function rg_PlayerProfilePage({data,accent,pageNum}){
           })}
         </div>
       </div>
-    </RgPage>
+    </rg_Page>
   );
 }
 
@@ -8722,8 +8813,8 @@ function rg_PressureProfilePage({data,accent,pageNum}){
   }
 
   return(
-    <RgPage num={pageNum} total={rg_TOTAL_PAGES} label="Pressure Profile">
-      <RgST num="PP" title="Pressure Profile" sub="Set · Momentum · Resilience"/>
+    <rg_Page num={pageNum} total={rg_TOTAL_PAGES} label="Pressure Profile">
+      <rg_ST num="PP" title="Pressure Profile" sub="Set · Momentum · Resilience"/>
       <div style={{
         fontFamily:"'Barlow',system-ui",
         fontSize:11,lineHeight:1.5,
@@ -8736,7 +8827,7 @@ function rg_PressureProfilePage({data,accent,pageNum}){
       <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
         {cards.map((card,i)=><StatCard key={i} card={card}/>)}
       </div>
-    </RgPage>
+    </rg_Page>
   );
 }
 
@@ -8753,7 +8844,7 @@ function rg_buildReportFragment(reportData, accent, key) {
   const recapCount = rg_matchRecapPageCount(reportData);
   const hasPeers = reportData.peerComparison && reportData.peerComparison.length > 0;
   const hasProfile = reportData.profile != null;
-  // RgPage numbering: 1 Cover, 2 Overview, 3 Combos, 3a Combo Finishes, 4 Peer(if any), 5 Profile(if any), 6 Battle Dynamics, PP Pressure Profile, 7+ Match Recap
+  // rg_Page numbering: 1 Cover, 2 Overview, 3 Combos, 3a Combo Finishes, 4 Peer(if any), 5 Profile(if any), 6 Battle Dynamics, PP Pressure Profile, 7+ Match Recap
   const hasComboFinishes = reportData.comboFinishes && reportData.comboFinishes.length > 0;
   let p = 3;
   const comboFinishPageNum = hasComboFinishes ? ++p : null;
@@ -8766,8 +8857,6 @@ function rg_buildReportFragment(reportData, accent, key) {
   p += recapCount - 1;
   const total = p;
 
-  rg_TOTAL_PAGES = total;
-
   const children = [
     React.createElement(rg_CoverPage,          {data:reportData, accent, logoSrc:rg_LOGO}),
     React.createElement(rg_OverviewPage,       {data:reportData, accent}),
@@ -8776,7 +8865,7 @@ function rg_buildReportFragment(reportData, accent, key) {
   if (hasComboFinishes) children.push(React.createElement(rg_ComboFinishPage, {data:reportData, accent, pageNum:comboFinishPageNum}));
   if (hasPeers) children.push(React.createElement(rg_PeerComparisonPage, {data:reportData, accent, pageNum:peerPageNum}));
   if (hasProfile) children.push(React.createElement(rg_PlayerProfilePage, {data:reportData, accent, pageNum:profilePageNum}));
-  children.push(React.createElement(rg_BattleDynamicsPage, {data:reportData, accent, pageNum:battlePageNum}));
+  children.push(React.createElement(rg_BattleDynamicsPage, {data:reportData, accent}));
   children.push(React.createElement(rg_PressureProfilePage, {data:reportData, accent, pageNum:pressurePageNum}));
   children.push(React.createElement(rg_MatchRecapPages,    {data:reportData, accent, startPageNum:recapStartNum}));
 
