@@ -5186,7 +5186,7 @@ function tr_generateAndShow() {
     document.getElementById('tr-toolbar').style.display = 'flex';
     const pagesEl = document.getElementById('tr-report-pages');
     if (!tr_reportRoot) tr_reportRoot = ReactDOM.createRoot(pagesEl);
-    tr_reportRoot.render(React.createElement(tr_TournamentBreakdown, { data }));
+    tr_reportRoot.render(React.createElement(TrTournamentBreakdown, { data }));
   }, 50);
 }
 
@@ -5541,7 +5541,7 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
 
 // ── SHARED COMPONENTS ─────────────────────────────────────────────────────────
 
-function tr_Page({children}) {
+function TrPage({children}) {
   return (
     <div style={{
       width:816, minHeight:1056, background:'#fffdf7', color:'#14241f',
@@ -5555,7 +5555,7 @@ function tr_Page({children}) {
   );
 }
 
-function tr_PageHeader({title, subtitle, pageNum}) {
+function TrPageHeader({title, subtitle, pageNum}) {
   return (
     <div style={{padding:'28px 40px 20px',borderBottom:'1px solid #c8d5d0',display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
       <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -5570,7 +5570,7 @@ function tr_PageHeader({title, subtitle, pageNum}) {
   );
 }
 
-function tr_PageFooter({pageNum, total}) {
+function TrPageFooter({pageNum, total}) {
   return (
     <div style={{padding:'12px 40px',borderTop:'1px solid #e4ebe7',display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:'auto'}}>
       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.12em',color:'#a2b0ab'}}>NCBLAST · NORCAL BEYBLADE LEAGUE · TOURNAMENT BREAKDOWN</div>
@@ -5579,7 +5579,7 @@ function tr_PageFooter({pageNum, total}) {
   );
 }
 
-function tr_SectionHead({num, title, sub}) {
+function TrSectionHead({num, title, sub}) {
   return (
     <div style={{marginBottom:12}}>
       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.2em',color:'#2ea89d',fontWeight:600,marginBottom:3}}>{num}</div>
@@ -5589,12 +5589,12 @@ function tr_SectionHead({num, title, sub}) {
   );
 }
 
-function tr_Rule() {
+function TrRule() {
   return <div style={{height:1,background:'#c8d5d0'}}/>;
 }
 
 // Stat tile used on page 1 — stronger text colours for cream background
-function tr_Tile({label, val, sub, teal}) {
+function TrTile({label, val, sub, teal}) {
   return (
     <div style={{background:'#f3efde',border:'1px solid #c8d5d0',borderRadius:5,padding:'11px 13px'}}>
       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.14em',color:'#3c4f4a',marginBottom:4}}>{label}</div>
@@ -5605,7 +5605,7 @@ function tr_Tile({label, val, sub, teal}) {
 }
 
 // ── PAGE 1: COVER ─────────────────────────────────────────────────────────────
-function tr_CoverPage({data}) {
+function TrCoverPage({data}) {
   const {tournament, winner, players, totalBattles, totalSets, uniqueCombos,
          avgBattles, minBattles, maxBattles, medWinPct, medPPB,
          finishData, finishTotal, metaTag, sides} = data;
@@ -5614,7 +5614,7 @@ function tr_CoverPage({data}) {
   const sideX = sides.find(s=>s.side==='X')||{battleWinPct:0,ppb:0,setWinPct:0,battles:0};
 
   return (
-    <tr_Page>
+    <TrPage>
       {/* DARK HERO */}
       <div style={{background:'#14241f',padding:'36px 40px 32px',color:'#d4e8e0',position:'relative',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
         <div style={{position:'absolute',top:-40,right:-40,width:220,height:220,borderRadius:'50%',background:'rgba(46,168,157,0.07)'}}/>
@@ -5669,19 +5669,19 @@ function tr_CoverPage({data}) {
 
         {/* §01 Participation Snapshot */}
         <div>
-          <tr_SectionHead num="§01" title="Participation Snapshot" sub="EVENT-WIDE AVERAGES · ALL PLAYERS"/>
+          <TrSectionHead num="§01" title="Participation Snapshot" sub="EVENT-WIDE AVERAGES · ALL PLAYERS"/>
           <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:12}}>
-            <tr_Tile label="AVG BATTLES / PLAYER" val={avgBattles.toFixed(1)}/>
-            <tr_Tile label="UNIQUE COMBOS"        val={uniqueCombos} sub="used this event"/>
+            <TrTile label="AVG BATTLES / PLAYER" val={avgBattles.toFixed(1)}/>
+            <TrTile label="UNIQUE COMBOS"        val={uniqueCombos} sub="used this event"/>
           </div>
         </div>
 
-        <tr_Rule/>
+        <TrRule/>
 
         {/* §02 Finish Type Distribution */}
         <div>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:10}}>
-            <tr_SectionHead num="§02" title="Finish Type Distribution" sub={`ALL ${finishTotal} BATTLES · EVENT-WIDE`}/>
+            <TrSectionHead num="§02" title="Finish Type Distribution" sub={`ALL ${finishTotal} BATTLES · EVENT-WIDE`}/>
             <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8.5,color:'#2ea89d',letterSpacing:'0.1em',fontWeight:600,marginBottom:1}}>{metaTag}</div>
           </div>
           <div style={{height:20,borderRadius:3,overflow:'hidden',display:'flex',marginBottom:8}}>
@@ -5704,11 +5704,11 @@ function tr_CoverPage({data}) {
           </div>
         </div>
 
-        <tr_Rule/>
+        <TrRule/>
 
         {/* §03 Stadium Side Performance */}
         <div>
-          <tr_SectionHead num="§03" title="Stadium Side Performance" sub="B-SIDE VS X-SIDE · EVENT-WIDE ACROSS ALL SETS"/>
+          <TrSectionHead num="§03" title="Stadium Side Performance" sub="B-SIDE VS X-SIDE · EVENT-WIDE ACROSS ALL SETS"/>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
             {/* B-SIDE — light card */}
             <div style={{borderRadius:6,padding:'16px 18px',background:'#f3efde',border:'1.5px solid #c8d5d0',position:'relative',overflow:'hidden'}}>
@@ -5759,13 +5759,13 @@ function tr_CoverPage({data}) {
 
       </div>
 
-      <tr_PageFooter pageNum={1} total={3}/>
-    </tr_Page>
+      <TrPageFooter pageNum={1} total={3}/>
+    </TrPage>
   );
 }
 
 // ── PAGE 2: COMBO CARDS ───────────────────────────────────────────────────────
-function tr_ComboCardsPage({data}) {
+function TrComboCardsPage({data}) {
   const {tournament, combos} = data;
   const topCombos = combos.slice(0,6);
 
@@ -5783,42 +5783,42 @@ function tr_ComboCardsPage({data}) {
   }
 
   return (
-    <tr_Page>
-      <tr_PageHeader
+    <TrPage>
+      <TrPageHeader
         title={`${tournament} — META BREAKDOWN`}
         subtitle="NORCAL BEYBLADE LEAGUE"
         pageNum="PAGE 2 OF 3"
       />
       <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:16}}>
-        <tr_SectionHead num="§04" title="Most-Used Combos — Event Meta" sub="RANKED BY USAGE · FIELD STATS ACROSS ALL PLAYERS · TOP PILOTS (10 BATTLES MIN)"/>
+        <TrSectionHead num="§04" title="Most-Used Combos — Event Meta" sub="RANKED BY USAGE · FIELD STATS ACROSS ALL PLAYERS · TOP PILOTS (10 BATTLES MIN)"/>
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:11}}>
           {topCombos.map((c,i) => (
-            <tr_ComboCard key={i} combo={c} rank={i} accent={cardAccent(i,c.winPct)} barColor={winBarColor(c.winPct)}/>
+            <TrComboCard key={i} combo={c} rank={i} accent={cardAccent(i,c.winPct)} barColor={winBarColor(c.winPct)}/>
           ))}
           {topCombos.length === 0 && (
             <div style={{gridColumn:'1/-1',fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:'#a2b0ab',padding:'20px 0'}}>No combo data found for this tournament.</div>
           )}
         </div>
       </div>
-      <tr_PageFooter pageNum={2} total={3}/>
-    </tr_Page>
+      <TrPageFooter pageNum={2} total={3}/>
+    </TrPage>
   );
 }
 
 // ── PAGE 3: FULL TABLE ────────────────────────────────────────────────────────
-function tr_ComboTablePage({data}) {
+function TrComboTablePage({data}) {
   const {tournament, combos, comboTableRows} = data;
 
   return (
-    <tr_Page>
-      <tr_PageHeader
+    <TrPage>
+      <TrPageHeader
         title={`${tournament} — COMBO USAGE`}
         subtitle="NORCAL BEYBLADE LEAGUE"
         pageNum="PAGE 3 OF 3"
       />
       <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:16}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
-          <tr_SectionHead num="§05" title="Full Combo Usage Table" sub={'COMBOS WITH ≥10 BATTLES EVENT-WIDE · RANKED BY USAGE'}/>
+          <TrSectionHead num="§05" title="Full Combo Usage Table" sub={'COMBOS WITH ≥10 BATTLES EVENT-WIDE · RANKED BY USAGE'}/>
           <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#6b7d78',letterSpacing:'0.08em',marginBottom:1}}>PPB = NET PTS ÷ BATTLES</div>
         </div>
         <table style={{width:'100%',borderCollapse:'collapse'}}>
@@ -5862,13 +5862,13 @@ function tr_ComboTablePage({data}) {
           </tbody>
         </table>
       </div>
-      <tr_PageFooter pageNum={3} total={3}/>
-    </tr_Page>
+      <TrPageFooter pageNum={3} total={3}/>
+    </TrPage>
   );
 }
 
 // ── COMBO CARD ────────────────────────────────────────────────────────────────
-function tr_ComboCard({combo, rank, accent, barColor}) {
+function TrComboCard({combo, rank, accent, barColor}) {
   const {name, battles, users, winPct, ppb, pilots} = combo;
   return (
     <div style={{border:'1.5px solid #c8d5d0',borderRadius:6,padding:13,background:'#f3efde',position:'relative',overflow:'hidden'}}>
@@ -5922,12 +5922,12 @@ function tr_ComboCard({combo, rank, accent, barColor}) {
 }
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
-function tr_TournamentBreakdown({data}) {
+function TrTournamentBreakdown({data}) {
   return (
     <>
-      <tr_CoverPage data={data}/>
-      <tr_ComboCardsPage data={data}/>
-      <tr_ComboTablePage data={data}/>
+      <TrCoverPage data={data}/>
+      <TrComboCardsPage data={data}/>
+      <TrComboTablePage data={data}/>
     </>
   );
 }
