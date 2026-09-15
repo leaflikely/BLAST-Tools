@@ -2446,7 +2446,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
   <button class="toolbar-btn" style="background:#2a3d35;color:#d4e8e0;border:1px solid #4a6358;" onclick="rg_backToTournament()">← New Report</button>
   <button class="toolbar-btn" style="background:#2ea89d;color:#fff;" onclick="rg_downloadReportHTML()">Download HTML</button>
   <button class="toolbar-btn" id="rg-btn-get-link" style="background:#6c47c9;color:#fff;" onclick="rg_getShareableLink()">🔗 Get Link</button>
-  <button class="toolbar-btn" id="rg-btn-print-pdf" style="background:#f6d335;color:#0e1512;" onclick="window.print()">Print / Save PDF</button>
+  <button class="toolbar-btn" id="rg-btn-print-pdf" style="background:#f6d335;color:#0e1512;" onclick="rg_printAllReports()">Print / Save PDF</button>
 </div>
 
 <!-- Share link overlay (shown after "Get Link" succeeds) -->
@@ -6644,38 +6644,54 @@ function rg_exportAllReports() {
   const pagesEl = document.getElementById('rg-report-pages');
   if (!window.__reportRoot) window.__reportRoot = ReactDOM.createRoot(pagesEl);
 
-  if (players.length === 1) {
-    // Single player: set title for PDF name, render, then wait for paint before printing
-    document.title = rg_buildFileStem(players[0], rg_SELECTED_TOURNAMENT);
-    renderReportInto(window.__reportRoot, rg_COMPUTED_STATS[players[0]]);
-    rg_waitForPaintThenPrint();
-  } else {
-    // Multiple players: open one print dialog per player, sequentially
-    var idx = 0;
-    var printBtn = document.getElementById('rg-btn-print-pdf');
-    function printNext() {
-      if (idx >= players.length) {
-        document.title = 'NCBLAST Report Generator';
-        if (printBtn) { printBtn.textContent = 'Print / Save PDF'; printBtn.disabled = false; }
-        window.removeEventListener('afterprint', onAfterPrint);
-        return;
-      }
-      var player = players[idx];
-      if (printBtn) {
-        printBtn.textContent = 'Printing ' + (idx+1) + ' of ' + players.length + '...';
-        printBtn.disabled = true;
-      }
-      document.title = rg_buildFileStem(player, rg_SELECTED_TOURNAMENT);
-      renderReportInto(window.__reportRoot, rg_COMPUTED_STATS[player]);
-      rg_waitForPaintThenPrint();
-      idx++;
-    }
-    function onAfterPrint() { setTimeout(printNext, 300); }
-    window.addEventListener('afterprint', onAfterPrint);
-    printNext();
-  }
+  // Render the first (or only) player's report. The Print/Save PDF button
+  // handles the actual print dialog -- this function never calls window.print().
+  document.title = rg_buildFileStem(players[0], rg_SELECTED_TOURNAMENT);
+  renderReportInto(window.__reportRoot, rg_COMPUTED_STATS[players[0]]);
 }
 
+// Called only by the Print / Save PDF button. For a single player the report
+// is already rendered -- just print. For multiple players, step through each
+// player sequentially, opening one print dialog per player.
+function rg_printAllReports() {
+  const players = Array.from(rg_SELECTED_PLAYERS);
+  if (players.length === 0) { window.print(); return; }
+
+  if (players.length === 1) {
+    document.title = rg_buildFileStem(players[0], rg_SELECTED_TOURNAMENT);
+    rg_waitForPaintThenPrint();
+    return;
+  }
+
+  // Multiple players: render + print sequentially
+  const pagesEl = document.getElementById('rg-report-pages');
+  if (!window.__reportRoot) window.__reportRoot = ReactDOM.createRoot(pagesEl);
+
+  var idx = 0;
+  var printBtn = document.getElementById('rg-btn-print-pdf');
+
+  function printNext() {
+    if (idx >= players.length) {
+      document.title = 'NCBLAST Report Generator';
+      if (printBtn) { printBtn.textContent = 'Print / Save PDF'; printBtn.disabled = false; }
+      window.removeEventListener('afterprint', onAfterPrint);
+      return;
+    }
+    var player = players[idx];
+    if (printBtn) {
+      printBtn.textContent = 'Printing ' + (idx + 1) + ' of ' + players.length + '...';
+      printBtn.disabled = true;
+    }
+    document.title = rg_buildFileStem(player, rg_SELECTED_TOURNAMENT);
+    renderReportInto(window.__reportRoot, rg_COMPUTED_STATS[player]);
+    rg_waitForPaintThenPrint();
+    idx++;
+  }
+
+  function onAfterPrint() { setTimeout(printNext, 300); }
+  window.addEventListener('afterprint', onAfterPrint);
+  printNext();
+}
 function rg_backToTournament() {
   document.getElementById('rg-generator').style.display = 'flex';
   document.getElementById('rg-report-output').style.display = 'none';
