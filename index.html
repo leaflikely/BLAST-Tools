@@ -2204,40 +2204,6 @@ padding: 20px;
 --danger-soft: #e89a90;
 -webkit-print-color-adjust: exact;
 print-color-adjust: exact }
-#tool-reportgen .swiss-toggle-row { display: flex;
-align-items: center;
-gap: 10px;
-margin-top: 14px;
-padding: 10px 14px;
-background: var(--g-surface2);
-border: 1px solid var(--g-border);
-border-radius: 6px }
-#tool-reportgen .swiss-toggle-label { font-family: "IBM Plex Mono", monospace;
-font-size: 10px;
-letter-spacing: 0.12em;
-color: var(--g-muted);
-flex: 1 }
-#tool-reportgen .swiss-toggle-check { width: 16px;
-height: 16px;
-border-radius: 3px;
-border: 2px solid var(--g-border);
-flex-shrink: 0;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-transition: all 0.15s;
-font-size: 10px }
-#tool-reportgen .swiss-toggle-check.on { background: var(--g-accent);
-border-color: var(--g-accent);
-color: #0e1512 }
-#tool-reportgen .swiss-auto-note { font-family: "IBM Plex Mono", monospace;
-font-size: 9.5px;
-letter-spacing: 0.05em;
-margin-top: 6px;
-line-height: 1.5 }
-#tool-reportgen .swiss-auto-note.detected { color: var(--g-teal) }
-#tool-reportgen .swiss-auto-note.mismatch { color: var(--g-accent) }
 #tool-reportgen #rg-report-output { display: none }
 #tool-reportgen .report-wrapper { --accent: #f6d335;
 --teal-deep: #0f6b67;
@@ -2356,11 +2322,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         <div class="panel-sub">Choose which tournament to generate the report for.</div>
         <div class="select-label">TOURNAMENTS FOUND IN FILE</div>
         <div class="option-list" id="rg-tournament-list"></div>
-        <div class="swiss-toggle-row">
-          <span class="swiss-toggle-label">6-ROUND SWISS &mdash; enable if this tournament ran 6 Swiss rounds before top cut</span>
-          <div class="swiss-toggle-check" id="rg-swiss-6-toggle" onclick="rg_toggleSwissRounds()"></div>
-        </div>
-        <div id="rg-swiss-auto-note"></div>
+
         <div class="btn-row">
           <button class="btn btn-primary" id="rg-btn-step2-next" disabled onclick="rg_goStep(2)" style="margin-left:auto">Next &#x2192;</button>
         </div>
@@ -5118,10 +5080,18 @@ if (window.SHARED_CSV_LISTENERS) {
 // ── POPULATE TOURNAMENTS ──────────────────────────────────────────────────────
 function tr_populateTournaments() {
   const counts = {};
-  tr_ALL_ROWS.forEach(r => { const t=(r.Tournament||'').trim(); if(t) counts[t]=(counts[t]||0)+1; });
+  const earliestTs = {};
+  tr_ALL_ROWS.forEach(r => {
+    const t = (r.Tournament||'').trim();
+    if (!t) return;
+    counts[t] = (counts[t]||0) + 1;
+    const ts = new Date(r.Timestamp||0).getTime();
+    const validTs = isNaN(ts) ? 0 : ts;
+    if (earliestTs[t] === undefined || validTs < earliestTs[t]) earliestTs[t] = validTs;
+  });
   const list = document.getElementById('tr-tournament-list');
   list.innerHTML = '';
-  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t, n]) => {
+  Object.entries(counts).sort((a,b)=>(earliestTs[b[0]]||0)-(earliestTs[a[0]]||0)).forEach(([t, n]) => {
     const btn = document.createElement('button');
     btn.className = 'option-btn' + (t === tr_SELECTED_TOURNAMENT ? ' selected' : '');
     btn.innerHTML = '<span>'+t+'</span><span class="option-meta">'+n+' rows</span>';
@@ -6199,45 +6169,15 @@ async function rg_saveAndFetchChallongeLink() {
 }
 
 // ── SWISS ROUNDS TOGGLE ───────────────────────────────────────────────────────
-function rg_toggleSwissRounds() {
-  rg_SWISS_ROUNDS = rg_SWISS_ROUNDS === 5 ? 6 : 5;
-  rg_SWISS_ROUNDS_AUTO = false; // a manual click always overrides whatever Challonge said
-  const el = document.getElementById('rg-swiss-6-toggle');
-  if (rg_SWISS_ROUNDS === 6) { el.classList.add('on'); el.textContent = '\u2713'; }
-  else { el.classList.remove('on'); el.textContent = ''; }
-  const note = document.getElementById('rg-swiss-auto-note');
-  if (note) note.innerHTML = '';
-}
-
-// Checks whatever Challonge data is on file for the selected tournament and,
-// if it includes a usable Swiss round count, sets the toggle automatically.
-// The toggle itself is never hidden — this only pre-sets it, the same way
-// placements get pre-filled but stay editable. If Challonge reports a round
-// count that isn't 5 or 6 (the only two this toggle supports), the toggle
-// is left alone and a warning is shown instead of guessing.
+// Reads the Swiss round count from Challonge data for the selected tournament
+// and applies it to rg_SWISS_ROUNDS so report generation uses the right split.
+// Falls back to the default of 5 if Challonge has no data for this event.
 function rg_syncSwissToggleFromChallonge() {
-  const note = document.getElementById('rg-swiss-auto-note');
-  if (!note) return;
-
   const rec = rg_SELECTED_TOURNAMENT ? rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] : null;
   const detected = rec && typeof rec.swissRounds === 'number' ? rec.swissRounds : null;
-
-  if (detected === null) {
-    note.innerHTML = '';
-    return;
-  }
-
-  if (detected === 5 || detected === 6) {
+  if (detected !== null) {
     rg_SWISS_ROUNDS = detected;
     rg_SWISS_ROUNDS_AUTO = true;
-    const el = document.getElementById('rg-swiss-6-toggle');
-    if (el) {
-      if (detected === 6) { el.classList.add('on'); el.textContent = '\u2713'; }
-      else { el.classList.remove('on'); el.textContent = ''; }
-    }
-    note.innerHTML = '<div class="swiss-auto-note detected">\u2713 Auto-set from Challonge (' + detected + ' Swiss rounds)</div>';
-  } else {
-    note.innerHTML = '<div class="swiss-auto-note mismatch">\u26A0 Challonge reports ' + detected + ' Swiss rounds, which this toggle doesn\u2019t support (only 5 or 6) \u2014 please verify manually.</div>';
   }
 }
 
@@ -6347,8 +6287,6 @@ function rg_populateTournaments() {
       // has a better answer for this specific tournament.
       rg_SWISS_ROUNDS = 5;
       rg_SWISS_ROUNDS_AUTO = false;
-      const toggleEl = document.getElementById('rg-swiss-6-toggle');
-      if (toggleEl) { toggleEl.classList.remove('on'); toggleEl.textContent = ''; }
       rg_syncSwissToggleFromChallonge();
       document.getElementById('rg-btn-step2-next').disabled = false;
     };
