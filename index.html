@@ -2318,13 +2318,52 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
       <p id="rg-drop-hint" class="shared-csv-warning" style="display:none"></p>
 
       <div class="panel" id="rg-step1">
-        <div class="panel-title">Select Tournament</div>
-        <div class="panel-sub">Choose which tournament to generate the report for.</div>
-        <div class="select-label">TOURNAMENTS FOUND IN FILE</div>
-        <div class="option-list" id="rg-tournament-list"></div>
+        <div class="panel-title">Generate a Report</div>
+        <div class="panel-sub">Find a tournament by browsing the list, or search by player name to see all events they attended.</div>
 
-        <div class="btn-row">
-          <button class="btn btn-primary" id="rg-btn-step2-next" disabled onclick="rg_goStep(2)" style="margin-left:auto">Next &#x2192;</button>
+        <!-- Mode toggle -->
+        <div id="rg-mode-toggle" style="display:flex;gap:0;margin-bottom:18px;border:1px solid var(--g-border);border-radius:6px;overflow:hidden;">
+          <button id="rg-mode-btn-tournament" onclick="rg_setStep1Mode('tournament')"
+            style="flex:1;padding:8px 0;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;border:none;cursor:pointer;background:var(--g-accent);color:#0e1512;font-weight:700;transition:all 0.15s;">
+            BY TOURNAMENT
+          </button>
+          <button id="rg-mode-btn-player" onclick="rg_setStep1Mode('player')"
+            style="flex:1;padding:8px 0;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;border:none;cursor:pointer;background:var(--g-surface2);color:var(--g-muted);font-weight:700;transition:all 0.15s;">
+            BY PLAYER
+          </button>
+        </div>
+
+        <!-- Tournament mode -->
+        <div id="rg-mode-tournament">
+          <div class="select-label">TOURNAMENTS FOUND IN FILE</div>
+          <div class="option-list" id="rg-tournament-list"></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="rg-btn-step2-next" disabled onclick="rg_goStep(2)" style="margin-left:auto">Next &#x2192;</button>
+          </div>
+        </div>
+
+        <!-- Player search mode -->
+        <div id="rg-mode-player" style="display:none;">
+          <div class="select-label">SEARCH PLAYER NAME</div>
+          <input id="rg-player-search-input" type="text" placeholder="Start typing a name…"
+            oninput="rg_onPlayerSearchInput()"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;background:var(--g-surface2);border:1px solid var(--g-border);border-radius:6px;color:var(--g-text);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;margin-bottom:12px;"/>
+
+          <!-- Player name matches -->
+          <div id="rg-player-search-names" style="display:none;">
+            <div class="select-label" style="margin-bottom:6px;">MATCHING PLAYERS</div>
+            <div class="option-list" id="rg-player-name-list" style="max-height:160px;"></div>
+          </div>
+
+          <!-- Tournament results for selected player -->
+          <div id="rg-player-search-results" style="display:none;">
+            <div class="select-label" style="margin-bottom:6px;">TOURNAMENTS — <span id="rg-search-player-label" style="color:var(--g-accent);"></span></div>
+            <div class="select-label" style="margin-bottom:8px;font-size:9px;opacity:0.7;">Click a tournament to generate the report immediately.</div>
+            <div class="option-list" id="rg-player-tournament-list"></div>
+            <div class="btn-row">
+              <button class="btn btn-ghost" onclick="rg_clearPlayerSearch()">← Search Again</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -5974,7 +6013,12 @@ function rg_goStep(n) {
       line.className = i < n ? 'step-line done' : 'step-line';
     }
   });
-  if (n === 1) rg_populateTournaments();
+  if (n === 1) {
+    rg_populateTournaments();
+    // Always return to tournament mode when coming back to step 1, so the
+    // user sees the full list rather than a stale search state.
+    rg_setStep1Mode('tournament');
+  }
   if (n === 2) { rg_renderChallongeBox(); rg_populatePlayers(); }
   if (n === 3) rg_populateReviewStep();
 }
@@ -6294,6 +6338,178 @@ function rg_populateTournaments() {
   });
   document.getElementById('rg-btn-step2-next').disabled = !rg_SELECTED_TOURNAMENT;
   rg_syncSwissToggleFromChallonge();
+}
+
+// ── STEP 1 MODE TOGGLE (BY TOURNAMENT / BY PLAYER) ───────────────────────────
+
+let rg_STEP1_MODE = 'tournament'; // 'tournament' | 'player'
+
+function rg_setStep1Mode(mode) {
+  rg_STEP1_MODE = mode;
+  const isTournament = mode === 'tournament';
+  document.getElementById('rg-mode-tournament').style.display = isTournament ? '' : 'none';
+  document.getElementById('rg-mode-player').style.display   = isTournament ? 'none' : '';
+
+  const tBtn = document.getElementById('rg-mode-btn-tournament');
+  const pBtn = document.getElementById('rg-mode-btn-player');
+  tBtn.style.background = isTournament ? 'var(--g-accent)' : 'var(--g-surface2)';
+  tBtn.style.color      = isTournament ? '#0e1512'         : 'var(--g-muted)';
+  pBtn.style.background = isTournament ? 'var(--g-surface2)' : 'var(--g-accent)';
+  pBtn.style.color      = isTournament ? 'var(--g-muted)'    : '#0e1512';
+
+  if (mode === 'player') {
+    setTimeout(() => document.getElementById('rg-player-search-input').focus(), 50);
+  }
+}
+
+// Build a map of player → list of tournaments (with earliest timestamp and battle count),
+// sorted newest tournament first. Lazily rebuilt when ALL_ROWS changes.
+function rg_buildPlayerTournamentIndex() {
+  const index = {}; // player → { [tournament]: { count, earliestTs } }
+  const tournamentEarliestTs = {};
+
+  rg_ALL_ROWS.forEach(r => {
+    const t = (r.Tournament||'').trim();
+    if (!t) return;
+    const ts = new Date(r.Timestamp||0).getTime();
+    const validTs = isNaN(ts) ? 0 : ts;
+    if (tournamentEarliestTs[t] === undefined || validTs < tournamentEarliestTs[t]) {
+      tournamentEarliestTs[t] = validTs;
+    }
+    [r.P1, r.P2].forEach(raw => {
+      const p = (raw||'').trim();
+      if (!p) return;
+      if (!index[p]) index[p] = {};
+      if (!index[p][t]) index[p][t] = { count: 0 };
+      index[p][t].count++;
+    });
+  });
+
+  // Attach the tournament's earliest timestamp to every player-tournament entry
+  Object.values(index).forEach(tMap => {
+    Object.keys(tMap).forEach(t => {
+      tMap[t].earliestTs = tournamentEarliestTs[t] || 0;
+    });
+  });
+
+  return index;
+}
+
+function rg_onPlayerSearchInput() {
+  const query = (document.getElementById('rg-player-search-input').value||'').trim().toLowerCase();
+  const namesDiv    = document.getElementById('rg-player-search-names');
+  const resultsDiv  = document.getElementById('rg-player-search-results');
+  const nameList    = document.getElementById('rg-player-name-list');
+
+  resultsDiv.style.display = 'none';
+  nameList.innerHTML = '';
+
+  if (!query) {
+    namesDiv.style.display = 'none';
+    return;
+  }
+
+  // Collect unique player names
+  const allPlayers = new Set();
+  rg_ALL_ROWS.forEach(r => {
+    [(r.P1||'').trim(), (r.P2||'').trim()].forEach(p => { if (p) allPlayers.add(p); });
+  });
+
+  const matches = [...allPlayers]
+    .filter(p => p.toLowerCase().includes(query))
+    .sort((a, b) => {
+      // Exact/starts-with matches first, then alphabetical
+      const al = a.toLowerCase(), bl = b.toLowerCase();
+      const aStart = al.startsWith(query) ? 0 : 1;
+      const bStart = bl.startsWith(query) ? 0 : 1;
+      return aStart - bStart || a.localeCompare(b);
+    })
+    .slice(0, 20); // cap at 20 for performance
+
+  if (!matches.length) {
+    namesDiv.style.display = 'none';
+    return;
+  }
+
+  namesDiv.style.display = '';
+  matches.forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = '<span>' + name + '</span>';
+    btn.onclick = () => rg_selectSearchPlayer(name);
+    nameList.appendChild(btn);
+  });
+}
+
+function rg_selectSearchPlayer(playerName) {
+  const index = rg_buildPlayerTournamentIndex();
+  const tMap  = index[playerName] || {};
+
+  // Sort tournaments: newest first
+  const sorted = Object.entries(tMap)
+    .sort((a, b) => b[1].earliestTs - a[1].earliestTs);
+
+  document.getElementById('rg-player-search-names').style.display = 'none';
+  document.getElementById('rg-search-player-label').textContent = playerName;
+
+  const list = document.getElementById('rg-player-tournament-list');
+  list.innerHTML = '';
+
+  sorted.forEach(([tournament, info]) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    const dateStr = info.earliestTs
+      ? new Date(info.earliestTs).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', timeZone:'UTC' })
+      : '';
+    btn.innerHTML =
+      '<span>' + tournament + '</span>' +
+      '<span class="option-meta">' + info.count + ' battles' + (dateStr ? ' &middot; ' + dateStr : '') + '</span>';
+    btn.onclick = () => rg_searchGenerateReport(playerName, tournament);
+    list.appendChild(btn);
+  });
+
+  document.getElementById('rg-player-search-results').style.display = '';
+}
+
+function rg_searchGenerateReport(playerName, tournament) {
+  // Set global state exactly as the normal flow does, then jump to step 3
+  rg_SELECTED_TOURNAMENT = tournament;
+  rg_SELECTED_PLAYERS = new Set([playerName]);
+  rg_COMPUTED_STATS = {};
+  rg_PLACEMENTS = {};
+  rg_CHALLONGE_BOX_EDITING = false;
+  rg_SWISS_ROUNDS = 5;
+  rg_SWISS_ROUNDS_AUTO = false;
+  rg_syncSwissToggleFromChallonge();
+
+  // Resolve placements from Challonge cache if available, same as rg_openPlacementModal does
+  const rec = rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT];
+  if (rec && Array.isArray(rec.placements)) {
+    const byNameLower = {};
+    rec.placements.forEach(p => {
+      if (p && p.name) byNameLower[String(p.name).trim().toLowerCase()] = p.finalRank;
+    });
+    const lc = playerName.trim().toLowerCase();
+    if (byNameLower[lc] != null) rg_PLACEMENTS[playerName] = byNameLower[lc];
+  }
+
+  // Compute stats then go straight to step 3
+  rg_COMPUTED_STATS[playerName] = rg_computeStats(rg_ALL_ROWS, rg_SELECTED_TOURNAMENT, playerName, rg_PLACEMENTS, rg_SWISS_ROUNDS);
+  const archetypeProfiles = rg_computeAllArchetypes(rg_ALL_ROWS, rg_SELECTED_TOURNAMENT, rg_COMPUTED_STATS);
+  Object.keys(rg_COMPUTED_STATS).forEach(p => {
+    rg_COMPUTED_STATS[p]._archetype = archetypeProfiles[p] || null;
+  });
+
+  rg_goStep(3);
+}
+
+function rg_clearPlayerSearch() {
+  document.getElementById('rg-player-search-input').value = '';
+  document.getElementById('rg-player-search-names').style.display   = 'none';
+  document.getElementById('rg-player-search-results').style.display = 'none';
+  document.getElementById('rg-player-name-list').innerHTML = '';
+  document.getElementById('rg-player-tournament-list').innerHTML = '';
+  setTimeout(() => document.getElementById('rg-player-search-input').focus(), 50);
 }
 
 // ── POPULATE PLAYER LIST ──────────────────────────────────────────────────────
