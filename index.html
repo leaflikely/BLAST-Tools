@@ -2445,6 +2445,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 <div id="rg-toolbar">
   <button class="toolbar-btn" style="background:#2a3d35;color:#d4e8e0;border:1px solid #4a6358;" onclick="rg_backToTournament()">← New Report</button>
   <button class="toolbar-btn" style="background:#2ea89d;color:#fff;" onclick="rg_downloadReportHTML()">Download HTML</button>
+  <button class="toolbar-btn" style="background:#2ea89d;color:#fff;" onclick="rg_downloadJSON()">Download JSON</button>
   <button class="toolbar-btn" id="rg-btn-get-link" style="background:#6c47c9;color:#fff;" onclick="rg_getShareableLink()">🔗 Get Link</button>
   <button class="toolbar-btn" id="rg-btn-print-pdf" style="background:#f6d335;color:#0e1512;" onclick="rg_printAllReports()">Print / Save PDF</button>
 </div>
@@ -6777,7 +6778,270 @@ function rg_downloadReportHTML() {
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-// ── SHAREABLE LINK ────────────────────────────────────────────────────────────
+// ── JSON EXPORT ───────────────────────────────────────────────────────────────
+// Builds a comprehensive JSON data file for the currently-displayed player.
+// Includes every stat computed by rg_computeStats PLUS raw per-battle detail
+// for every match (side, combo, opponent combo, finish type, points, timestamp).
+// Players can use this to import into spreadsheets, share with coaches, or
+// feed into other tools.
+function rg_downloadJSON() {
+  const players = Array.from(rg_SELECTED_PLAYERS);
+  if (!players.length) return;
+
+  // Export one file per player — same pattern as HTML download
+  players.forEach(playerName => {
+    const stats = rg_COMPUTED_STATS[playerName];
+    if (!stats) return;
+
+    const stem = rg_buildFileStem(playerName, rg_SELECTED_TOURNAMENT);
+    const playerLower = playerName.toLowerCase();
+
+    // ── Pull raw battle rows for this player in this tournament ──────────────
+    // Filter + sort exactly as rg_computeStats does so the detail rows match
+    // what the report shows.
+    const _mkMap = rg_buildMatchKeyMap(
+      rg_ALL_ROWS.filter(r => (r.Tournament||'').trim() === rg_SELECTED_TOURNAMENT)
+    );
+
+    function isP1(r){ return (r.P1||'').trim().toLowerCase() === playerLower; }
+    function iWon(r){ const w=(r.Winner||'').toLowerCase(); return w===playerLower || w.includes(playerLower); }
+
+    const rawBattles = rg_ALL_ROWS
+      .filter(r => {
+        if ((r.Tournament||'').trim() !== rg_SELECTED_TOURNAMENT) return false;
+        const p1 = (r.P1||'').trim().toLowerCase();
+        const p2 = (r.P2||'').trim().toLowerCase();
+        if (p1 !== playerLower && p2 !== playerLower) return false;
+        const ft = (r.FinishType||'').trim();
+        const pts = parseInt(r.Points||'0', 10);
+        if ((ft==='LER Strike'||ft==='Launch Error') && pts===0) return false;
+        return true;
+      })
+      .sort((a,b) => new Date(a.Timestamp||0) - new Date(b.Timestamp||0));
+
+    // ── Group raw battles by match → set ─────────────────────────────────────
+    const matchGroups = {};
+    rawBattles.forEach(r => {
+      const mk = rg_getMatchKey(r, _mkMap);
+      const setNum = parseInt(r.Set||'0', 10);
+      if (!matchGroups[mk]) matchGroups[mk] = { sets: {} };
+      if (!matchGroups[mk].sets[setNum]) matchGroups[mk].sets[setNum] = [];
+      matchGroups[mk].sets[setNum].push(r);
+    });
+
+    // Build the detailed match array — one entry per match, with sets inside,
+    // with individual battles inside each set.
+    const matchesDetailed = Object.entries(matchGroups).map(([matchKey, mg]) => {
+      const allMatchRows = Object.values(mg.sets).flat();
+      const firstRow = allMatchRows[0];
+      const opponent = firstRow
+        ? (isP1(firstRow) ? (firstRow.P2||'').trim() : (firstRow.P1||'').trim())
+        : '—';
+
+      // Determine match result from set scores (same logic as rg_computeStats)
+      let matchSetW = 0, matchSetL = 0;
+      const setsArr = Object.entries(mg.sets)
+        .sort(([a],[b]) => parseInt(a) - parseInt(b))
+        .map(([setNum, setRows]) => {
+          const sortedSet = setRows.slice().sort((a,b) => new Date(a.Timestamp||0) - new Date(b.Timestamp||0));
+          let myPts = 0, oppPts = 0;
+
+          const battlesArr = sortedSet.map((r, idx) => {
+            const myCombo   = isP1(r) ? (r.P1Combo||'') : (r.P2Combo||'');
+            const oppCombo  = isP1(r) ? (r.P2Combo||'') : (r.P1Combo||'');
+            const mySide    = isP1(r) ? (r.P1Side||'') : (r.P2Side||'');
+            const oppSide   = isP1(r) ? (r.P2Side||'') : (r.P1Side||'');
+            const won       = iWon(r);
+            const finishType = (r.FinishType||'').trim();
+            const pts       = rg_finishPts(finishType);
+            const winnerCombo = (r.WinnerCombo||'').trim();
+
+            if (won) myPts += pts; else oppPts += pts;
+
+            return {
+              battle:      idx + 1,
+              timestamp:   r.Timestamp || '',
+              slot:        parseInt(r.Slot||'0', 10),
+              shuffle:     parseInt(r.Shuffle||'0', 10),
+              yourSide:    mySide,
+              oppSide:     oppSide,
+              yourCombo:   myCombo,
+              oppCombo:    oppCombo,
+              winnerCombo: winnerCombo,
+              finishType:  finishType,
+              result:      won ? 'WIN' : 'LOSS',
+              pointsScored: won ? pts : 0,
+              pointsAllowed: won ? 0 : pts,
+              runningScore: { you: myPts, opponent: oppPts },
+            };
+          });
+
+          const setWon = myPts >= 4;
+          if (setWon) matchSetW++; else matchSetL++;
+
+          return {
+            set:      parseInt(setNum, 10),
+            result:   setWon ? 'WIN' : 'LOSS',
+            score:    { you: myPts, opponent: oppPts },
+            battles:  battlesArr,
+          };
+        });
+
+      const matchWon = matchSetW > matchSetL;
+      const matchBattles = setsArr.flatMap(s => s.battles);
+      const matchPtsScored  = matchBattles.reduce((s,b) => s + b.pointsScored,  0);
+      const matchPtsAllowed = matchBattles.reduce((s,b) => s + b.pointsAllowed, 0);
+      const matchPPB = matchBattles.length > 0
+        ? rg_round2((matchPtsScored - matchPtsAllowed) / matchBattles.length)
+        : 0;
+
+      return {
+        matchKey,
+        opponent,
+        result:       matchWon ? 'WIN' : 'LOSS',
+        sets:         { won: matchSetW, lost: matchSetL },
+        battles:      matchBattles.length,
+        battlesWon:   matchBattles.filter(b => b.result==='WIN').length,
+        pointsScored: matchPtsScored,
+        pointsAllowed: matchPtsAllowed,
+        ppb:          matchPPB,
+        detail:       setsArr,
+      };
+    });
+
+    // ── Assemble the full export object ──────────────────────────────────────
+    const exportObj = {
+      _meta: {
+        exportedAt:  new Date().toISOString(),
+        exportedBy:  'NCBLAST Data Tools',
+        version:     '1.0',
+        description: 'Full player tournament data export. All stats match the printed report. Battle detail is in matches[].detail[].battles[].',
+      },
+
+      player: {
+        name:      playerName,
+        tournament: rg_SELECTED_TOURNAMENT,
+        date:      stats.event.date,
+        placement: stats.summary.placement,
+        format:    stats.event.format,
+        location:  stats.event.location,
+      },
+
+      summary: {
+        matchRecord:  { wins: stats.summary.swissRecord.wins, losses: stats.summary.swissRecord.losses },
+        setRecord:    { wins: stats.summary.setRecord.wins,   losses: stats.summary.setRecord.losses   },
+        totalBattles: stats.summary.totalBattles,
+        totalSets:    stats.summary.totalSets,
+        battleWinPct: stats.summary.overallWinPct,
+        ppb:          stats.summary.overallPPB,
+        ppw:          stats.summary.ppw,
+        fieldPPW:     stats.summary.fieldPPW,
+      },
+
+      matchResultStrip: {
+        swiss:  stats.matchResultStrip.swiss,
+        topCut: stats.matchResultStrip.topCut,
+      },
+
+      deck: stats.allComboDeck.map(c => ({
+        slot:    c.slot,
+        combo:   c.name,
+        battles: c.battles,
+        winPct:  c.winPct,
+        ppb:     c.ppb,
+      })),
+
+      sides: stats.sides.map(s => ({
+        side:        s.side,
+        setsPlayed:  s.setsPlayed,
+        setsWon:     s.setsWon,
+        setWinPct:   s.setWinPct,
+        battles:     s.battles,
+        battleWinPct: s.battleWinPct,
+        ppb:         s.ppb,
+      })),
+
+      finishes: {
+        scored:  stats.finishes.filter(f => !f.negative).map(f => ({ type: f.type, count: f.count, pointsEach: f.pts })),
+        allowed: stats.finishes.filter(f =>  f.negative).map(f => ({ type: f.type, count: f.count, pointsEach: f.pts })),
+      },
+
+      comboFinishes: stats.comboFinishes.map(cf => ({
+        slot:    cf.slot,
+        combo:   cf.name,
+        scored:  cf.scored.map(f => ({ type: f.type, count: f.count, pointsEach: f.pts })),
+        allowed: cf.allowed.map(f => ({ type: f.type, count: f.count, pointsEach: f.pts })),
+      })),
+
+      shuffleSlots: {
+        description: 'Win/loss per launch slot (1-3 = initial shuffle, 4-6 = post-shuffle)',
+        initial: stats.shuffleInitial.map(c => ({
+          combo: c.name,
+          slots: c.slots.map(s => ({ slot: s.slot, wins: s.w, losses: s.l, winPct: s.winPct, ppb: s.ppb })),
+        })),
+        post: stats.shufflePost.map(c => ({
+          combo: c.name,
+          slots: c.slots.map(s => ({ slot: s.slot, wins: s.w, losses: s.l, winPct: s.winPct, ppb: s.ppb })),
+        })),
+      },
+
+      comboSidePPB: stats.comboSidePPB.map(c => ({
+        slot:  c.slot,
+        combo: c.name,
+        B:     c.B,
+        X:     c.X,
+      })),
+
+      recurringMatchups: stats.recurringMatchups.map(m => ({
+        yourCombo:  m.yourComboName,
+        oppCombo:   m.oppCombo,
+        battles:    m.times,
+        wins:       m.w,
+        losses:     m.l,
+        winPct:     m.winPct,
+        ppb:        m.ppb,
+        netPoints:  m.net,
+      })),
+
+      pressureProfile: {
+        closeoutRate:  stats.setDynamics.closeoutRate,
+        leadConvRate:  stats.setDynamics.leadConvRate,
+        comebackRate:  stats.setDynamics.comebackRate,
+        shutOutRate:   stats.setDynamics.shutOutRate,
+        closeouts:     { achieved: stats.setDynamics.closedOut,    opportunities: stats.setDynamics.closeoutTotal   },
+        comebacks:     { wins:     stats.setDynamics.comebackWins, attempts:      stats.setDynamics.comebackTotal   },
+        shutOuts:      { wins:     stats.setDynamics.shutOutWins,  opportunities: stats.setDynamics.shutOutTotal    },
+      },
+
+      momentumQuarters: stats.quarters.map(q => ({
+        quarter:  q.label,
+        battles:  q.battles,
+        winPct:   q.winPct,
+      })),
+
+      highlights: {
+        longestSet:      stats.highlights.longestSet,
+        maxWinStreak:    stats.highlights.maxStreak,
+        xtremeFinishes:  stats.highlights.xtremeCount,
+        dominantMatch:   stats.highlights.dominantMatch,
+        biggestWin:      stats.highlights.biggestWin,
+        toughestLoss:    stats.highlights.toughestLoss,
+      },
+
+      // The full match-by-match breakdown with every set and every battle
+      matches: matchesDetailed,
+    };
+
+    // Download as .json
+    const json = JSON.stringify(exportObj, null, 2);
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = stem + '.json';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  });
+}
 
 async function rg_getShareableLink() {
   const btn = document.getElementById('rg-btn-get-link');
