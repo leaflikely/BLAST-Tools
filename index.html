@@ -2862,8 +2862,11 @@ function cs_parseFormatA(lines) {
     const winner = get('Winner');
     const p1combo = get('P1Combo');
     const p2combo = get('P2Combo');
-    const p1 = get('P1');
-    const p2 = get('P2');
+    const p1raw = get('P1'); const p2raw = get('P2');
+    const cs_p1tag = p1raw.endsWith('~P~'); const cs_p2tag = p2raw.endsWith('~P~');
+    const p1 = cs_p1tag ? p1raw.slice(0,-3) : p1raw;
+    const p2 = cs_p2tag ? p2raw.slice(0,-3) : p2raw;
+    const p1Priority = cs_p1tag ? true : cs_p2tag ? false : null;
     const winnerIsP1 = winner.toLowerCase() === p1.toLowerCase();
     const ft = get('FinishType');
     // Derive per-battle point value from the finish type — the Points column
@@ -2877,7 +2880,7 @@ function cs_parseFormatA(lines) {
     rows.push({
       tournament:  get('Tournament'),
       match:       get('Match'),
-      p1, p2,
+      p1, p2, p1Priority,
       p1side:      get('P1Side'),
       p2side:      get('P2Side'),
       p1score:     parseInt(get('P1Score','0'),10),
@@ -2906,8 +2909,11 @@ function cs_parseFormatB(lines) {
     if (v.length < 13) continue;
     const winner     = (v[11]||'').trim();
     const winnerCombo= (v[12]||'').trim();
-    const p1         = (v[4]||'').trim();
-    const p2         = (v[6]||'').trim();
+    const p1raw      = (v[4]||'').trim(); const p2raw = (v[6]||'').trim();
+    const csb_p1tag  = p1raw.endsWith('~P~'); const csb_p2tag = p2raw.endsWith('~P~');
+    const p1         = csb_p1tag ? p1raw.slice(0,-3) : p1raw;
+    const p2         = csb_p2tag ? p2raw.slice(0,-3) : p2raw;
+    const p1Priority = csb_p1tag ? true : csb_p2tag ? false : null;
     const winnerIsP1 = winner.toLowerCase() === p1.toLowerCase();
     // Derive point value from finish type
     const ft = (v[13]||'').trim();
@@ -2915,7 +2921,7 @@ function cs_parseFormatB(lines) {
     rows.push({
       tournament:  (v[2]||'').trim(),
       match:       (v[3]||'').trim(),
-      p1, p2,
+      p1, p2, p1Priority,
       p1side:      (v[5]||'').trim(),
       p2side:      (v[7]||'').trim(),
       p1score:     parseInt(v[8]||'0',10),
@@ -4104,12 +4110,18 @@ function ph_parseCSV(lines){
     const ft=g(v,'FinishType');
     const pts=ph_ftPoints(ft);
     if(ft==='LER Strike'||ft==='Launch Error'){if(pts===0)continue;}
-    rows.push(ph_makeRow(
-      g(v,'Tournament'),g(v,'Match'),g(v,'P1'),g(v,'P2'),
+    const ph_p1raw=g(v,'P1'); const ph_p2raw=g(v,'P2');
+    const ph_p1tag=ph_p1raw.endsWith('~P~'); const ph_p2tag=ph_p2raw.endsWith('~P~');
+    const ph_p1=ph_p1tag?ph_p1raw.slice(0,-3):ph_p1raw;
+    const ph_p2=ph_p2tag?ph_p2raw.slice(0,-3):ph_p2raw;
+    const ph_rowObj=ph_makeRow(
+      g(v,'Tournament'),g(v,'Match'),ph_p1,ph_p2,
       g(v,'P1Side'),g(v,'P2Side'),g(v,'P1Score'),g(v,'P2Score'),
       g(v,'Shuffle','0'),g(v,'Round'),g(v,'Winner'),
       g(v,'P1Combo'),g(v,'P2Combo'),ft,false
-    ));
+    );
+    ph_rowObj.p1Priority=ph_p1tag?true:ph_p2tag?false:null;
+    rows.push(ph_rowObj);
   }
   return rows;
 }
@@ -4125,14 +4137,18 @@ function ph_parseTSV(lines){
     // 0=ts,1=judge,2=tourn,3=match,4=p1,5=p1side,6=p2,7=p2side,8=p1sc,9=p2sc,10=round,11=winner,12=winnerCombo,13=ft
     const winner=(v[11]||'').trim();
     const wCombo=(v[12]||'').trim();
-    const p1=(v[4]||'').trim();
+    const p1raw=(v[4]||'').trim(); const p2raw=(v[6]||'').trim();
+    const pht_p1tag=p1raw.endsWith('~P~'); const pht_p2tag=p2raw.endsWith('~P~');
+    const p1=pht_p1tag?p1raw.slice(0,-3):p1raw;
+    const p2tsv=pht_p2tag?p2raw.slice(0,-3):p2raw;
     const wIsP1=winner.toLowerCase()===p1.toLowerCase();
     const row=ph_makeRow(
-      (v[2]||'').trim(),(v[3]||'').trim(),p1,(v[6]||'').trim(),
+      (v[2]||'').trim(),(v[3]||'').trim(),p1,p2tsv,
       (v[5]||'').trim(),(v[7]||'').trim(),v[8],v[9],
       '0',v[10],winner,
       wIsP1?wCombo:'',wIsP1?'':wCombo,ft,true
     );
+    row.p1Priority=pht_p1tag?true:pht_p2tag?false:null;
     rows.push(row);
   }
   return rows;
@@ -5064,6 +5080,11 @@ function tr_parseCSV(text) {
     vals.push(cur.trim());
     const row = {};
     headers.forEach((h, idx) => { row[h] = vals[idx] !== undefined ? vals[idx].replace(/^"|"$/g,'') : ''; });
+    const tr_p1tag = (row.P1||'').endsWith('~P~');
+    const tr_p2tag = (row.P2||'').endsWith('~P~');
+    if (tr_p1tag) row.P1 = row.P1.slice(0, -3);
+    if (tr_p2tag) row.P2 = row.P2.slice(0, -3);
+    row.P1Priority = tr_p1tag ? true : tr_p2tag ? false : null;
     rows.push(row);
   }
   return rows;
@@ -5966,6 +5987,11 @@ function rg_parseCSV(text) {
     vals.push(cur.trim());
     const row = {};
     headers.forEach((h, idx) => { row[h] = vals[idx] !== undefined ? vals[idx].replace(/^"|"$/g,'') : ''; });
+    const rg_p1tag = (row.P1||'').endsWith('~P~');
+    const rg_p2tag = (row.P2||'').endsWith('~P~');
+    if (rg_p1tag) row.P1 = row.P1.slice(0, -3);
+    if (rg_p2tag) row.P2 = row.P2.slice(0, -3);
+    row.P1Priority = rg_p1tag ? true : rg_p2tag ? false : null;
     rows.push(row);
   }
   return rows;
