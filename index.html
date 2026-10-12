@@ -2316,23 +2316,31 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
     #tool-database .db-check { display: flex; align-items: center; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; white-space: nowrap; }
     #tool-database .db-count { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
 
-    #tool-database .db-table-wrap { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); max-height: 70vh; overflow: auto; }
-    #tool-database .db-table { border-collapse: collapse; width: 100%; font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
-    #tool-database .db-table th {
-      position: sticky; top: 0; z-index: 1; background: var(--surface2); color: var(--muted); text-align: left;
-      font-weight: 600; letter-spacing: 0.08em; font-size: 9px; padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap;
-    }
-    #tool-database .db-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
-    #tool-database .db-table tbody tr:hover td { background: var(--surface2); }
-    #tool-database .db-table .db-num { text-align: right; }
-    #tool-database .db-table .db-win { color: var(--teal); font-weight: 600; }
-    #tool-database .db-table .db-msg { text-align: center; color: var(--muted); padding: 28px 10px; white-space: normal; max-width: none; }
     #tool-database .db-pri { display: inline-block; font-size: 8px; font-weight: 700; color: #0e1512; background: var(--accent); border-radius: 3px; padding: 0 4px; margin-left: 4px; vertical-align: 1px; }
 
-    #tool-database .db-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-    #tool-database .db-pager-mid { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
-    #tool-database .db-pager-right { display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
-
+    #tool-database .db-grid { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); outline: none; overflow: hidden; }
+    #tool-database .db-grid:focus-within { border-color: var(--teal); }
+    #tool-database .db-g-scroll { height: 70vh; overflow: auto; position: relative; }
+    #tool-database .db-g-sizer { position: relative; min-width: 100%; }
+    #tool-database .db-g-head { position: sticky; top: 0; z-index: 3; height: 30px; }
+    #tool-database .db-g-hrow { display: flex; height: 30px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+    #tool-database .db-g-body { position: absolute; left: 0; top: 30px; right: 0; }
+    #tool-database .db-g-row { position: absolute; left: 0; display: flex; height: 26px; }
+    #tool-database .db-g-corner, #tool-database .db-g-n { position: sticky; left: 0; z-index: 2; flex: 0 0 56px; width: 56px; box-sizing: border-box; background: var(--surface2); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); cursor: pointer; }
+    #tool-database .db-g-corner { z-index: 4; }
+    #tool-database .db-g-n { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); text-align: center; line-height: 25px; user-select: none; }
+    #tool-database .db-g-n.sel, #tool-database .db-g-h.sel { background: #26453f; color: #fff; }
+    #tool-database .db-g-h { position: relative; flex: 0 0 auto; box-sizing: border-box; display: flex; align-items: center; padding: 0 10px; border-right: 1px solid var(--border); font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.08em; color: var(--muted); white-space: nowrap; cursor: pointer; user-select: none; overflow: hidden; }
+    #tool-database .db-g-h span { overflow: hidden; text-overflow: ellipsis; }
+    #tool-database .db-g-rs { position: absolute; top: 0; right: 0; width: 7px; height: 100%; cursor: col-resize; }
+    #tool-database .db-g-rs:hover { background: var(--teal); opacity: 0.5; }
+    #tool-database .db-g-c { flex: 0 0 auto; box-sizing: border-box; height: 26px; padding: 0 10px; line-height: 25px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: cell; user-select: none; }
+    #tool-database .db-g-c.db-num { text-align: right; }
+    #tool-database .db-g-c.db-win { color: var(--teal); font-weight: 600; }
+    #tool-database .db-g-c.sel { background: rgba(60, 170, 150, 0.18); }
+    #tool-database .db-g-c.act { background: rgba(60, 170, 150, 0.30); box-shadow: inset 0 0 0 2px var(--teal); }
+    #tool-database .db-g-msg { position: absolute; left: 0; top: 0; width: 100%; padding: 40px 10px; text-align: center; color: var(--muted); font-size: 13px; }
+    #tool-database .db-g-statusbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); min-height: 32px; }
 
     #tool-database .db-sanity { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 18px; overflow: hidden; }
     #tool-database .db-sanity[hidden] { display: none; }
@@ -2851,24 +2859,17 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
             <button class="db-btn" id="db-filter-clear" type="button">Clear</button>
           </div>
           <div class="db-count" id="db-count"></div>
-          <div class="db-table-wrap">
-            <table class="db-table">
-              <thead id="db-thead"></thead>
-              <tbody id="db-tbody"></tbody>
-            </table>
-          </div>
-          <div class="db-pager">
-            <button class="db-btn" id="db-prev" type="button">← Prev</button>
-            <span class="db-pager-mid" id="db-page-info"></span>
-            <div class="db-pager-right">
-              <span>Rows per page</span>
-              <select class="db-select" id="db-page-size">
-                <option value="50">50</option>
-                <option value="100" selected>100</option>
-                <option value="250">250</option>
-              </select>
-              <button class="db-btn" id="db-next" type="button">Next →</button>
+          <div class="db-grid" id="db-grid" tabindex="0" aria-label="Battle data grid">
+            <div class="db-g-scroll" id="db-g-scroll">
+              <div class="db-g-sizer" id="db-g-sizer">
+                <div class="db-g-head" id="db-g-head"></div>
+                <div class="db-g-body" id="db-g-body"></div>
+              </div>
             </div>
+          </div>
+          <div class="db-g-statusbar">
+            <span id="db-g-status"></span>
+            <button class="db-btn" id="db-g-copy" type="button" disabled>Copy selection</button>
           </div>
         </section>
       </div>
@@ -9416,8 +9417,9 @@ const db_state = {
   events: [],        // [{ name, count, first }] newest event first
   csvText: '',       // the export exactly as the database served it
   filtered: [],      // rows matching the current filters, in display order
-  page: 0,
-  pageSize: 100,
+  cols: null,        // columns currently shown in the grid
+  colW: {},          // column widths the user dragged, by column name
+  sel: null,         // selected block { ar, ac, fr, fc } = anchor and far corner
   event: '',
   search: '',
   finish: '',
@@ -9537,7 +9539,7 @@ async function db_load() {
   refreshBtn.disabled = true;
   db_setStatus('Loading from the database…', '');
   if (!s.loaded) {
-    document.getElementById('db-tbody').innerHTML = '<tr><td class="db-msg" colspan="12">Loading battles from the database…</td></tr>';
+    db_gridMessage('Loading battles from the database…');
   }
   try {
     const res = await fetch(DB_API + '/export.csv', { cache: 'no-store' });
@@ -9561,7 +9563,7 @@ async function db_load() {
     const msg = err && err.message ? err.message : String(err);
     db_setStatus('Could not load the database. ' + msg, 'error');
     if (!s.loaded) {
-      document.getElementById('db-tbody').innerHTML = '<tr><td class="db-msg" colspan="12">Could not reach the database. Check your connection and press Refresh.</td></tr>';
+      db_gridMessage('Could not reach the database. Check your connection and press Refresh.');
     }
   } finally {
     s.loading = false;
@@ -9607,53 +9609,9 @@ function db_applyFilters() {
     (!q || r.hay.indexOf(q) !== -1));
   if (s.sort === 'new') out.reverse();
   s.filtered = out;
-  s.page = 0;
+  s.sel = null;
+  document.getElementById('db-g-scroll').scrollTop = 0;
   db_render();
-}
-
-function db_cols() {
-  const name = (r, which) => {
-    const nm = which === 1 ? r.p1 : r.p2;
-    const hadPriority = which === 1 ? r.p1Priority === true : r.p1Priority === false;
-    return db_esc(nm) + (hadPriority ? '<span class="db-pri" title="Had pick priority in set 1">P</span>' : '');
-  };
-  const compact = [
-    { l: 'WHEN', h: r => db_esc(db_fmtTime(r.ts)) },
-    { l: 'JUDGE', h: r => db_esc(r.judge) },
-    { l: 'EVENT', h: r => db_esc(r.event) },
-    { l: 'MATCH', h: r => db_esc(r.match) },
-    { l: 'P1', h: r => name(r, 1) },
-    { l: 'P2', h: r => name(r, 2) },
-    { l: 'SET', c: 'db-num', h: r => db_esc(r.set) },
-    { l: 'SLOT', c: 'db-num', h: r => db_esc(r.slot) },
-    { l: 'WINNER', c: 'db-win', h: r => db_esc(r.winner) },
-    { l: 'WINNING COMBO', h: r => db_esc(r.winnerCombo) },
-    { l: 'FINISH', h: r => db_esc(r.finish) },
-    { l: 'PTS', c: 'db-num', h: r => db_esc(r.points) }
-  ];
-  if (!db_state.allCols) return compact;
-  return [
-    { l: 'WHEN', h: r => db_esc(db_fmtTime(r.ts)) },
-    { l: 'JUDGE', h: r => db_esc(r.judge) },
-    { l: 'EVENT', h: r => db_esc(r.event) },
-    { l: 'MATCH', h: r => db_esc(r.match) },
-    { l: 'P1', h: r => name(r, 1) },
-    { l: 'P1 SIDE', h: r => db_esc(r.p1Side) },
-    { l: 'P2', h: r => name(r, 2) },
-    { l: 'P2 SIDE', h: r => db_esc(r.p2Side) },
-    { l: 'SET', c: 'db-num', h: r => db_esc(r.set) },
-    { l: 'SHUFFLE', c: 'db-num', h: r => db_esc(r.shuffle) },
-    { l: 'SLOT', c: 'db-num', h: r => db_esc(r.slot) },
-    { l: 'WINNER', c: 'db-win', h: r => db_esc(r.winner) },
-    { l: 'WINNING COMBO', h: r => db_esc(r.winnerCombo) },
-    { l: 'FINISH', h: r => db_esc(r.finish) },
-    { l: 'PTS', c: 'db-num', h: r => db_esc(r.points) },
-    { l: 'PENALTY', c: 'db-num', h: r => db_esc(r.penalty) },
-    { l: 'P1 SCORE', c: 'db-num', h: r => db_esc(r.p1Score) },
-    { l: 'P2 SCORE', c: 'db-num', h: r => db_esc(r.p2Score) },
-    { l: 'P1 COMBO', h: r => db_esc(r.p1Combo) },
-    { l: 'P2 COMBO', h: r => db_esc(r.p2Combo) }
-  ];
 }
 
 function db_renderEvents() {
@@ -9670,38 +9628,356 @@ function db_renderEvents() {
   document.getElementById('db-event-list').innerHTML = html;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// THE GRID — a spreadsheet-style view of the battles.
+// Only the rows you can see are drawn (plus a few spare ones), so all 20,000+
+// rows scroll smoothly. Select cells with the mouse or the keyboard like Google
+// Sheets; Ctrl+C copies the selection in a form that pastes into Sheets/Excel.
+// ═══════════════════════════════════════════════════════════════════════════
+const DB_ROW_H = 26, DB_HEAD_H = 30, DB_NUM_W = 56;
+
+// v = plain text of the cell (used for display and copying); compact = shown without "All columns"
+function db_allCols() {
+  const name = which => r => which === 1 ? r.p1 : r.p2;
+  const nameHtml = which => r => {
+    const hadPriority = which === 1 ? r.p1Priority === true : r.p1Priority === false;
+    return db_esc(which === 1 ? r.p1 : r.p2) + (hadPriority ? '<span class="db-pri" title="Had pick priority in set 1">P</span>' : '');
+  };
+  return [
+    { l: 'WHEN', w: 130, compact: true, v: r => db_fmtTime(r.ts) },
+    { l: 'JUDGE', w: 110, compact: true, v: r => r.judge },
+    { l: 'EVENT', w: 170, compact: true, v: r => r.event },
+    { l: 'MATCH', w: 200, compact: true, v: r => r.match },
+    { l: 'P1', w: 120, compact: true, v: name(1), h: nameHtml(1) },
+    { l: 'P1 SIDE', w: 70, v: r => r.p1Side },
+    { l: 'P2', w: 120, compact: true, v: name(2), h: nameHtml(2) },
+    { l: 'P2 SIDE', w: 70, v: r => r.p2Side },
+    { l: 'SET', w: 52, c: 'db-num', compact: true, v: r => r.set },
+    { l: 'SHUFFLE', w: 72, c: 'db-num', v: r => r.shuffle },
+    { l: 'SLOT', w: 52, c: 'db-num', compact: true, v: r => r.slot },
+    { l: 'WINNER', w: 120, c: 'db-win', compact: true, v: r => r.winner },
+    { l: 'WINNING COMBO', w: 250, compact: true, v: r => r.winnerCombo },
+    { l: 'FINISH', w: 110, compact: true, v: r => r.finish },
+    { l: 'PTS', w: 48, c: 'db-num', compact: true, v: r => r.points },
+    { l: 'PENALTY', w: 70, c: 'db-num', v: r => r.penalty },
+    { l: 'P1 SCORE', w: 76, c: 'db-num', v: r => r.p1Score },
+    { l: 'P2 SCORE', w: 76, c: 'db-num', v: r => r.p2Score },
+    { l: 'P1 COMBO', w: 250, v: r => r.p1Combo },
+    { l: 'P2 COMBO', w: 250, v: r => r.p2Combo }
+  ];
+}
+function db_cols() {
+  const all = db_allCols();
+  return db_state.allCols ? all : all.filter(c => c.compact);
+}
+function db_colW(c) { return db_state.colW[c.l] || c.w; }
+function db_totalW(cols) { return cols.reduce((a, c) => a + db_colW(c), DB_NUM_W); }
+
+function db_selRange() {
+  const q = db_state.sel;
+  if (!q) return null;
+  return { r1: Math.min(q.ar, q.fr), r2: Math.max(q.ar, q.fr), c1: Math.min(q.ac, q.fc), c2: Math.max(q.ac, q.fc) };
+}
+
+function db_gridMessage(text) {
+  document.getElementById('db-g-head').innerHTML = '';
+  document.getElementById('db-g-body').innerHTML = '<div class="db-g-msg">' + db_esc(text) + '</div>';
+  document.getElementById('db-g-sizer').style.height = '';
+  document.getElementById('db-g-sizer').style.width = '';
+  db_state.cols = null;
+}
+
 function db_render() {
   const s = db_state;
   db_renderEvents();
-
-  const cols = db_cols();
-  document.getElementById('db-thead').innerHTML = '<tr>' + cols.map(c => '<th class="' + (c.c || '') + '">' + c.l + '</th>').join('') + '</tr>';
-
   const total = s.filtered.length;
-  const pages = Math.max(1, Math.ceil(total / s.pageSize));
-  if (s.page >= pages) s.page = pages - 1;
-  if (s.page < 0) s.page = 0;
-  const start = s.page * s.pageSize;
-  const slice = s.filtered.slice(start, start + s.pageSize);
-
-  let body = '';
-  if (!slice.length) {
-    body = '<tr><td class="db-msg" colspan="' + cols.length + '">No battles match these filters.</td></tr>';
-  } else {
-    slice.forEach(r => {
-      body += '<tr>' + cols.map(c => '<td class="' + (c.c || '') + '">' + c.h(r) + '</td>').join('') + '</tr>';
-    });
-  }
-  document.getElementById('db-tbody').innerHTML = body;
-
   const filtering = s.event || s.finish || s.search.trim();
   document.getElementById('db-count').textContent = db_fmtNum(total) + ' battle' + (total === 1 ? '' : 's') +
     (filtering ? ' match your filters (of ' + db_fmtNum(s.rows.length) + ' in the database)' : ' in the database');
-  document.getElementById('db-page-info').textContent = total
-    ? 'Showing ' + db_fmtNum(start + 1) + '–' + db_fmtNum(start + slice.length) + ' of ' + db_fmtNum(total) + ' · page ' + (s.page + 1) + ' of ' + db_fmtNum(pages)
-    : '';
-  document.getElementById('db-prev').disabled = s.page <= 0;
-  document.getElementById('db-next').disabled = s.page >= pages - 1;
+  if (!total) { db_gridMessage('No battles match these filters.'); db_renderStatus(); return; }
+  s.cols = db_cols();
+  const sizer = document.getElementById('db-g-sizer');
+  sizer.style.width = db_totalW(s.cols) + 'px';
+  sizer.style.height = (DB_HEAD_H + total * DB_ROW_H) + 'px';
+  db_paint();
+  db_renderStatus();
+}
+
+function db_paint() {
+  const s = db_state;
+  const cols = s.cols;
+  if (!cols || !s.filtered.length) return;
+  const sc = document.getElementById('db-g-scroll');
+  const viewH = sc.clientHeight || 600;
+  const total = s.filtered.length;
+  const first = Math.max(0, Math.floor(sc.scrollTop / DB_ROW_H) - 8);
+  const last = Math.min(total - 1, Math.ceil((sc.scrollTop + viewH) / DB_ROW_H) + 8);
+  const sel = db_selRange();
+  const totalW = db_totalW(cols);
+
+  let head = '<div class="db-g-hrow" style="width:' + totalW + 'px"><div class="db-g-corner" data-corner="1"></div>';
+  cols.forEach((c, ci) => {
+    const on = sel && ci >= sel.c1 && ci <= sel.c2;
+    head += '<div class="db-g-h' + (on ? ' sel' : '') + '" data-hc="' + ci + '" style="width:' + db_colW(c) + 'px">' +
+      '<span>' + c.l + '</span><i class="db-g-rs" data-rs="' + ci + '"></i></div>';
+  });
+  document.getElementById('db-g-head').innerHTML = head + '</div>';
+
+  const act = s.sel ? { r: s.sel.ar, c: s.sel.ac } : null;
+  let body = '';
+  for (let i = first; i <= last; i++) {
+    const r = s.filtered[i];
+    const rowOn = sel && i >= sel.r1 && i <= sel.r2;
+    body += '<div class="db-g-row" style="top:' + (i * DB_ROW_H) + 'px;width:' + totalW + 'px">' +
+      '<div class="db-g-n' + (rowOn ? ' sel' : '') + '" data-rn="' + i + '">' + (i + 1) + '</div>';
+    for (let ci = 0; ci < cols.length; ci++) {
+      const c = cols[ci];
+      const inSel = rowOn && ci >= sel.c1 && ci <= sel.c2;
+      const isAct = act && act.r === i && act.c === ci;
+      const cls = 'db-g-c' + (c.c ? ' ' + c.c : '') + (inSel ? ' sel' : '') + (isAct ? ' act' : '');
+      body += '<div class="' + cls + '" data-r="' + i + '" data-c="' + ci + '" style="width:' + db_colW(c) + 'px">' +
+        (c.h ? c.h(r) : db_esc(c.v(r))) + '</div>';
+    }
+    body += '</div>';
+  }
+  document.getElementById('db-g-body').innerHTML = body;
+}
+
+function db_renderStatus() {
+  const s = db_state;
+  const el = document.getElementById('db-g-status');
+  const copyBtn = document.getElementById('db-g-copy');
+  const sel = db_selRange();
+  if (!sel || !s.cols) {
+    el.textContent = 'Click a cell · drag or Shift+click to select · click a column name or row number to select it all · Ctrl+C copies';
+    copyBtn.disabled = true;
+    return;
+  }
+  const nr = sel.r2 - sel.r1 + 1, nc = sel.c2 - sel.c1 + 1;
+  if (nr === 1 && nc === 1) {
+    const v = String(s.cols[sel.c1].v(s.filtered[sel.r1]));
+    el.textContent = s.cols[sel.c1].l + ' · row ' + db_fmtNum(sel.r1 + 1) + ' · ' + (v === '' ? '(blank)' : v);
+  } else {
+    el.textContent = db_fmtNum(nr) + ' row' + (nr === 1 ? '' : 's') + ' × ' + db_fmtNum(nc) + ' column' + (nc === 1 ? '' : 's') + ' selected (' + db_fmtNum(nr * nc) + ' cells)';
+  }
+  copyBtn.disabled = false;
+}
+
+function db_setSel(ar, ac, fr, fc) {
+  const s = db_state;
+  if (!s.cols || !s.filtered.length) return;
+  const maxR = s.filtered.length - 1, maxC = s.cols.length - 1;
+  const cl = (v, m) => Math.max(0, Math.min(m, v));
+  s.sel = { ar: cl(ar, maxR), ac: cl(ac, maxC), fr: cl(fr, maxR), fc: cl(fc, maxC) };
+  db_paint();
+  db_renderStatus();
+}
+
+// Scrolls just enough that the cell is on screen.
+function db_ensureVisible(r, c) {
+  const s = db_state;
+  const sc = document.getElementById('db-g-scroll');
+  const viewH = sc.clientHeight || 600, viewW = sc.clientWidth || 1000;
+  const top = r * DB_ROW_H, bottom = top + DB_ROW_H;
+  if (top < sc.scrollTop) sc.scrollTop = top;
+  else if (bottom > sc.scrollTop + viewH - DB_HEAD_H) sc.scrollTop = bottom - viewH + DB_HEAD_H;
+  let x = DB_NUM_W;
+  for (let i = 0; i < c; i++) x += db_colW(s.cols[i]);
+  const w = db_colW(s.cols[c]);
+  if (x - DB_NUM_W < sc.scrollLeft) sc.scrollLeft = x - DB_NUM_W;
+  else if (x + w > sc.scrollLeft + viewW) sc.scrollLeft = x + w - viewW;
+}
+
+// Plain tab-separated text of the selection (pastes straight into Google Sheets / Excel).
+function db_selectionText() {
+  const s = db_state;
+  const sel = db_selRange();
+  if (!sel || !s.cols) return '';
+  const clean = v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ');
+  const lines = [];
+  for (let r = sel.r1; r <= sel.r2; r++) {
+    const row = s.filtered[r];
+    const cells = [];
+    for (let c = sel.c1; c <= sel.c2; c++) cells.push(clean(s.cols[c].v(row)));
+    lines.push(cells.join('\t'));
+  }
+  return lines.join('\n');
+}
+
+function db_copySelection() {
+  const text = db_selectionText();
+  if (!text) return;
+  const btn = document.getElementById('db-g-copy');
+  const done = () => { btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Copy selection'; }, 1200); };
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove();
+    document.getElementById('db-grid').focus({ preventScroll: true });
+    if (ok) done();
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, fallback);
+  } else fallback();
+}
+
+// ---- mouse ----
+let db_drag = null;     // { kind: 'cells' | 'rows' | 'cols' | 'resize', ... }
+
+function db_pointToCell(ev) {
+  const s = db_state;
+  const sc = document.getElementById('db-g-scroll');
+  const rect = sc.getBoundingClientRect();
+  const x = ev.clientX - rect.left + sc.scrollLeft - DB_NUM_W;
+  const y = ev.clientY - rect.top + sc.scrollTop - DB_HEAD_H;
+  let r = Math.floor(y / DB_ROW_H);
+  r = Math.max(0, Math.min(s.filtered.length - 1, r));
+  let c = 0, acc = 0;
+  for (; c < s.cols.length - 1; c++) {
+    acc += db_colW(s.cols[c]);
+    if (x < acc) break;
+  }
+  return { r: r, c: c, rect: rect };
+}
+
+function db_gridMouseDown(e) {
+  const s = db_state;
+  if (e.button !== 0 || !s.cols) return;
+  const t = e.target;
+  const rs = t.closest('[data-rs]');
+  if (rs) {
+    const ci = parseInt(rs.getAttribute('data-rs'), 10);
+    db_drag = { kind: 'resize', ci: ci, startX: e.clientX, startW: db_colW(s.cols[ci]) };
+    e.preventDefault();
+    return;
+  }
+  document.getElementById('db-grid').focus({ preventScroll: true });
+  const last = s.filtered.length - 1, lastC = s.cols.length - 1;
+  const cell = t.closest('[data-r]');
+  const hc = t.closest('[data-hc]');
+  const rn = t.closest('[data-rn]');
+  if (t.closest('[data-corner]')) {
+    db_setSel(0, 0, last, lastC);
+    e.preventDefault();
+  } else if (cell) {
+    const r = parseInt(cell.getAttribute('data-r'), 10), c = parseInt(cell.getAttribute('data-c'), 10);
+    if (e.shiftKey && s.sel) db_setSel(s.sel.ar, s.sel.ac, r, c);
+    else db_setSel(r, c, r, c);
+    db_drag = { kind: 'cells' };
+    e.preventDefault();
+  } else if (rn) {
+    const r = parseInt(rn.getAttribute('data-rn'), 10);
+    if (e.shiftKey && s.sel) db_setSel(s.sel.ar, 0, r, lastC);
+    else db_setSel(r, 0, r, lastC);
+    db_drag = { kind: 'rows' };
+    e.preventDefault();
+  } else if (hc) {
+    const c = parseInt(hc.getAttribute('data-hc'), 10);
+    if (e.shiftKey && s.sel) db_setSel(0, s.sel.ac, last, c);
+    else db_setSel(0, c, last, c);
+    db_drag = { kind: 'cols' };
+    e.preventDefault();
+  }
+}
+
+function db_gridMouseMove(e) {
+  const s = db_state;
+  if (!db_drag || !s.cols) return;
+  if (db_drag.kind === 'resize') {
+    const w = Math.max(40, Math.min(700, db_drag.startW + (e.clientX - db_drag.startX)));
+    s.colW[s.cols[db_drag.ci].l] = w;
+    const sizer = document.getElementById('db-g-sizer');
+    sizer.style.width = db_totalW(s.cols) + 'px';
+    db_paint();
+    return;
+  }
+  const p = db_pointToCell(e);
+  const sc = document.getElementById('db-g-scroll');
+  // drifting past an edge scrolls the grid
+  if (e.clientY > p.rect.bottom - 24) sc.scrollTop += 30;
+  else if (e.clientY < p.rect.top + DB_HEAD_H + 8) sc.scrollTop -= 30;
+  if (e.clientX > p.rect.right - 24) sc.scrollLeft += 40;
+  else if (e.clientX < p.rect.left + DB_NUM_W + 8) sc.scrollLeft -= 40;
+  const q = s.sel;
+  if (!q) return;
+  const lastC = s.cols.length - 1, lastR = s.filtered.length - 1;
+  if (db_drag.kind === 'cells') db_setSel(q.ar, q.ac, p.r, p.c);
+  else if (db_drag.kind === 'rows') db_setSel(q.ar, 0, p.r, lastC);
+  else if (db_drag.kind === 'cols') db_setSel(0, q.ac, lastR, p.c);
+}
+
+function db_gridMouseUp() { db_drag = null; }
+
+// ---- keyboard ----
+function db_gridKeyDown(e) {
+  const s = db_state;
+  if (!s.cols || !s.filtered.length) return;
+  const last = s.filtered.length - 1, lastC = s.cols.length - 1;
+  const ctrl = e.ctrlKey || e.metaKey;
+  const k = e.key;
+  const sc = document.getElementById('db-g-scroll');
+  const page = Math.max(1, Math.floor(((sc.clientHeight || 600) - DB_HEAD_H) / DB_ROW_H) - 1);
+
+  if (ctrl && (k === 'a' || k === 'A')) { db_setSel(0, 0, last, lastC); e.preventDefault(); return; }
+  if (ctrl && (k === 'c' || k === 'C')) { if (s.sel) { db_copySelection(); } e.preventDefault(); return; }
+  if (k === 'Escape') { if (s.sel) db_setSel(s.sel.ar, s.sel.ac, s.sel.ar, s.sel.ac); return; }
+
+  let dr = 0, dc = 0, jump = false, collapse = false, handled = true;
+  if (k === 'ArrowDown') { dr = 1; jump = ctrl; }
+  else if (k === 'ArrowUp') { dr = -1; jump = ctrl; }
+  else if (k === 'ArrowRight') { dc = 1; jump = ctrl; }
+  else if (k === 'ArrowLeft') { dc = -1; jump = ctrl; }
+  else if (k === 'PageDown') { dr = page; }
+  else if (k === 'PageUp') { dr = -page; }
+  else if (k === 'Tab') { dc = e.shiftKey ? -1 : 1; collapse = true; }
+  else if (k === 'Enter') { dr = e.shiftKey ? -1 : 1; collapse = true; }
+  else if (k === 'Home' || k === 'End') {
+    const q0 = s.sel || { ar: 0, ac: 0, fr: 0, fc: 0 };
+    let nr = q0.fr, nc = k === 'Home' ? 0 : lastC;
+    if (ctrl) nr = k === 'Home' ? 0 : last;
+    if (e.shiftKey) db_setSel(q0.ar, q0.ac, nr, nc); else db_setSel(nr, nc, nr, nc);
+    db_ensureVisible(nr, nc);
+    e.preventDefault();
+    return;
+  } else handled = false;
+  if (!handled) return;
+  e.preventDefault();
+
+  const q = s.sel || { ar: 0, ac: 0, fr: 0, fc: 0 };
+  // moving without Shift starts from the active cell; with Shift the far corner moves
+  let r = q.fr, c = q.fc;
+  if (!e.shiftKey || collapse) { r = q.ar; c = q.ac; if (!s.sel) { r = 0; c = 0; dr = 0; dc = 0; } }
+  if (jump) {
+    if (dr) r = dr > 0 ? last : 0;
+    if (dc) c = dc > 0 ? lastC : 0;
+  } else { r += dr; c += dc; }
+  if (collapse && c > lastC) { c = 0; r += 1; }       // Tab past the last column wraps to the next row
+  r = Math.max(0, Math.min(last, r));
+  c = Math.max(0, Math.min(lastC, c));
+  if (e.shiftKey && !collapse) db_setSel(q.ar, q.ac, r, c);
+  else db_setSel(r, c, r, c);
+  db_ensureVisible(r, c);
+}
+
+function db_initGrid() {
+  const sc = document.getElementById('db-g-scroll');
+  const grid = document.getElementById('db-grid');
+  let ticking = false;
+  sc.addEventListener('scroll', function () {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () { ticking = false; db_paint(); });
+  });
+  grid.addEventListener('mousedown', db_gridMouseDown);
+  document.addEventListener('mousemove', db_gridMouseMove);
+  document.addEventListener('mouseup', db_gridMouseUp);
+  grid.addEventListener('keydown', db_gridKeyDown);
+  document.getElementById('db-g-copy').addEventListener('click', db_copySelection);
 }
 
 function db_setEvent(name) {
@@ -10071,16 +10347,14 @@ function db_init() {
   });
 
   db_initSanity();
+  db_initGrid();
   document.getElementById('db-refresh-btn').addEventListener('click', db_load);
   document.getElementById('db-download-btn').addEventListener('click', db_downloadCSV);
   document.getElementById('db-filter-clear').addEventListener('click', db_clearFilters);
   document.getElementById('db-filter-event').addEventListener('change', function (e) { db_setEvent(e.target.value); });
   document.getElementById('db-filter-finish').addEventListener('change', function (e) { s.finish = e.target.value; db_applyFilters(); });
   document.getElementById('db-filter-sort').addEventListener('change', function (e) { s.sort = e.target.value; db_applyFilters(); });
-  document.getElementById('db-filter-allcols').addEventListener('change', function (e) { s.allCols = e.target.checked; db_render(); });
-  document.getElementById('db-page-size').addEventListener('change', function (e) { s.pageSize = parseInt(e.target.value, 10) || 100; s.page = 0; db_render(); });
-  document.getElementById('db-prev').addEventListener('click', function () { s.page--; db_render(); });
-  document.getElementById('db-next').addEventListener('click', function () { s.page++; db_render(); });
+  document.getElementById('db-filter-allcols').addEventListener('change', function (e) { s.allCols = e.target.checked; s.sel = null; db_render(); });
 
   let searchTimer = null;
   document.getElementById('db-filter-search').addEventListener('input', function (e) {
