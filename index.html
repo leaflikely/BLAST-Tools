@@ -2262,6 +2262,83 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 @media print {
   #tool-reportgen #rg-toolbar { display: none !important }
 }
+
+    /* ═══════════════════════════════════════════════
+       DATABASE TAB — tool id: database · JS prefix db_ · element IDs db-
+       Everything is scoped under #tool-database so it cannot touch the
+       other four tools or the shell.
+       ═══════════════════════════════════════════════ */
+    #tool-database .db-app { max-width: 1500px; margin: 0 auto; padding: 22px 32px 56px; }
+    #tool-database .db-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+    #tool-database .db-head h2 { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: 0.04em; color: #fff; line-height: 1; }
+    #tool-database .db-head p { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: var(--muted); margin-top: 6px; }
+    #tool-database .db-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    #tool-database .db-status { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+    #tool-database .db-status.ok { color: var(--teal); }
+    #tool-database .db-status.error { color: var(--danger); }
+    #tool-database .db-btn {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.06em;
+      color: var(--text); background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 14px; cursor: pointer; transition: border-color .15s, color .15s;
+    }
+    #tool-database .db-btn:hover:not(:disabled) { border-color: var(--teal); color: #fff; }
+    #tool-database .db-btn:disabled { opacity: 0.45; cursor: default; }
+
+    #tool-database .db-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    #tool-database .db-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    #tool-database .db-card-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: var(--muted); }
+    #tool-database .db-card-value { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; color: #fff; margin-top: 4px; line-height: 1.1; }
+    #tool-database .db-card-value.small { font-size: 18px; padding-top: 5px; }
+
+    #tool-database .db-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 18px; align-items: start; }
+    #tool-database .db-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    #tool-database .db-panel-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: var(--muted); padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
+    #tool-database .db-events { max-height: 74vh; overflow-y: auto; }
+    #tool-database .db-ev {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+      background: none; border: none; border-bottom: 1px solid var(--border); color: var(--text);
+      padding: 9px 14px; cursor: pointer; text-align: left; font-family: 'Barlow', sans-serif; font-size: 13px;
+    }
+    #tool-database .db-ev:hover { background: var(--surface2); }
+    #tool-database .db-ev.on { background: var(--surface2); box-shadow: inset 3px 0 0 var(--accent); color: #fff; }
+    #tool-database .db-ev-main { display: flex; flex-direction: column; min-width: 0; }
+    #tool-database .db-ev-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #tool-database .db-ev-date { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 2px; }
+    #tool-database .db-ev-n { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--teal); flex-shrink: 0; }
+
+    #tool-database .db-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+    #tool-database .db-input, #tool-database .db-select {
+      font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; outline: none; min-width: 0;
+    }
+    #tool-database .db-input { flex: 1 1 220px; }
+    #tool-database .db-input:focus, #tool-database .db-select:focus { border-color: var(--teal); }
+    #tool-database .db-check { display: flex; align-items: center; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+    #tool-database .db-count { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+
+    #tool-database .db-table-wrap { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); max-height: 70vh; overflow: auto; }
+    #tool-database .db-table { border-collapse: collapse; width: 100%; font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+    #tool-database .db-table th {
+      position: sticky; top: 0; z-index: 1; background: var(--surface2); color: var(--muted); text-align: left;
+      font-weight: 600; letter-spacing: 0.08em; font-size: 9px; padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    #tool-database .db-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+    #tool-database .db-table tbody tr:hover td { background: var(--surface2); }
+    #tool-database .db-table .db-num { text-align: right; }
+    #tool-database .db-table .db-win { color: var(--teal); font-weight: 600; }
+    #tool-database .db-table .db-msg { text-align: center; color: var(--muted); padding: 28px 10px; white-space: normal; max-width: none; }
+    #tool-database .db-pri { display: inline-block; font-size: 8px; font-weight: 700; color: #0e1512; background: var(--accent); border-radius: 3px; padding: 0 4px; margin-left: 4px; vertical-align: 1px; }
+
+    #tool-database .db-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+    #tool-database .db-pager-mid { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+    #tool-database .db-pager-right { display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+
+    @media (max-width: 900px) {
+      #tool-database .db-app { padding: 16px 14px 48px; }
+      #tool-database .db-cards { grid-template-columns: repeat(2, 1fr); }
+      #tool-database .db-layout { grid-template-columns: 1fr; }
+      #tool-database .db-events { max-height: 220px; }
+    }
 </style>
 </head>
 <body>
@@ -2281,6 +2358,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
   <button class="shell-tab" data-tool="recapper"><span class="shell-tab-icon">🏆</span> Tournament Recap</button>
   <button class="shell-tab" data-tool="playerhub"><span class="shell-tab-icon">⚔️</span> Player Comparison</button>
   <button class="shell-tab" data-tool="combostats"><span class="shell-tab-icon">🔩</span> Combo Comparison</button>
+  <button class="shell-tab" data-tool="database"><span class="shell-tab-icon">🗄️</span> Database</button>
 </nav>
 
 <div class="shell-data-panel">
@@ -2688,6 +2766,72 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 
   </div>
 </div>
+  </div>
+
+  <div class="tool-view" id="tool-database">
+    <div class="db-app">
+
+      <div class="db-head">
+        <div>
+          <h2>DATABASE</h2>
+          <p>NCBLAST BATTLE DATA · VIEW ONLY</p>
+        </div>
+        <div class="db-actions">
+          <span class="db-status" id="db-status">Not loaded yet</span>
+          <button class="db-btn" id="db-refresh-btn" type="button">Refresh</button>
+          <button class="db-btn" id="db-download-btn" type="button" disabled>Download CSV</button>
+        </div>
+      </div>
+
+      <div class="db-cards">
+        <div class="db-card"><div class="db-card-label">BATTLES</div><div class="db-card-value" id="db-card-rows">—</div></div>
+        <div class="db-card"><div class="db-card-label">EVENTS</div><div class="db-card-value" id="db-card-events">—</div></div>
+        <div class="db-card"><div class="db-card-label">FIRST ENTRY</div><div class="db-card-value small" id="db-card-first">—</div></div>
+        <div class="db-card"><div class="db-card-label">LATEST ENTRY</div><div class="db-card-value small" id="db-card-last">—</div></div>
+      </div>
+
+      <div class="db-layout">
+        <aside class="db-panel db-events">
+          <div class="db-panel-title">EVENTS</div>
+          <div id="db-event-list"></div>
+        </aside>
+
+        <section>
+          <div class="db-filters">
+            <input class="db-input" id="db-filter-search" type="search" placeholder="Search player, judge, or combo…" autocomplete="off">
+            <select class="db-select" id="db-filter-event" title="Event"></select>
+            <select class="db-select" id="db-filter-finish" title="Finish type"></select>
+            <select class="db-select" id="db-filter-sort" title="Order">
+              <option value="new">Newest first</option>
+              <option value="old">Oldest first</option>
+            </select>
+            <label class="db-check"><input type="checkbox" id="db-filter-allcols"> All columns</label>
+            <button class="db-btn" id="db-filter-clear" type="button">Clear</button>
+          </div>
+          <div class="db-count" id="db-count"></div>
+          <div class="db-table-wrap">
+            <table class="db-table">
+              <thead id="db-thead"></thead>
+              <tbody id="db-tbody"></tbody>
+            </table>
+          </div>
+          <div class="db-pager">
+            <button class="db-btn" id="db-prev" type="button">← Prev</button>
+            <span class="db-pager-mid" id="db-page-info"></span>
+            <div class="db-pager-right">
+              <span>Rows per page</span>
+              <select class="db-select" id="db-page-size">
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="250">250</option>
+              </select>
+              <button class="db-btn" id="db-next" type="button">Next →</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+    </div>
   </div>
 </main>
 
@@ -9211,6 +9355,376 @@ window.renderAllReports = function(root, dataArray) {
   root.render(React.createElement(React.Fragment, null, ...frags));
 };
 
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// DATABASE TAB — tool id: database · JS prefix db_ · element IDs db-
+// View-only window into the live NCBLAST database (the Cloudflare D1 database
+// behind ncblast-db). It reads the database's own CSV export directly, so it
+// does NOT use the shared "Upload New CSV" data (SHARED_CSV_LISTENERS) on purpose.
+// The ~P~ pick-priority marker is stripped at parse time into p1Priority.
+// ═══════════════════════════════════════════════════════════════════════════
+const DB_API = 'https://ncblast-db.danny61734.workers.dev';
+
+const db_state = {
+  loaded: false,
+  loading: false,
+  rows: [],          // every battle, oldest first
+  events: [],        // [{ name, count, first }] newest event first
+  csvText: '',       // the export exactly as the database served it
+  filtered: [],      // rows matching the current filters, in display order
+  page: 0,
+  pageSize: 100,
+  event: '',
+  search: '',
+  finish: '',
+  sort: 'new',
+  allCols: false
+};
+
+function db_esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function db_fmtNum(n) { return Number(n).toLocaleString('en-US'); }
+
+function db_fmtTime(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso || '';
+  return d.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function db_fmtDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso || '';
+  return d.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Reads CSV text into rows of cells. Handles quoted cells, doubled quotes and line breaks inside quotes.
+function db_parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        inQuotes = false; i++; continue;
+      }
+      field += c; i++; continue;
+    }
+    if (c === '"') { inQuotes = true; i++; continue; }
+    if (c === ',') { row.push(field); field = ''; i++; continue; }
+    if (c === '\r') { i++; continue; }
+    if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+    field += c; i++;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+// Turns the export into battle objects. Throws a plain-language error if a column is missing.
+function db_rowsFromCSV(text) {
+  const grid = db_parseCSV(text);
+  if (!grid.length) return [];
+  const ix = {};
+  grid[0].forEach((h, k) => { ix[h.trim()] = k; });
+  const need = ['Timestamp', 'Judge', 'Tournament', 'Match', 'P1', 'P1Side', 'P2', 'P2Side', 'Set', 'Shuffle', 'Slot',
+    'Winner', 'WinnerCombo', 'FinishType', 'Points', 'Penalty', 'P1Score', 'P2Score', 'P1Combo', 'P2Combo'];
+  for (let k = 0; k < need.length; k++) {
+    if (!(need[k] in ix)) throw new Error('The database export is missing the "' + need[k] + '" column.');
+  }
+  const out = [];
+  for (let r = 1; r < grid.length; r++) {
+    const g = grid[r];
+    if (g.length === 1 && g[0] === '') continue;
+    const get = h => (g[ix[h]] == null ? '' : g[ix[h]]);
+    let p1 = get('P1');
+    let p2 = get('P2');
+    let pri = null;
+    if (p1.endsWith('~P~')) { p1 = p1.slice(0, -3); pri = true; }
+    else if (p2.endsWith('~P~')) { p2 = p2.slice(0, -3); pri = false; }
+    const row = {
+      n: out.length + 1,
+      ts: get('Timestamp'), judge: get('Judge'), event: get('Tournament'), match: get('Match'),
+      p1: p1, p1Side: get('P1Side'), p2: p2, p2Side: get('P2Side'),
+      set: get('Set'), shuffle: get('Shuffle'), slot: get('Slot'),
+      winner: get('Winner'), winnerCombo: get('WinnerCombo'), finish: get('FinishType'),
+      points: get('Points'), penalty: get('Penalty'), p1Score: get('P1Score'), p2Score: get('P2Score'),
+      p1Combo: get('P1Combo'), p2Combo: get('P2Combo'),
+      p1Priority: pri,
+      hay: ''
+    };
+    row.hay = [row.judge, row.p1, row.p2, row.winner, row.winnerCombo, row.p1Combo, row.p2Combo, row.event, row.match]
+      .join('\u0001').toLowerCase();
+    out.push(row);
+  }
+  return out;
+}
+
+function db_buildEvents(rows) {
+  const map = {};
+  rows.forEach(r => {
+    let e = map[r.event];
+    if (!e) { e = map[r.event] = { name: r.event, count: 0, first: r.ts }; }
+    e.count++;
+    if (r.ts < e.first) e.first = r.ts;
+  });
+  return Object.keys(map).map(k => map[k]).sort((a, b) => (a.first < b.first ? 1 : a.first > b.first ? -1 : 0));
+}
+
+function db_setStatus(text, kind) {
+  const el = document.getElementById('db-status');
+  el.textContent = text;
+  el.className = 'db-status' + (kind ? ' ' + kind : '');
+}
+
+async function db_load() {
+  const s = db_state;
+  if (s.loading) return;
+  s.loading = true;
+  const refreshBtn = document.getElementById('db-refresh-btn');
+  refreshBtn.disabled = true;
+  db_setStatus('Loading from the database…', '');
+  if (!s.loaded) {
+    document.getElementById('db-tbody').innerHTML = '<tr><td class="db-msg" colspan="12">Loading battles from the database…</td></tr>';
+  }
+  try {
+    const res = await fetch(DB_API + '/export.csv', { cache: 'no-store' });
+    if (!res.ok) throw new Error('The database answered with an error (' + res.status + ').');
+    const text = await res.text();
+    const rows = db_rowsFromCSV(text);
+    rows.sort((a, b) => (a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : a.n - b.n));
+    s.rows = rows;
+    s.events = db_buildEvents(rows);
+    s.csvText = text;
+    s.loaded = true;
+    if (s.event && !s.events.some(e => e.name === s.event)) s.event = '';
+    db_buildControls();
+    db_applyFilters();
+    document.getElementById('db-download-btn').disabled = false;
+    db_setStatus('✓ Loaded ' + db_fmtNum(rows.length) + ' battles · ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), 'ok');
+  } catch (err) {
+    const msg = err && err.message ? err.message : String(err);
+    db_setStatus('Could not load the database. ' + msg, 'error');
+    if (!s.loaded) {
+      document.getElementById('db-tbody').innerHTML = '<tr><td class="db-msg" colspan="12">Could not reach the database. Check your connection and press Refresh.</td></tr>';
+    }
+  } finally {
+    s.loading = false;
+    refreshBtn.disabled = false;
+  }
+}
+
+// Fills the cards and the Event / Finish dropdowns after a load.
+function db_buildControls() {
+  const s = db_state;
+  document.getElementById('db-card-rows').textContent = db_fmtNum(s.rows.length);
+  document.getElementById('db-card-events').textContent = db_fmtNum(s.events.length);
+  document.getElementById('db-card-first').textContent = s.rows.length ? db_fmtDate(s.rows[0].ts) : '—';
+  document.getElementById('db-card-last').textContent = s.rows.length ? db_fmtDate(s.rows[s.rows.length - 1].ts) : '—';
+
+  const evSel = document.getElementById('db-filter-event');
+  let evHtml = '<option value="">All events</option>';
+  s.events.forEach(e => {
+    evHtml += '<option value="' + db_esc(e.name) + '">' + db_esc(e.name) + ' (' + db_fmtNum(e.count) + ')</option>';
+  });
+  evSel.innerHTML = evHtml;
+  evSel.value = s.event;
+
+  const counts = {};
+  s.rows.forEach(r => { counts[r.finish] = (counts[r.finish] || 0) + 1; });
+  const finishes = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  const fSel = document.getElementById('db-filter-finish');
+  let fHtml = '<option value="">All finish types</option>';
+  finishes.forEach(f => {
+    fHtml += '<option value="' + db_esc(f) + '">' + db_esc(f === '' ? '(blank)' : f) + ' (' + db_fmtNum(counts[f]) + ')</option>';
+  });
+  fSel.innerHTML = fHtml;
+  if (s.finish && !(s.finish in counts)) s.finish = '';
+  fSel.value = s.finish;
+}
+
+function db_applyFilters() {
+  const s = db_state;
+  const q = s.search.trim().toLowerCase();
+  const out = s.rows.filter(r =>
+    (!s.event || r.event === s.event) &&
+    (!s.finish || r.finish === s.finish) &&
+    (!q || r.hay.indexOf(q) !== -1));
+  if (s.sort === 'new') out.reverse();
+  s.filtered = out;
+  s.page = 0;
+  db_render();
+}
+
+function db_cols() {
+  const name = (r, which) => {
+    const nm = which === 1 ? r.p1 : r.p2;
+    const hadPriority = which === 1 ? r.p1Priority === true : r.p1Priority === false;
+    return db_esc(nm) + (hadPriority ? '<span class="db-pri" title="Had pick priority in set 1">P</span>' : '');
+  };
+  const compact = [
+    { l: 'WHEN', h: r => db_esc(db_fmtTime(r.ts)) },
+    { l: 'JUDGE', h: r => db_esc(r.judge) },
+    { l: 'EVENT', h: r => db_esc(r.event) },
+    { l: 'MATCH', h: r => db_esc(r.match) },
+    { l: 'P1', h: r => name(r, 1) },
+    { l: 'P2', h: r => name(r, 2) },
+    { l: 'SET', c: 'db-num', h: r => db_esc(r.set) },
+    { l: 'SLOT', c: 'db-num', h: r => db_esc(r.slot) },
+    { l: 'WINNER', c: 'db-win', h: r => db_esc(r.winner) },
+    { l: 'WINNING COMBO', h: r => db_esc(r.winnerCombo) },
+    { l: 'FINISH', h: r => db_esc(r.finish) },
+    { l: 'PTS', c: 'db-num', h: r => db_esc(r.points) }
+  ];
+  if (!db_state.allCols) return compact;
+  return [
+    { l: 'WHEN', h: r => db_esc(db_fmtTime(r.ts)) },
+    { l: 'JUDGE', h: r => db_esc(r.judge) },
+    { l: 'EVENT', h: r => db_esc(r.event) },
+    { l: 'MATCH', h: r => db_esc(r.match) },
+    { l: 'P1', h: r => name(r, 1) },
+    { l: 'P1 SIDE', h: r => db_esc(r.p1Side) },
+    { l: 'P2', h: r => name(r, 2) },
+    { l: 'P2 SIDE', h: r => db_esc(r.p2Side) },
+    { l: 'SET', c: 'db-num', h: r => db_esc(r.set) },
+    { l: 'SHUFFLE', c: 'db-num', h: r => db_esc(r.shuffle) },
+    { l: 'SLOT', c: 'db-num', h: r => db_esc(r.slot) },
+    { l: 'WINNER', c: 'db-win', h: r => db_esc(r.winner) },
+    { l: 'WINNING COMBO', h: r => db_esc(r.winnerCombo) },
+    { l: 'FINISH', h: r => db_esc(r.finish) },
+    { l: 'PTS', c: 'db-num', h: r => db_esc(r.points) },
+    { l: 'PENALTY', c: 'db-num', h: r => db_esc(r.penalty) },
+    { l: 'P1 SCORE', c: 'db-num', h: r => db_esc(r.p1Score) },
+    { l: 'P2 SCORE', c: 'db-num', h: r => db_esc(r.p2Score) },
+    { l: 'P1 COMBO', h: r => db_esc(r.p1Combo) },
+    { l: 'P2 COMBO', h: r => db_esc(r.p2Combo) }
+  ];
+}
+
+function db_renderEvents() {
+  const s = db_state;
+  let html = '<button type="button" class="db-ev' + (!s.event ? ' on' : '') + '" data-event="">' +
+    '<span class="db-ev-main"><span class="db-ev-name">All events</span></span>' +
+    '<span class="db-ev-n">' + db_fmtNum(s.rows.length) + '</span></button>';
+  s.events.forEach(e => {
+    html += '<button type="button" class="db-ev' + (s.event === e.name ? ' on' : '') + '" data-event="' + db_esc(e.name) + '">' +
+      '<span class="db-ev-main"><span class="db-ev-name" title="' + db_esc(e.name) + '">' + db_esc(e.name) + '</span>' +
+      '<span class="db-ev-date">' + db_esc(db_fmtDate(e.first)) + '</span></span>' +
+      '<span class="db-ev-n">' + db_fmtNum(e.count) + '</span></button>';
+  });
+  document.getElementById('db-event-list').innerHTML = html;
+}
+
+function db_render() {
+  const s = db_state;
+  db_renderEvents();
+
+  const cols = db_cols();
+  document.getElementById('db-thead').innerHTML = '<tr>' + cols.map(c => '<th class="' + (c.c || '') + '">' + c.l + '</th>').join('') + '</tr>';
+
+  const total = s.filtered.length;
+  const pages = Math.max(1, Math.ceil(total / s.pageSize));
+  if (s.page >= pages) s.page = pages - 1;
+  if (s.page < 0) s.page = 0;
+  const start = s.page * s.pageSize;
+  const slice = s.filtered.slice(start, start + s.pageSize);
+
+  let body = '';
+  if (!slice.length) {
+    body = '<tr><td class="db-msg" colspan="' + cols.length + '">No battles match these filters.</td></tr>';
+  } else {
+    slice.forEach(r => {
+      body += '<tr>' + cols.map(c => '<td class="' + (c.c || '') + '">' + c.h(r) + '</td>').join('') + '</tr>';
+    });
+  }
+  document.getElementById('db-tbody').innerHTML = body;
+
+  const filtering = s.event || s.finish || s.search.trim();
+  document.getElementById('db-count').textContent = db_fmtNum(total) + ' battle' + (total === 1 ? '' : 's') +
+    (filtering ? ' match your filters (of ' + db_fmtNum(s.rows.length) + ' in the database)' : ' in the database');
+  document.getElementById('db-page-info').textContent = total
+    ? 'Showing ' + db_fmtNum(start + 1) + '–' + db_fmtNum(start + slice.length) + ' of ' + db_fmtNum(total) + ' · page ' + (s.page + 1) + ' of ' + db_fmtNum(pages)
+    : '';
+  document.getElementById('db-prev').disabled = s.page <= 0;
+  document.getElementById('db-next').disabled = s.page >= pages - 1;
+}
+
+function db_setEvent(name) {
+  db_state.event = name;
+  document.getElementById('db-filter-event').value = name;
+  db_applyFilters();
+}
+
+function db_clearFilters() {
+  const s = db_state;
+  s.event = ''; s.finish = ''; s.search = '';
+  document.getElementById('db-filter-event').value = '';
+  document.getElementById('db-filter-finish').value = '';
+  document.getElementById('db-filter-search').value = '';
+  db_applyFilters();
+}
+
+function db_downloadCSV() {
+  const s = db_state;
+  if (!s.csvText) return;
+  const blob = new Blob([s.csvText], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ncblast-database-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+
+function db_init() {
+  const s = db_state;
+  const sharedPanel = document.querySelector('.shell-data-panel');
+
+  // Load once, the first time the Database tab is opened. The shared "Upload New CSV"
+  // bar belongs to the other four tools, so it is hidden while this tab is showing.
+  document.querySelectorAll('.shell-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      const isDb = tab.dataset.tool === 'database';
+      if (sharedPanel) sharedPanel.style.display = isDb ? 'none' : '';
+      if (isDb && !s.loaded && !s.loading) db_load();
+    });
+  });
+
+  document.getElementById('db-refresh-btn').addEventListener('click', db_load);
+  document.getElementById('db-download-btn').addEventListener('click', db_downloadCSV);
+  document.getElementById('db-filter-clear').addEventListener('click', db_clearFilters);
+  document.getElementById('db-filter-event').addEventListener('change', function (e) { db_setEvent(e.target.value); });
+  document.getElementById('db-filter-finish').addEventListener('change', function (e) { s.finish = e.target.value; db_applyFilters(); });
+  document.getElementById('db-filter-sort').addEventListener('change', function (e) { s.sort = e.target.value; db_applyFilters(); });
+  document.getElementById('db-filter-allcols').addEventListener('change', function (e) { s.allCols = e.target.checked; db_render(); });
+  document.getElementById('db-page-size').addEventListener('change', function (e) { s.pageSize = parseInt(e.target.value, 10) || 100; s.page = 0; db_render(); });
+  document.getElementById('db-prev').addEventListener('click', function () { s.page--; db_render(); });
+  document.getElementById('db-next').addEventListener('click', function () { s.page++; db_render(); });
+
+  let searchTimer = null;
+  document.getElementById('db-filter-search').addEventListener('input', function (e) {
+    const v = e.target.value;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () { s.search = v; db_applyFilters(); }, 150);
+  });
+
+  document.getElementById('db-event-list').addEventListener('click', function (e) {
+    const b = e.target.closest('[data-event]');
+    if (b) db_setEvent(b.getAttribute('data-event'));
+  });
+}
+
+db_init();
 </script>
 
 </body>
