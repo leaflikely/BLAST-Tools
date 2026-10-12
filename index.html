@@ -2333,11 +2333,41 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
     #tool-database .db-pager-mid { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
     #tool-database .db-pager-right { display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
 
+
+    #tool-database .db-sanity { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 18px; overflow: hidden; }
+    #tool-database .db-sanity[hidden] { display: none; }
+    #tool-database .db-sc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+    #tool-database .db-sc-sum { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text); }
+    #tool-database .db-sc-sum.ok { color: var(--teal); }
+    #tool-database .db-sc-sum.warn { color: var(--accent); }
+    #tool-database .db-sc-btns { display: flex; gap: 8px; }
+    #tool-database .db-sc-msg { padding: 14px; color: var(--danger); font-size: 13px; }
+    #tool-database .db-sc-row { border-bottom: 1px solid var(--border); }
+    #tool-database .db-sc-row:last-child { border-bottom: none; }
+    #tool-database .db-sc-head { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: none; color: var(--text); padding: 10px 14px; cursor: pointer; text-align: left; font-family: 'Barlow', sans-serif; font-size: 14px; }
+    #tool-database .db-sc-head:disabled { cursor: default; }
+    #tool-database .db-sc-head:hover:not(:disabled) { background: var(--surface2); }
+    #tool-database .db-sc-badge { min-width: 34px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 6px; }
+    #tool-database .db-sc-badge.good { color: var(--teal); border: 1px solid var(--teal); }
+    #tool-database .db-sc-badge.bad { color: #0e1512; background: var(--accent); }
+    #tool-database .db-sc-title { flex: 1 1 auto; }
+    #tool-database .db-sc-note { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); text-align: right; }
+    #tool-database .db-sc-chev { color: var(--muted); }
+    #tool-database .db-sc-list { max-height: 320px; overflow-y: auto; background: var(--bg, transparent); border-top: 1px solid var(--border); }
+    #tool-database .db-sc-item { display: grid; grid-template-columns: 200px 220px minmax(0, 1fr); gap: 12px; width: 100%; background: none; border: none; border-bottom: 1px solid var(--border); color: var(--text); padding: 7px 14px; cursor: pointer; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+    #tool-database .db-sc-item:hover { background: var(--surface2); }
+    #tool-database .db-sc-ev { color: var(--teal); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #tool-database .db-sc-match { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #tool-database .db-sc-detail { color: var(--muted); }
+    #tool-database .db-sc-more { padding: 8px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
+
     @media (max-width: 900px) {
       #tool-database .db-app { padding: 16px 14px 48px; }
       #tool-database .db-cards { grid-template-columns: repeat(2, 1fr); }
       #tool-database .db-layout { grid-template-columns: 1fr; }
       #tool-database .db-events { max-height: 220px; }
+      #tool-database .db-sc-item { grid-template-columns: 1fr; gap: 2px; }
+      #tool-database .db-sc-note { display: none; }
     }
 </style>
 </head>
@@ -2779,8 +2809,20 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         <div class="db-actions">
           <span class="db-status" id="db-status">Not loaded yet</span>
           <button class="db-btn" id="db-refresh-btn" type="button">Refresh</button>
+          <button class="db-btn" id="db-sanity-btn" type="button" disabled>Run Sanity Checks</button>
           <button class="db-btn" id="db-download-btn" type="button" disabled>Download CSV</button>
         </div>
+      </div>
+
+      <div class="db-sanity" id="db-sanity" hidden>
+        <div class="db-sc-top">
+          <div class="db-sc-sum" id="db-sanity-sum"></div>
+          <div class="db-sc-btns">
+            <button class="db-btn" id="db-sanity-dl" type="button">Download results</button>
+            <button class="db-btn" id="db-sanity-close" type="button">Close</button>
+          </div>
+        </div>
+        <div id="db-sanity-body"></div>
       </div>
 
       <div class="db-cards">
@@ -9380,7 +9422,9 @@ const db_state = {
   search: '',
   finish: '',
   sort: 'new',
-  allCols: false
+  allCols: false,
+  sanity: null,      // result of the last Run Sanity Checks
+  sanityOpen: null   // which check's list is expanded
 };
 
 function db_esc(s) {
@@ -9509,6 +9553,9 @@ async function db_load() {
     db_buildControls();
     db_applyFilters();
     document.getElementById('db-download-btn').disabled = false;
+    document.getElementById('db-sanity-btn').disabled = false;
+    s.sanity = null;
+    db_renderSanity();
     db_setStatus('✓ Loaded ' + db_fmtNum(rows.length) + ' battles · ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), 'ok');
   } catch (err) {
     const msg = err && err.message ? err.message : String(err);
@@ -9686,6 +9733,329 @@ function db_downloadCSV() {
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SANITY CHECKS — the "Run Sanity Checks" button. Looks at the loaded database
+// export and lists anything that looks wrong. It only READS; it never changes data.
+// ═══════════════════════════════════════════════════════════════════════════
+// Players who deliberately chose a name that Google Sheets used to turn into a time.
+// The Match text kept "11:60pm" while the P1/P2 columns became "24:00:00 AM".
+// Both spellings are treated as the same name by the checks below.
+const DB_NAME_ALIASES = { '11:60pm': '24:00:00 AM' };
+// Placeholder used when nobody remembers who judged. It counts as "filled in".
+const DB_LOST_JUDGE = '[Lost]';
+
+const DB_CHECKS = [
+  { id: 1, title: 'Sets end at 4 points' },
+  { id: 2, title: 'Matches end after a player wins 2 sets' },
+  { id: 3, title: 'Judge cell is not blank' },
+  { id: 4, title: 'Each match has 2 players' },
+  { id: 5, title: 'No player has more than 3 combos in a match' },
+  { id: 6, title: 'First set of a match has a pick priority marker' }
+];
+
+function db_canonName(n) {
+  return Object.prototype.hasOwnProperty.call(DB_NAME_ALIASES, n) ? DB_NAME_ALIASES[n] : n;
+}
+function db_canonText(t) {
+  let out = String(t);
+  Object.keys(DB_NAME_ALIASES).forEach(function (k) { out = out.split(k).join(DB_NAME_ALIASES[k]); });
+  return out;
+}
+
+function db_runChecks(rows) {
+  const flags = [];
+  const flag = function (check, r, detail, setNo) {
+    flags.push({
+      check: check, event: r.event, match: r.match || (r.p1 + ' vs ' + r.p2),
+      set: setNo == null ? '' : setNo, judge: r.judge, ts: r.ts, detail: detail
+    });
+  };
+  const num = function (v) { const n = parseInt(v, 10); return isNaN(n) ? 0 : n; };
+  const label = function (r) { return r.p1 + ' vs ' + r.p2; };
+
+  // rows with numbers pre-read, grouped by event + the two players (P1/P2 order does not matter)
+  const groups = {};
+  rows.forEach(function (r, i) {
+    const a = db_canonName(r.p1), b = db_canonName(r.p2);
+    const key = r.event + '\u0001' + (a < b ? a + '\u0001' + b : b + '\u0001' + a);
+    (groups[key] = groups[key] || []).push({ r: r, i: i, pts: num(r.points), setNo: num(r.set), slotN: num(r.slot) });
+  });
+
+  const allSets = [], allMatches = [];
+  Object.keys(groups).forEach(function (key) {
+    const g = groups[key].slice().sort(function (x, y) { return x.r.ts < y.r.ts ? -1 : x.r.ts > y.r.ts ? 1 : x.i - y.i; });
+    const sets = [];
+    let cur = null;
+    g.forEach(function (x) {
+      let start = false, extra = false;
+      if (!cur) start = true;
+      else {
+        const closed = Math.max.apply(null, Object.keys(cur.tally).map(function (k) { return cur.tally[k]; }).concat([0])) >= 4;
+        if (x.setNo !== cur.setNo) start = true;
+        else if (closed) { if (x.slotN > cur.lastSlot) extra = true; else start = true; }
+      }
+      if (start) {
+        if (cur) sets.push(cur);
+        cur = { rows: [], extras: [], tally: {}, setNo: x.setNo, lastSlot: 0, event: x.r.event };
+      }
+      if (extra) cur.extras.push(x);
+      else {
+        cur.rows.push(x);
+        const w = db_canonName(x.r.winner);
+        cur.tally[w] = (cur.tally[w] || 0) + x.pts;
+      }
+      cur.lastSlot = Math.max(cur.lastSlot, x.slotN);
+    });
+    if (cur) sets.push(cur);
+    sets.forEach(function (s) {
+      let best = null, top = 0;
+      Object.keys(s.tally).forEach(function (k) { if (best === null || s.tally[k] > top) { best = k; top = s.tally[k]; } });
+      s.done = top >= 4;
+      s.winner = best;
+      s.first = s.rows[0].r;
+    });
+    Array.prototype.push.apply(allSets, sets);
+
+    const matches = [];
+    let m = null;
+    sets.forEach(function (s) {
+      if (!m || s.setNo === 1) {
+        if (m) matches.push(m);
+        m = { sets: [], wins: {}, notes: [] };
+        if (s.setNo !== 1) m.notes.push('starts at Set ' + s.setNo + ' (earlier set(s) not found under these two names)');
+      } else {
+        const topWins = Math.max.apply(null, Object.keys(m.wins).map(function (k) { return m.wins[k]; }).concat([0]));
+        if (topWins >= 2) m.notes.push('Set ' + s.setNo + ' was played after a player already had 2 set wins');
+        else if (s.setNo !== m.sets.length + 1) m.notes.push('set numbers jump: Set ' + s.setNo + ' follows ' + m.sets.length + ' set(s)');
+      }
+      m.sets.push(s);
+      if (s.done) m.wins[s.winner] = (m.wins[s.winner] || 0) + 1;
+    });
+    if (m) matches.push(m);
+    matches.forEach(function (mm) {
+      mm.event = sets[0].event;
+      mm.xrows = [];
+      mm.sets.forEach(function (s) { mm.xrows = mm.xrows.concat(s.rows, s.extras); });
+      mm.first = mm.xrows[0].r;
+    });
+    Array.prototype.push.apply(allMatches, matches);
+  });
+
+  // 1 — sets end at 4 points
+  allSets.forEach(function (s) {
+    const r0 = s.first;
+    if (!s.done) {
+      flag(1, r0, 'Set never reached 4 points: ' + Object.keys(s.tally).map(function (k) { return k + ' ' + s.tally[k]; }).join(', '), s.setNo);
+    } else {
+      const run = {};
+      s.rows.slice(0, -1).forEach(function (x) { const w = db_canonName(x.r.winner); run[w] = (run[w] || 0) + x.pts; });
+      if (Math.max.apply(null, Object.keys(run).map(function (k) { return run[k]; }).concat([0])) >= 4) {
+        flag(1, r0, 'Someone already had 4+ points before the final battle of the set', s.setNo);
+      }
+    }
+    if (s.extras.length) flag(1, r0, s.extras.length + ' battle(s) logged after someone already had 4+ points', s.setNo);
+  });
+
+  // 2 — matches end after a player wins 2 sets
+  allMatches.forEach(function (mm) {
+    const r0 = mm.first;
+    mm.notes.forEach(function (n) { flag(2, r0, n, ''); });
+    const top = Math.max.apply(null, Object.keys(mm.wins).map(function (k) { return mm.wins[k]; }).concat([0]));
+    if (top < 2) {
+      flag(2, r0, 'Match never reached 2 set wins (' + mm.sets.length + ' set(s) recorded)', '');
+    }
+  });
+
+  // 3 — judge cell not blank (one line per event, so the list stays short)
+  const judgeBy = {};
+  rows.forEach(function (r) {
+    const e = judgeBy[r.event] = judgeBy[r.event] || { total: 0, blank: 0, first: '', last: '', sample: r };
+    e.total++;
+    if (String(r.judge).trim() === '') {
+      e.blank++;
+      if (!e.first || r.ts < e.first) { e.first = r.ts; e.sample = r; }
+      if (r.ts > e.last) e.last = r.ts;
+    }
+  });
+  Object.keys(judgeBy).forEach(function (ev) {
+    const e = judgeBy[ev];
+    if (e.blank) {
+      flag(3, e.sample, e.blank + ' of ' + e.total + ' battles in this event have no judge (first one ' + db_fmtDate(e.first) + ')', '');
+      flags[flags.length - 1].match = '(whole event)';
+    }
+  });
+
+  // 4 — each match has exactly 2 players
+  rows.forEach(function (r) {
+    if (String(r.p1).trim() === '' || String(r.p2).trim() === '') flag(4, r, 'A player name is blank', r.set);
+    else if (db_canonName(r.p1) === db_canonName(r.p2)) flag(4, r, 'P1 and P2 are the same name', r.set);
+    if (db_canonText(r.match) !== db_canonText(label(r))) flag(4, r, 'Match text does not agree with the player columns (' + label(r) + ')', r.set);
+    if (db_canonName(r.winner) !== db_canonName(r.p1) && db_canonName(r.winner) !== db_canonName(r.p2)) {
+      flag(4, r, 'Winner "' + r.winner + '" is neither player', r.set);
+    }
+  });
+
+  // 5 — no more than 3 combos per player per match
+  allMatches.forEach(function (mm) {
+    const r0 = mm.first;
+    const combos = {};
+    combos[db_canonName(r0.p1)] = {};
+    combos[db_canonName(r0.p2)] = {};
+    mm.xrows.forEach(function (x) {
+      const r = x.r;
+      [[db_canonName(r.p1), r.p1Combo], [db_canonName(r.p2), r.p2Combo]].forEach(function (pair) {
+        const who = pair[0];
+        if (!combos[who]) return;
+        if (who === db_canonName(r.winner)) { if (r.winnerCombo) combos[who][r.winnerCombo] = 1; }
+        else if (pair[1]) combos[who][pair[1]] = 1;
+      });
+    });
+    Object.keys(combos).forEach(function (p) {
+      const list = Object.keys(combos[p]);
+      if (list.length > 3) flag(5, r0, p + ' used ' + list.length + ' combos: ' + list.sort().join(' | '), '');
+    });
+  });
+
+  // 6 — first set carries a pick priority marker (only for events that have started using it)
+  const eventUsesPriority = {};
+  rows.forEach(function (r) { if (r.p1Priority !== null) eventUsesPriority[r.event] = true; });
+  const priorityEvents = Object.keys(eventUsesPriority).length;
+  allMatches.forEach(function (mm) {
+    if (!eventUsesPriority[mm.event]) return;
+    const has = mm.sets[0].rows.some(function (x) { return x.r.p1Priority !== null; });
+    if (!has) flag(6, mm.first, 'No pick priority marker on the first set', 1);
+  });
+
+  const lostCount = rows.filter(function (r) { return r.judge === DB_LOST_JUDGE; }).length;
+  flags.sort(function (a, b) { return a.check - b.check || (a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0); });
+  return {
+    flags: flags,
+    stats: { battles: rows.length, sets: allSets.length, matches: allMatches.length, lostJudge: lostCount, priorityEvents: priorityEvents }
+  };
+}
+
+function db_runChecksClick() {
+  const s = db_state;
+  if (!s.loaded) return;
+  const btn = document.getElementById('db-sanity-btn');
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+  // let the browser repaint the button before the (brief) work starts
+  setTimeout(function () {
+    try {
+      s.sanity = db_runChecks(s.rows);
+      s.sanityOpen = null;
+      db_renderSanity();
+    } catch (err) {
+      const box = document.getElementById('db-sanity');
+      box.hidden = false;
+      document.getElementById('db-sanity-body').innerHTML =
+        '<div class="db-sc-msg">The checks could not run: ' + db_esc(err && err.message ? err.message : err) + '</div>';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Run Sanity Checks';
+  }, 30);
+}
+
+function db_renderSanity() {
+  const s = db_state;
+  const res = s.sanity;
+  const box = document.getElementById('db-sanity');
+  if (!res) { box.hidden = true; return; }
+  box.hidden = false;
+  const byCheck = {};
+  res.flags.forEach(function (f) { (byCheck[f.check] = byCheck[f.check] || []).push(f); });
+  let total = res.flags.length;
+  document.getElementById('db-sanity-sum').textContent = total === 0
+    ? '✓ All 6 checks passed · ' + db_fmtNum(res.stats.battles) + ' battles, ' + db_fmtNum(res.stats.sets) + ' sets, ' + db_fmtNum(res.stats.matches) + ' matches'
+    : '⚠ ' + db_fmtNum(total) + ' flag' + (total === 1 ? '' : 's') + ' found · ' + db_fmtNum(res.stats.battles) + ' battles, ' + db_fmtNum(res.stats.sets) + ' sets, ' + db_fmtNum(res.stats.matches) + ' matches';
+  document.getElementById('db-sanity-sum').className = 'db-sc-sum ' + (total === 0 ? 'ok' : 'warn');
+  document.getElementById('db-sanity-dl').disabled = total === 0;
+
+  let html = '';
+  DB_CHECKS.forEach(function (c) {
+    const list = byCheck[c.id] || [];
+    const open = s.sanityOpen === c.id;
+    let note = '';
+    if (c.id === 3 && res.stats.lostJudge) note = db_fmtNum(res.stats.lostJudge) + ' battles are marked ' + DB_LOST_JUDGE + ' (accepted)';
+    if (c.id === 6) note = res.stats.priorityEvents ? 'only checks events that use the marker' : 'no event uses the marker yet, so nothing to check';
+    html += '<div class="db-sc-row' + (open ? ' open' : '') + '">' +
+      '<button type="button" class="db-sc-head" data-check="' + c.id + '"' + (list.length ? '' : ' disabled') + '>' +
+      '<span class="db-sc-badge ' + (list.length ? 'bad' : 'good') + '">' + (list.length ? db_fmtNum(list.length) : '✓') + '</span>' +
+      '<span class="db-sc-title">' + db_esc(c.title) + '</span>' +
+      '<span class="db-sc-note">' + db_esc(note) + '</span>' +
+      (list.length ? '<span class="db-sc-chev">' + (open ? '▾' : '▸') + '</span>' : '') +
+      '</button>';
+    if (open && list.length) {
+      const shown = list.slice(0, 100);
+      html += '<div class="db-sc-list">';
+      shown.forEach(function (f, k) {
+        html += '<button type="button" class="db-sc-item" data-flag="' + c.id + ':' + k + '" title="Show this event in the table">' +
+          '<span class="db-sc-ev">' + db_esc(f.event) + '</span>' +
+          '<span class="db-sc-match">' + db_esc(f.match) + (f.set !== '' ? ' · set ' + db_esc(f.set) : '') + '</span>' +
+          '<span class="db-sc-detail">' + db_esc(f.detail) + '</span>' +
+          '</button>';
+      });
+      if (list.length > shown.length) {
+        html += '<div class="db-sc-more">Showing the first ' + shown.length + ' of ' + db_fmtNum(list.length) + '. Download the results to see them all.</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  document.getElementById('db-sanity-body').innerHTML = html;
+}
+
+function db_csvCell(v) {
+  const t = String(v == null ? '' : v);
+  return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+}
+function db_downloadSanity() {
+  const res = db_state.sanity;
+  if (!res || !res.flags.length) return;
+  const titles = {};
+  DB_CHECKS.forEach(function (c) { titles[c.id] = c.id + ' ' + c.title; });
+  const lines = [['Check', 'Event', 'Match', 'Set', 'Judge', 'Timestamp', 'What looks wrong'].join(',')];
+  res.flags.forEach(function (f) {
+    lines.push([titles[f.check], f.event, f.match, f.set, f.judge, f.ts, f.detail].map(db_csvCell).join(','));
+  });
+  const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ncblast-sanity-checks.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+
+function db_initSanity() {
+  const s = db_state;
+  document.getElementById('db-sanity-btn').addEventListener('click', db_runChecksClick);
+  document.getElementById('db-sanity-dl').addEventListener('click', db_downloadSanity);
+  document.getElementById('db-sanity-close').addEventListener('click', function () { s.sanity = null; db_renderSanity(); });
+  document.getElementById('db-sanity-body').addEventListener('click', function (e) {
+    const head = e.target.closest('[data-check]');
+    if (head) {
+      const id = parseInt(head.getAttribute('data-check'), 10);
+      s.sanityOpen = s.sanityOpen === id ? null : id;
+      db_renderSanity();
+      return;
+    }
+    const item = e.target.closest('[data-flag]');
+    if (item && s.sanity) {
+      const parts = item.getAttribute('data-flag').split(':');
+      const list = s.sanity.flags.filter(function (f) { return f.check === parseInt(parts[0], 10); });
+      const f = list[parseInt(parts[1], 10)];
+      if (f) {
+        db_setEvent(f.event);
+        document.querySelector('#tool-database .db-layout').scrollIntoView({ block: 'start' });
+      }
+    }
+  });
+}
+
 function db_init() {
   const s = db_state;
   const sharedPanel = document.querySelector('.shell-data-panel');
@@ -9700,6 +10070,7 @@ function db_init() {
     });
   });
 
+  db_initSanity();
   document.getElementById('db-refresh-btn').addEventListener('click', db_load);
   document.getElementById('db-download-btn').addEventListener('click', db_downloadCSV);
   document.getElementById('db-filter-clear').addEventListener('click', db_clearFilters);
