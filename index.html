@@ -10134,11 +10134,12 @@ const DB_LOST_JUDGE = '[Lost]';
 
 const DB_CHECKS = [
   { id: 1, title: 'Sets end at 4 points' },
-  { id: 2, title: 'Matches end after a player wins 2 sets' },
+  { id: 2, title: 'Matches end when a player wins a second set' },
   { id: 3, title: 'Judge cell is not blank' },
   { id: 4, title: 'Each match has 2 players' },
   { id: 5, title: 'No player has more than 3 combos in a match' },
-  { id: 6, title: 'First set of a match has a pick priority marker' }
+  { id: 6, title: 'First set of a match has a pick priority marker' },
+  { id: 7, title: 'All matches of an event are from the same day' }
 ];
 
 function db_canonName(n) {
@@ -10314,6 +10315,35 @@ function db_runChecks(rows) {
     if (!has) flag(6, mm.first, 'No pick priority marker on the first set', 1);
   });
 
+  // 7 — every match of an event happened on the same day. A "day" runs from 4 AM to 4 AM
+  // Pacific time, so an event that goes past midnight still counts as one day.
+  const dayOf = function (ts) {
+    const t = Date.parse(ts);
+    if (isNaN(t)) return '';
+    return new Date(t - 4 * 3600 * 1000).toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+  };
+  const fmtDay = function (d) {
+    const p = d.split('-');
+    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return p.length === 3 ? names[parseInt(p[1], 10) - 1] + ' ' + parseInt(p[2], 10) + ', ' + p[0] : d;
+  };
+  const daysByEvent = {};
+  allMatches.forEach(function (mm) {
+    mm.day = dayOf(mm.first.ts);
+    const e = daysByEvent[mm.event] = daysByEvent[mm.event] || {};
+    e[mm.day] = (e[mm.day] || 0) + 1;
+  });
+  allMatches.forEach(function (mm) {
+    const days = daysByEvent[mm.event];
+    const keys = Object.keys(days);
+    if (keys.length < 2 || !mm.day) return;
+    let main = keys[0], total = 0;
+    keys.forEach(function (k) { total += days[k]; if (days[k] > days[main]) main = k; });
+    if (mm.day !== main) {
+      flag(7, mm.first, 'Played on ' + fmtDay(mm.day) + ', but most of this event (' + days[main] + ' of ' + total + ' matches) is on ' + fmtDay(main), mm.sets[0].setNo);
+    }
+  });
+
   const lostCount = rows.filter(function (r) { return r.judge === DB_LOST_JUDGE; }).length;
   flags.sort(function (a, b) { return a.check - b.check || (a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0); });
   return {
@@ -10355,7 +10385,7 @@ function db_renderSanity() {
   res.flags.forEach(function (f) { (byCheck[f.check] = byCheck[f.check] || []).push(f); });
   let total = res.flags.length;
   document.getElementById('db-sanity-sum').textContent = total === 0
-    ? '✓ All 6 checks passed · ' + db_fmtNum(res.stats.battles) + ' battles, ' + db_fmtNum(res.stats.sets) + ' sets, ' + db_fmtNum(res.stats.matches) + ' matches'
+    ? '✓ All ' + DB_CHECKS.length + ' checks passed · ' + db_fmtNum(res.stats.battles) + ' battles, ' + db_fmtNum(res.stats.sets) + ' sets, ' + db_fmtNum(res.stats.matches) + ' matches'
     : '⚠ ' + db_fmtNum(total) + ' flag' + (total === 1 ? '' : 's') + ' found · ' + db_fmtNum(res.stats.battles) + ' battles, ' + db_fmtNum(res.stats.sets) + ' sets, ' + db_fmtNum(res.stats.matches) + ' matches';
   document.getElementById('db-sanity-sum').className = 'db-sc-sum ' + (total === 0 ? 'ok' : 'warn');
   document.getElementById('db-sanity-dl').disabled = total === 0;
@@ -11088,14 +11118,23 @@ function db_planRatchets(rows, bladeSet, alsoNoRatchet) {
       let next = cur;
       const p = db_ratchetParts(cur);
       if (p && bladeSet.has(p.blade)) next = p.without;
-      if (alsoNoRatchet && /\bNo Ratchet\b/i.test(next)) next = next.replace(/\s*\bNo Ratchet\b\s*/i, ' ').replace(/\s+/g, ' ').trim();
+      if (alsoNoRatchet && /\bNo Ratchet\b/i.test(next)) {
+        // only for the ticked blades, so a blade you did not pick is never touched
+        let mine = false;
+        bladeSet.forEach(function (b) { if (next.indexOf(b + ' ') === 0) mine = true; });
+        if (mine) next = next.replace(/\s*\bNo Ratchet\b\s*/i, ' ').replace(/\s+/g, ' ').trim();
+      }
       if (next !== cur) out.push({ row: row, label: label, old: cur, value: next });
     });
   });
   return out;
 }
 
-// Blades seen with a ratchet in these rows, with counts.
+// The blades that never have a ratchet (the CXE line). They are always in the list, and ticked at first.
+const DB_NO_RATCHET_BLADES = ['Bullet Griffon', 'Cutter Shinobi', 'Rampart Aegis', 'Valor Bison', 'Glory Valkyrie', 'Hells Nether'];
+
+// The blades to show: every blade seen with a ratchet in these rows, plus the no-ratchet line,
+// each with counts of wrong entries (a ratchet, or the "No Ratchet" tag) and correct ones.
 function db_bladeSurvey(rows, allRows) {
   const withR = {};
   rows.forEach(function (row) {
@@ -11105,16 +11144,25 @@ function db_bladeSurvey(rows, allRows) {
     });
   });
   const names = Object.keys(withR);
-  const without = {};
-  names.forEach(function (n) { without[n] = 0; });
-  allRows.forEach(function (row) {
+  DB_NO_RATCHET_BLADES.forEach(function (n) { if (names.indexOf(n) === -1) names.push(n); });
+  const tagged = {}, without = {};
+  names.forEach(function (n) { tagged[n] = 0; without[n] = 0; });
+  rows.forEach(function (row) {
     DB_COMBO_LABELS.forEach(function (label) {
       const v = db_getVal(row, label);
       if (!v || db_ratchetParts(v)) return;
-      names.forEach(function (n) { if (v.indexOf(n + ' ') === 0) without[n]++; });
+      names.forEach(function (n) {
+        if (v.indexOf(n + ' ') !== 0) return;
+        if (/\bNo Ratchet\b/i.test(v)) tagged[n]++; else without[n]++;
+      });
     });
   });
-  return names.sort(function (a, b) { return withR[b] - withR[a] || (a < b ? -1 : 1); }).map(function (n) { return { name: n, count: withR[n], without: without[n] }; });
+  return names.sort(function (a, b) {
+    const pa = DB_NO_RATCHET_BLADES.indexOf(a) !== -1, pb = DB_NO_RATCHET_BLADES.indexOf(b) !== -1;
+    if (pa !== pb) return pa ? -1 : 1;
+    const wa = (withR[a] || 0) + tagged[a], wb = (withR[b] || 0) + tagged[b];
+    return wb - wa || (a < b ? -1 : 1);
+  }).map(function (n) { return { name: n, count: withR[n] || 0, tagged: tagged[n], without: without[n], preset: DB_NO_RATCHET_BLADES.indexOf(n) !== -1 }; });
 }
 
 function db_sampleHtml(plan, n) {
@@ -11146,15 +11194,15 @@ async function db_openFixTools(startTab) {
     '<label class="db-check"><input type="checkbox" data-f="case"> Match capital letters exactly</label>' +
     '<div class="db-m-preview" data-prev="fr"></div></div>' +
     '<div class="db-m-pane" data-pane="rr" hidden>' +
-    '<p class="db-m-p">For beys that have no ratchet (CXE). This takes the ratchet out of the winning combo, P1 combo and P2 combo together, so <b>Blade 9-60 Bit</b> becomes <b>Blade Bit</b>. Tick the blades that should have no ratchet:</p>' +
+    '<p class="db-m-p">For beys that have no ratchet. This takes the ratchet (and, if ticked below, the words “No Ratchet”) out of the winning combo, P1 combo and P2 combo together, so <b>Blade 9-60 Bit</b> becomes <b>Blade Bit</b>. The six no-ratchet blades are ticked already; tick any others that should have none:</p>' +
     '<div class="db-m-grid"><label>Where</label>' + scopeOpts('all') + '<label>Find blade</label><input class="db-input" data-f="bsearch" placeholder="Type to filter the list" autocomplete="off"></div>' +
     '<div class="db-m-blades" data-f="blades"></div>' +
     '<div><button type="button" class="db-btn" data-act="bladeAll">Tick all shown</button> <button type="button" class="db-btn" data-act="bladeNone">Untick all</button></div>' +
-    '<label class="db-check"><input type="checkbox" data-f="alsoNo"> Also remove the words “No Ratchet” from combos (they are in some older entries)</label>' +
+    '<label class="db-check"><input type="checkbox" data-f="alsoNo" checked> Also remove the words “No Ratchet” from the combos of the ticked blades</label>' +
     '<div class="db-m-preview" data-prev="rr"></div></div>';
 
   let plan = [];
-  const ticked = new Set();
+  const ticked = new Set(DB_NO_RATCHET_BLADES);   // the no-ratchet line starts ticked
   let tab = startTab || 'fr';
 
   await db_modal({
@@ -11181,7 +11229,8 @@ async function db_openFixTools(startTab) {
           const shown = survey.filter(function (b) { return !needle || b.name.toLowerCase().indexOf(needle) !== -1; });
           pane.querySelector('[data-f="blades"]').innerHTML = shown.length ? shown.map(function (b) {
             return '<label class="db-m-blade"><input type="checkbox" data-blade="' + db_esc(b.name) + '"' + (ticked.has(b.name) ? ' checked' : '') + '> <span>' + db_esc(b.name) + '</span>' +
-              '<i>' + db_plural(b.count, 'cell') + ' with a ratchet' + (b.without ? ' · also seen ' + db_fmtNum(b.without) + '× without' : '') + '</i></label>';
+              '<i>' + (b.count || b.tagged ? (b.count ? db_plural(b.count, 'cell') + ' with a ratchet' : '') + (b.count && b.tagged ? ' · ' : '') + (b.tagged ? db_plural(b.tagged, 'cell') + ' tagged “No Ratchet”' : '') : '✓ nothing to fix') +
+              (b.without ? ' · ' + db_fmtNum(b.without) + ' already correct' : '') + '</i></label>';
           }).join('') : '<div class="db-m-none">No blades with a ratchet in these rows.</div>';
           plan = db_planRatchets(rows, ticked, pane.querySelector('[data-f="alsoNo"]').checked);
           q('[data-prev="rr"]').innerHTML = '<div class="db-m-count">' + (plan.length ? db_plural(plan.length, 'cell') + ' will change' : 'Tick a blade to see what would change') + '</div>' + (plan.length ? db_sampleHtml(plan, 8) : '');
