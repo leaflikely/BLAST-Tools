@@ -9736,7 +9736,7 @@ function db_allCols() {
     return db_esc(which === 1 ? r.p1 : r.p2) + (hadPriority ? '<span class="db-pri" title="Had pick priority in set 1">P</span>' : '');
   };
   return [
-    { l: 'WHEN', w: 130, compact: true, v: r => db_fmtTime(r.ts) },
+    { l: 'WHEN', w: 130, compact: true, v: r => db_fmtTime(r.ts), t: r => db_tsToEditText(r.ts) },
     { l: 'JUDGE', w: 110, compact: true, v: r => r.judge },
     { l: 'EVENT', w: 170, compact: true, v: r => r.event },
     { l: 'MATCH', w: 200, compact: true, v: r => r.match },
@@ -9891,7 +9891,7 @@ function db_selectionText() {
   for (let r = sel.r1; r <= sel.r2; r++) {
     const row = s.filtered[r];
     const cells = [];
-    for (let c = sel.c1; c <= sel.c2; c++) cells.push(clean(s.cols[c].v(row)));
+    for (let c = sel.c1; c <= sel.c2; c++) cells.push(clean(db_cellText(s.cols[c], row)));
     lines.push(cells.join('\t'));
   }
   return lines.join('\n');
@@ -10641,8 +10641,9 @@ async function db_lockDevice() {
 // the History window (or with Ctrl+Z for the most recent one).
 // ═══════════════════════════════════════════════════════════════════════════
 // Which columns can be edited: grid column name -> row property, database column name,
-// whether it must be a whole number, and whether it may be blank. WHEN is read-only.
+// whether it must be a whole number, and whether it may be blank.
 const DB_EDIT_MAP = {
+  'WHEN': { k: 'ts', f: 'Timestamp', req: true, time: true },
   'JUDGE': { k: 'judge', f: 'Judge' },
   'EVENT': { k: 'event', f: 'Tournament', req: true },
   'MATCH': { k: 'match', f: 'Match', req: true },
@@ -10665,6 +10666,50 @@ const DB_EDIT_MAP = {
 };
 const DB_CHUNK = 1500;      // cells per request (the Worker's limit)
 const DB_DEL_CHUNK = 800;   // rows per delete request
+
+// ----- times: the database keeps UTC, people read and type Pacific time -----
+function db_pacificParts(utcMs) {
+  const f = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const o = {};
+  f.formatToParts(new Date(utcMs)).forEach(function (p) { o[p.type] = p.value; });
+  return o;
+}
+// "2026-06-07T21:05:09.123Z" -> "2026-06-07 14:05:09.123" (Pacific). Anything unreadable is shown as it is.
+function db_tsToEditText(iso) {
+  const ms = Date.parse(iso);
+  if (isNaN(ms)) return iso == null ? '' : String(iso);
+  const p = db_pacificParts(ms);
+  const frac = String(((ms % 1000) + 1000) % 1000).padStart(3, '0');
+  return p.year + '-' + p.month + '-' + p.day + ' ' + p.hour + ':' + p.minute + ':' + p.second + '.' + frac;
+}
+// "2026-06-07 14:05:09" (Pacific; seconds and .123 optional) or a full "...Z" time -> "2026-06-07T21:05:09.123Z", or null if it does not make sense.
+function db_parsePacific(text) {
+  const t = String(text).trim();
+  if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(t)) {
+    const ms = Date.parse(t.replace(' ', 'T'));
+    return isNaN(ms) ? null : new Date(ms).toISOString();
+  }
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/.exec(t);
+  if (!m) return null;
+  const y = +m[1], mo = +m[2], d = +m[3], H = +m[4], Mi = +m[5], S = m[6] ? +m[6] : 0, ms = m[7] ? +m[7].padEnd(3, '0') : 0;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || H > 23 || Mi > 59 || S > 59) return null;
+  const wall = Date.UTC(y, mo - 1, d, H, Mi, S, ms);
+  const chk = new Date(wall);
+  if (chk.getUTCMonth() !== mo - 1 || chk.getUTCDate() !== d) return null;   // e.g. Feb 30
+  let utc = wall;
+  for (let i = 0; i < 3; i++) {   // find the UTC time whose Pacific clock reads what was typed (handles summer/winter time)
+    const p = db_pacificParts(utc);
+    const shown = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second, 0);
+    const offset = shown - Math.floor(utc / 1000) * 1000;
+    utc = wall - offset;
+  }
+  return new Date(utc).toISOString();
+}
+// What a cell holds as plain text (for editing and copying). WHEN is shown short but edited/copied in full.
+function db_cellText(col, row) {
+  const v = col.t ? col.t(row) : col.v(row);
+  return v == null ? '' : String(v);
+}
 
 function db_makeHay(r) {
   return [r.judge, r.p1, r.p2, r.winner, r.winnerCombo, r.p1Combo, r.p2Combo, r.event, r.match].join('\u0001').toLowerCase();
@@ -10750,17 +10795,18 @@ function db_openEditor(r, c, initial) {
   const s = db_state;
   if (!s.editMode || !s.cols || !s.filtered[r]) return;
   const col = s.cols[c];
-  if (!DB_EDIT_MAP[col.l]) { db_setStatus(col.l + ' is read-only.', ''); return; }
+  if (!DB_EDIT_MAP[col.l]) { db_setStatus(col.l + ' cannot be edited.', ''); return; }
   if (s.editing) db_closeEditor(true);
   db_ensureVisible(r, c);
   const ed = document.getElementById('db-g-editor');
   const row = s.filtered[r];
   ed.style.top = (DB_HEAD_H + r * DB_ROW_H) + 'px';
   ed.style.left = db_colX(c) + 'px';
-  ed.style.width = Math.max(db_colW(col), 160) + 'px';
-  ed.value = initial !== undefined ? initial : String(col.v(row) == null ? '' : col.v(row));
+  ed.style.width = Math.max(db_colW(col), col.l === 'WHEN' ? 200 : 160) + 'px';
+  ed.value = initial !== undefined ? initial : db_cellText(col, row);
   ed.hidden = false;
   s.editing = { r: r, c: c, row: row, label: col.l };
+  if (col.l === 'WHEN') db_setStatus('WHEN is in Pacific time, like 2026-06-07 14:05:09', '');
   ed.focus();
   if (initial === undefined) ed.select(); else ed.setSelectionRange(ed.value.length, ed.value.length);
 }
@@ -10813,7 +10859,12 @@ function db_applyEdits(items) {
   items.forEach(function (it) {
     const m = DB_EDIT_MAP[it.label];
     if (!m) return;
-    const v = String(it.value == null ? '' : it.value).trim();
+    let v = String(it.value == null ? '' : it.value).trim();
+    if (m.time && v !== '') {
+      const iso = db_parsePacific(v);
+      if (!iso) { errs.push('WHEN must look like 2026-06-07 14:05:09 (Pacific time).'); return; }
+      v = iso;
+    }
     if (v === '') { if (m.req) { errs.push(it.label + " can't be blank."); return; } }
     else if (m.int && !/^-?\d{1,9}$/.test(v)) { errs.push(it.label + ' must be a whole number.'); return; }
     else if ((m.f === 'P1' || m.f === 'P2') && v.indexOf('~P~') !== -1) { errs.push("The ~P~ marker can't be typed into a name."); return; }
@@ -10861,7 +10912,7 @@ function db_applyEdits(items) {
 // Keeps the screen in step after cell values changed in memory.
 function db_afterLocalChange(changes) {
   const s = db_state;
-  if (changes.some(function (c) { return c.k === 'event'; })) {
+  if (changes.some(function (c) { return c.k === 'event' || c.k === 'ts'; })) {
     s.events = db_buildEvents(s.rows);
   }
   if (changes.some(function (c) { return c.k === 'event' || c.k === 'finish'; })) db_buildControls();
@@ -10902,7 +10953,7 @@ async function db_fillDown() {
   for (let c = sel.c1; c <= sel.c2; c++) {
     const label = s.cols[c].l;
     if (!DB_EDIT_MAP[label]) continue;
-    const top = String(s.cols[c].v(s.filtered[sel.r1]) == null ? '' : s.cols[c].v(s.filtered[sel.r1]));
+    const top = db_cellText(s.cols[c], s.filtered[sel.r1]);
     for (let r = sel.r1 + 1; r <= sel.r2; r++) items.push({ row: s.filtered[r], label: label, value: top });
   }
   if (items.length > 50 && !(await db_confirm('Fill down ' + db_plural(items.length, 'cell') + '?', 'The top cell of each column is copied down the selection. You can undo this from History.', 'Fill down'))) return;
