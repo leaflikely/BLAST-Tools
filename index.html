@@ -9938,6 +9938,7 @@ function db_pointToCell(ev) {
   return { r: r, c: c, rect: rect };
 }
 
+let db_lastDown = null;
 function db_gridMouseDown(e) {
   const s = db_state;
   if (e.button !== 0 || !s.cols) return;
@@ -9961,6 +9962,18 @@ function db_gridMouseDown(e) {
     e.preventDefault();
   } else if (cell) {
     const r = parseInt(cell.getAttribute('data-r'), 10), c = parseInt(cell.getAttribute('data-c'), 10);
+    // Double-click is detected by hand (two quick presses on the same cell). The grid redraws its
+    // cells after the first press, and a browser's own dblclick event gets lost when that happens.
+    const now = Date.now();
+    const isDouble = !e.shiftKey && db_lastDown && db_lastDown.r === r && db_lastDown.c === c && now - db_lastDown.t < 450;
+    db_lastDown = isDouble ? null : { r: r, c: c, t: now };
+    if (isDouble) {
+      db_setSel(r, c, r, c);
+      db_drag = null;
+      e.preventDefault();
+      if (s.editMode) db_openEditor(r, c); else db_openViewer(r, c);
+      return;
+    }
     if (e.shiftKey && s.sel) db_setSel(s.sel.ar, s.sel.ac, r, c);
     else db_setSel(r, c, r, c);
     db_drag = { kind: 'cells' };
@@ -11412,7 +11425,7 @@ function db_initEditing() {
   ed.addEventListener('blur', function () { if (s.editing) db_closeEditor(true); });
   document.getElementById('db-grid').addEventListener('dblclick', function (e) {
     const c = e.target.closest('[data-r]');
-    if (!c) return;
+    if (!c || s.editing) return;
     const r = parseInt(c.getAttribute('data-r'), 10), cc = parseInt(c.getAttribute('data-c'), 10);
     if (s.editMode) db_openEditor(r, cc); else db_openViewer(r, cc);
     // Select all the text again just after the browser finishes its own double-click handling,
