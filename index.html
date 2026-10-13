@@ -10803,12 +10803,33 @@ function db_openEditor(r, c, initial) {
   ed.style.top = (DB_HEAD_H + r * DB_ROW_H) + 'px';
   ed.style.left = db_colX(c) + 'px';
   ed.style.width = Math.max(db_colW(col), col.l === 'WHEN' ? 200 : 160) + 'px';
+  ed.readOnly = false;
   ed.value = initial !== undefined ? initial : db_cellText(col, row);
   ed.hidden = false;
   s.editing = { r: r, c: c, row: row, label: col.l };
   if (col.l === 'WHEN') db_setStatus('WHEN is in Pacific time, like 2026-06-07 14:05:09', '');
   ed.focus();
   if (initial === undefined) ed.select(); else ed.setSelectionRange(ed.value.length, ed.value.length);
+}
+
+// Edit mode off: double-click shows the full cell text, all selected, so it can be copied.
+function db_openViewer(r, c) {
+  const s = db_state;
+  if (!s.cols || !s.filtered[r]) return;
+  if (s.editing) db_closeEditor(true);
+  db_ensureVisible(r, c);
+  const col = s.cols[c];
+  const row = s.filtered[r];
+  const ed = document.getElementById('db-g-editor');
+  ed.style.top = (DB_HEAD_H + r * DB_ROW_H) + 'px';
+  ed.style.left = db_colX(c) + 'px';
+  ed.style.width = Math.max(db_colW(col), 160) + 'px';
+  ed.readOnly = true;
+  ed.value = db_cellText(col, row);
+  ed.hidden = false;
+  s.editing = { r: r, c: c, row: row, label: col.l, view: true };
+  ed.focus();
+  ed.select();
 }
 
 function db_closeEditor(commit) {
@@ -10820,7 +10841,8 @@ function db_closeEditor(commit) {
   const val = ed.value;
   ed.hidden = true;
   ed.value = '';
-  if (commit) db_applyEdits([{ row: e.row, label: e.label, value: val }]);
+  ed.readOnly = false;
+  if (commit && !e.view) db_applyEdits([{ row: e.row, label: e.label, value: val }]);
   document.getElementById('db-grid').focus({ preventScroll: true });
 }
 
@@ -11391,12 +11413,11 @@ function db_initEditing() {
   document.getElementById('db-grid').addEventListener('dblclick', function (e) {
     const c = e.target.closest('[data-r]');
     if (!c) return;
-    if (s.editMode) {
-      db_openEditor(parseInt(c.getAttribute('data-r'), 10), parseInt(c.getAttribute('data-c'), 10));
-      // Select all the text again just after the browser finishes its own double-click handling,
-      // which can otherwise collapse the selection to a single word or a caret.
-      setTimeout(function () { const ed = document.getElementById('db-g-editor'); if (s.editing && !ed.hidden) ed.select(); }, 0);
-    }
+    const r = parseInt(c.getAttribute('data-r'), 10), cc = parseInt(c.getAttribute('data-c'), 10);
+    if (s.editMode) db_openEditor(r, cc); else db_openViewer(r, cc);
+    // Select all the text again just after the browser finishes its own double-click handling,
+    // which can otherwise collapse the selection to a single word or a caret.
+    setTimeout(function () { const ed = document.getElementById('db-g-editor'); if (s.editing && !ed.hidden) ed.select(); }, 0);
   });
   document.addEventListener('paste', function (e) {
     if (!s.editMode || s.editing || document.activeElement !== document.getElementById('db-grid')) return;
