@@ -11390,7 +11390,13 @@ function db_initEditing() {
   ed.addEventListener('blur', function () { if (s.editing) db_closeEditor(true); });
   document.getElementById('db-grid').addEventListener('dblclick', function (e) {
     const c = e.target.closest('[data-r]');
-    if (c && s.editMode) db_openEditor(parseInt(c.getAttribute('data-r'), 10), parseInt(c.getAttribute('data-c'), 10));
+    if (!c) return;
+    if (s.editMode) {
+      db_openEditor(parseInt(c.getAttribute('data-r'), 10), parseInt(c.getAttribute('data-c'), 10));
+      // Select all the text again just after the browser finishes its own double-click handling,
+      // which can otherwise collapse the selection to a single word or a caret.
+      setTimeout(function () { const ed = document.getElementById('db-g-editor'); if (s.editing && !ed.hidden) ed.select(); }, 0);
+    }
   });
   document.addEventListener('paste', function (e) {
     if (!s.editMode || s.editing || document.activeElement !== document.getElementById('db-grid')) return;
