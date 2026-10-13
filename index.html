@@ -2369,6 +2369,75 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
     #tool-database .db-sc-detail { color: var(--muted); }
     #tool-database .db-sc-more { padding: 8px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
 
+
+    #tool-database .db-btn.primary { background: var(--teal); border-color: var(--teal); color: #08110e; }
+    #tool-database .db-btn.primary:hover:not(:disabled) { color: #08110e; filter: brightness(1.1); }
+    #tool-database .db-btn.danger { border-color: var(--danger); color: var(--danger); }
+    #tool-database .db-btn.danger:hover:not(:disabled) { background: var(--danger); color: #fff; border-color: var(--danger); }
+    #tool-database .db-edit-toggle { color: var(--text); font-weight: 600; }
+    #tool-database .db-editbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; background: var(--surface); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; }
+    #tool-database .db-editbar[hidden] { display: none; }
+    #tool-database .db-edit-hint { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); flex: 1 1 320px; }
+    #tool-database .db-grid.editing { border-color: var(--accent); }
+    #tool-database .db-g-editor { position: absolute; z-index: 2; box-sizing: border-box; height: 26px; margin: 0; padding: 0 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #fff; background: #0e1512; border: 2px solid var(--accent); outline: none; }
+    #tool-database .db-g-editor[hidden] { display: none; }
+
+    /* pop-up windows (confirmations, Fix tools, History) */
+    #tool-database .db-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(5, 10, 8, 0.72); display: flex; align-items: flex-start; justify-content: center; padding: 8vh 16px 16px; overflow-y: auto; }
+    #tool-database .db-modal[hidden] { display: none; }
+    #tool-database .db-modal-box { width: 100%; max-width: 480px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    #tool-database .db-modal-box.wide { max-width: 820px; }
+    #tool-database .db-modal-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.04em; color: #fff; padding: 16px 20px 6px; }
+    #tool-database .db-modal-body { padding: 6px 20px 14px; max-height: 64vh; overflow-y: auto; font-size: 13px; color: var(--text); }
+    #tool-database .db-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 20px 16px; border-top: 1px solid var(--border); }
+    #tool-database .db-m-p { margin: 8px 0; line-height: 1.5; }
+    #tool-database .db-m-list { margin: 6px 0 6px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+    #tool-database .db-m-none { color: var(--muted); padding: 14px 0; text-align: center; }
+    #tool-database .db-m-tabs { display: flex; gap: 8px; margin: 4px 0 12px; }
+    #tool-database .db-m-tab { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.05em; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+    #tool-database .db-m-tab.on { color: #fff; border-color: var(--teal); }
+    #tool-database .db-m-pane[hidden] { display: none; }
+    #tool-database .db-m-grid { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px 12px; align-items: center; margin-bottom: 10px; }
+    #tool-database .db-m-grid label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+    #tool-database .db-m-preview { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+    #tool-database .db-m-count { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent); margin-bottom: 6px; }
+    #tool-database .db-m-sample { font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.7; }
+    #tool-database .db-m-sample .o { color: var(--danger); text-decoration: line-through; }
+    #tool-database .db-m-sample .n { color: var(--teal); }
+    #tool-database .db-m-sample .a { color: var(--muted); }
+    #tool-database .db-m-more { color: var(--muted); }
+    #tool-database .db-m-blades { max-height: 190px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; margin: 8px 0; }
+    #tool-database .db-m-blade { display: flex; align-items: baseline; gap: 8px; padding: 5px 10px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 13px; }
+    #tool-database .db-m-blade i { margin-left: auto; font-style: normal; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
+    #tool-database .db-h-list { border: 1px solid var(--border); border-radius: 8px; max-height: 42vh; overflow-y: auto; }
+    #tool-database .db-h-row { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+    #tool-database .db-h-row.undone { opacity: 0.5; }
+    #tool-database .db-h-row.isundo .db-h-sum { color: var(--teal); }
+    #tool-database .db-h-main { flex: 1 1 auto; min-width: 0; }
+    #tool-database .db-h-sum { font-size: 13px; word-break: break-word; }
+    #tool-database .db-h-sum i { color: var(--muted); font-style: normal; font-size: 11px; }
+    #tool-database .db-h-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
+    #tool-database .db-h-btns { display: flex; gap: 6px; flex-shrink: 0; }
+    #tool-database .db-h-devtitle { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: var(--muted); margin: 16px 0 6px; }
+    #tool-database .db-h-dev { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; font-size: 13px; }
+    #tool-database .db-h-dev i { font-style: normal; color: var(--muted); font-size: 11px; }
+
+    /* the staff password screen — covers the whole site until this device is unlocked */
+    html.db-locked, html.db-locked body { overflow: hidden; }
+    #db-lock { position: fixed; inset: 0; z-index: 2147483000; background: var(--bg, #0e1512); display: flex; align-items: center; justify-content: center; padding: 20px; font-family: 'Barlow', sans-serif; }
+    #db-lock[hidden] { display: none; }
+    #db-lock .db-lock-box { width: 100%; max-width: 360px; background: var(--surface, #141c19); border: 1px solid var(--border, #2a3d35); border-radius: 14px; padding: 28px 24px; text-align: center; }
+    #db-lock .db-lock-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: 0.05em; color: #fff; }
+    #db-lock .db-lock-sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: var(--accent, #f6d335); margin: 4px 0 18px; }
+    #db-lock .db-lock-msg { min-height: 20px; font-size: 13px; color: var(--text, #d4e8e0); margin-bottom: 12px; line-height: 1.4; }
+    #db-lock form { display: flex; flex-direction: column; gap: 10px; }
+    #db-lock input { font-size: 15px; color: var(--text, #d4e8e0); background: var(--bg, #0e1512); border: 1px solid var(--border, #2a3d35); border-radius: 8px; padding: 11px 12px; outline: none; }
+    #db-lock input:focus { border-color: var(--teal, #2ea89d); }
+    #db-lock button { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 0.08em; color: #08110e; background: var(--teal, #2ea89d); border: none; border-radius: 8px; padding: 11px; cursor: pointer; }
+    #db-lock button:disabled { opacity: 0.6; cursor: default; }
+    #db-lock #db-lock-retry { margin-top: 8px; width: 100%; }
+    #db-lock #db-lock-retry[hidden] { display: none; }
+
     @media (max-width: 900px) {
       #tool-database .db-app { padding: 16px 14px 48px; }
       #tool-database .db-cards { grid-template-columns: repeat(2, 1fr); }
@@ -2376,6 +2445,8 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
       #tool-database .db-events { max-height: 220px; }
       #tool-database .db-sc-item { grid-template-columns: 1fr; gap: 2px; }
       #tool-database .db-sc-note { display: none; }
+      #tool-database .db-m-grid { grid-template-columns: 1fr; }
+      #tool-database .db-h-row { flex-direction: column; align-items: flex-start; }
     }
 </style>
 </head>
@@ -2816,10 +2887,21 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         </div>
         <div class="db-actions">
           <span class="db-status" id="db-status">Not loaded yet</span>
-          <button class="db-btn" id="db-refresh-btn" type="button">Refresh</button>
+          <label class="db-check db-edit-toggle"><input type="checkbox" id="db-edit-toggle"> Edit mode</label>
           <button class="db-btn" id="db-sanity-btn" type="button" disabled>Run Sanity Checks</button>
+          <button class="db-btn" id="db-history-btn" type="button">History</button>
           <button class="db-btn" id="db-download-btn" type="button" disabled>Download CSV</button>
+          <button class="db-btn" id="db-refresh-btn" type="button">Refresh</button>
+          <button class="db-btn" id="db-lock-btn" type="button" title="Sign this device out">Lock</button>
         </div>
+      </div>
+
+      <div class="db-editbar" id="db-edit-bar" hidden>
+        <button class="db-btn" id="db-fix-btn" type="button" disabled>Fix tools</button>
+        <button class="db-btn danger" id="db-del-rows" type="button" disabled>Delete selected rows</button>
+        <button class="db-btn danger" id="db-del-event" type="button" disabled>Delete this event's rows</button>
+        <button class="db-btn" id="db-undo-last" type="button" disabled>Undo last change</button>
+        <span class="db-edit-hint">Type to replace a cell · double-click or F2 to edit inside it · Delete clears · Ctrl+V pastes · Ctrl+D fills down · every change saves at once and can be undone</span>
       </div>
 
       <div class="db-sanity" id="db-sanity" hidden>
@@ -2864,6 +2946,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
               <div class="db-g-sizer" id="db-g-sizer">
                 <div class="db-g-head" id="db-g-head"></div>
                 <div class="db-g-body" id="db-g-body"></div>
+                <input class="db-g-editor" id="db-g-editor" type="text" autocomplete="off" hidden>
               </div>
             </div>
           </div>
@@ -2875,6 +2958,8 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
       </div>
 
     </div>
+
+    <div class="db-modal" id="db-modal" hidden><div class="db-modal-box"></div></div>
   </div>
 </main>
 
@@ -9426,7 +9511,14 @@ const db_state = {
   sort: 'new',
   allCols: false,
   sanity: null,      // result of the last Run Sanity Checks
-  sanityOpen: null   // which check's list is expanded
+  sanityOpen: null,  // which check's list is expanded
+  unlocked: false,   // has this device been let in by the password screen
+  memToken: '',      // device key kept in memory if the browser blocks storage
+  editMode: false,   // typing changes cells only while this is ticked
+  editing: null,     // the cell currently open in the editor
+  undoStack: [],     // change numbers saved this visit, newest last (for Ctrl+Z)
+  queue: Promise.resolve(),   // saves go to the database one after another, in order
+  pending: 0
 };
 
 function db_esc(s) {
@@ -9505,10 +9597,10 @@ function db_rowsFromCSV(text) {
       points: get('Points'), penalty: get('Penalty'), p1Score: get('P1Score'), p2Score: get('P2Score'),
       p1Combo: get('P1Combo'), p2Combo: get('P2Combo'),
       p1Priority: pri,
+      id: get('_id') ? parseInt(get('_id'), 10) : 0,
       hay: ''
     };
-    row.hay = [row.judge, row.p1, row.p2, row.winner, row.winnerCombo, row.p1Combo, row.p2Combo, row.event, row.match]
-      .join('\u0001').toLowerCase();
+    row.hay = db_makeHay(row);
     out.push(row);
   }
   return out;
@@ -9542,7 +9634,7 @@ async function db_load() {
     db_gridMessage('Loading battles from the database…');
   }
   try {
-    const res = await fetch(DB_API + '/export.csv', { cache: 'no-store' });
+    const res = await db_api('/export.csv?ids=1');
     if (!res.ok) throw new Error('The database answered with an error (' + res.status + ').');
     const text = await res.text();
     const rows = db_rowsFromCSV(text);
@@ -9745,6 +9837,7 @@ function db_paint() {
 
 function db_renderStatus() {
   const s = db_state;
+  db_syncEditBar();
   const el = document.getElementById('db-g-status');
   const copyBtn = document.getElementById('db-g-copy');
   const sel = db_selRange();
@@ -9848,6 +9941,8 @@ function db_pointToCell(ev) {
 function db_gridMouseDown(e) {
   const s = db_state;
   if (e.button !== 0 || !s.cols) return;
+  if (e.target && e.target.id === 'db-g-editor') return;
+  if (s.editing) db_closeEditor(true);
   const t = e.target;
   const rs = t.closest('[data-rs]');
   if (rs) {
@@ -9916,6 +10011,7 @@ function db_gridMouseUp() { db_drag = null; }
 // ---- keyboard ----
 function db_gridKeyDown(e) {
   const s = db_state;
+  if (e.target && e.target.id === 'db-g-editor') return;
   if (!s.cols || !s.filtered.length) return;
   const last = s.filtered.length - 1, lastC = s.cols.length - 1;
   const ctrl = e.ctrlKey || e.metaKey;
@@ -9927,6 +10023,13 @@ function db_gridKeyDown(e) {
   if (ctrl && (k === 'c' || k === 'C')) { if (s.sel) { db_copySelection(); } e.preventDefault(); return; }
   if (k === 'Escape') { if (s.sel) db_setSel(s.sel.ar, s.sel.ac, s.sel.ar, s.sel.ac); return; }
 
+  if (s.editMode) {
+    if (ctrl && (k === 'z' || k === 'Z')) { e.preventDefault(); db_undoLast(); return; }
+    if (ctrl && (k === 'd' || k === 'D')) { e.preventDefault(); db_fillDown(); return; }
+    if (k === 'F2' && s.sel) { e.preventDefault(); db_openEditor(s.sel.ar, s.sel.ac); return; }
+    if ((k === 'Delete' || k === 'Backspace') && s.sel) { e.preventDefault(); db_clearSelection(); return; }
+    if (!ctrl && !e.altKey && k.length === 1 && s.sel) { e.preventDefault(); db_openEditor(s.sel.ar, s.sel.ac, k); return; }
+  }
   let dr = 0, dc = 0, jump = false, collapse = false, handled = true;
   if (k === 'ArrowDown') { dr = 1; jump = ctrl; }
   else if (k === 'ArrowUp') { dr = -1; jump = ctrl; }
@@ -9995,18 +10098,27 @@ function db_clearFilters() {
   db_applyFilters();
 }
 
-function db_downloadCSV() {
-  const s = db_state;
-  if (!s.csvText) return;
-  const blob = new Blob([s.csvText], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'ncblast-database-' + new Date().toISOString().slice(0, 10) + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+async function db_downloadCSV() {
+  const btn = document.getElementById('db-download-btn');
+  btn.disabled = true;
+  try {
+    // the plain export (no id column), exactly as the other tools expect it
+    const res = await db_api('/export.csv');
+    if (!res.ok) throw new Error('The database answered with an error (' + res.status + ').');
+    const blob = new Blob([await res.text()], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ncblast-database-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  } catch (err) {
+    db_setStatus('Could not download: ' + (err && err.message ? err.message : err), 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -10332,6 +10444,862 @@ function db_initSanity() {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// STAFF LOCK — the whole site stays behind a password screen until this device
+// has been unlocked once. The password is checked by the database Worker (never
+// stored in this file); a correct password gives the device a long private key
+// that the browser remembers. After 5 wrong tries the Worker locks that internet
+// connection out for 15 minutes.
+// NOTE: this screen covers the whole page, but the data the OTHER four tools show
+// still comes from the old shared file until those tools are moved onto the database.
+// The database itself (this tab) is protected by the key on every request.
+// ═══════════════════════════════════════════════════════════════════════════
+const DB_TOKEN_KEY = 'ncblast_db_key';
+
+function db_getToken() {
+  try { const t = localStorage.getItem(DB_TOKEN_KEY); if (t) return t; } catch (e) { /* storage blocked */ }
+  return db_state.memToken || '';
+}
+function db_setToken(t) {
+  db_state.memToken = t || '';
+  try { if (t) localStorage.setItem(DB_TOKEN_KEY, t); else localStorage.removeItem(DB_TOKEN_KEY); } catch (e) { /* storage blocked */ }
+}
+
+// Talks to the database Worker with this device's key. A "not signed in" answer puts the lock screen back.
+async function db_api(path, opts) {
+  opts = opts || {};
+  const headers = {};
+  const tok = db_getToken();
+  if (tok) headers.Authorization = 'Bearer ' + tok;
+  let body;
+  if (opts.body !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(opts.body); }
+  const res = await fetch(DB_API + path, { method: opts.method || 'GET', headers: headers, body: body, cache: 'no-store' });
+  if (res.status === 401) {
+    db_setToken('');
+    db_showLock('This device was signed out. Enter the password to continue.');
+    const err = new Error('Not signed in.');
+    err.status = 401;
+    throw err;
+  }
+  return res;
+}
+async function db_apiJson(path, opts) {
+  const res = await db_api(path, opts);
+  let data = null;
+  try { data = await res.json(); } catch (e) { data = null; }
+  if (!res.ok) {
+    const err = new Error((data && data.error) || 'The database answered with an error (' + res.status + ').');
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+function db_defaultDeviceName() {
+  const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+  const os = /iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : /Mac OS/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : 'Device';
+  const br = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+  return br + ' on ' + os;
+}
+
+function db_buildLock() {
+  if (document.getElementById('db-lock')) return;
+  const el = document.createElement('div');
+  el.id = 'db-lock';
+  el.hidden = true;
+  el.innerHTML =
+    '<div class="db-lock-box">' +
+    '<div class="db-lock-title">NCBLAST DATA TOOLS</div>' +
+    '<div class="db-lock-sub">STAFF ONLY</div>' +
+    '<div class="db-lock-msg" id="db-lock-msg"></div>' +
+    '<form id="db-lock-form" autocomplete="on">' +
+    '<input type="password" id="db-lock-pw" placeholder="Password" autocomplete="current-password">' +
+    '<input type="text" id="db-lock-label" placeholder="Name this device (e.g. Leaf laptop)" maxlength="40" autocomplete="off">' +
+    '<button type="submit" id="db-lock-go">Unlock</button>' +
+    '</form>' +
+    '<button type="button" id="db-lock-retry" hidden>Try again</button>' +
+    '</div>';
+  document.body.appendChild(el);
+  document.getElementById('db-lock-form').addEventListener('submit', function (e) { e.preventDefault(); db_submitLogin(); });
+  document.getElementById('db-lock-retry').addEventListener('click', db_bootAuth);
+}
+
+function db_showLock(message, mode) {
+  db_buildLock();
+  const el = document.getElementById('db-lock');
+  el.hidden = false;
+  document.documentElement.classList.add('db-locked');
+  document.getElementById('db-lock-msg').textContent = message || '';
+  const form = document.getElementById('db-lock-form');
+  form.style.display = mode === 'checking' || mode === 'retry' ? 'none' : '';
+  document.getElementById('db-lock-retry').hidden = mode !== 'retry';
+  document.getElementById('db-lock-pw').value = '';
+  if (!mode) { setTimeout(function () { const p = document.getElementById('db-lock-pw'); if (p) p.focus(); }, 30); }
+  db_state.unlocked = false;
+}
+function db_hideLock() {
+  const el = document.getElementById('db-lock');
+  if (el) el.hidden = true;
+  document.documentElement.classList.remove('db-locked');
+  db_state.unlocked = true;
+}
+
+async function db_submitLogin() {
+  const pw = document.getElementById('db-lock-pw').value;
+  const label = document.getElementById('db-lock-label').value.trim() || db_defaultDeviceName();
+  const go = document.getElementById('db-lock-go');
+  const msg = document.getElementById('db-lock-msg');
+  if (!pw) { msg.textContent = 'Type the password first.'; return; }
+  go.disabled = true;
+  msg.textContent = 'Checking…';
+  try {
+    const res = await fetch(DB_API + '/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pw, label: label }), cache: 'no-store' });
+    let data = null;
+    try { data = await res.json(); } catch (e) { data = null; }
+    if (res.ok && data && data.token) {
+      db_setToken(data.token);
+      db_hideLock();
+      db_afterUnlock();
+    } else if (res.status === 401) {
+      msg.textContent = 'Wrong password.' + (data && data.attemptsLeft != null ? ' ' + data.attemptsLeft + ' ' + (data.attemptsLeft === 1 ? 'try' : 'tries') + ' left before a 15 minute lockout.' : '');
+      document.getElementById('db-lock-pw').value = '';
+    } else if (res.status === 429) {
+      msg.textContent = (data && data.error) || 'Too many wrong tries. Try again in 15 minutes.';
+    } else {
+      msg.textContent = (data && data.error) || 'The database answered with an error (' + res.status + ').';
+    }
+  } catch (e) {
+    msg.textContent = 'Could not reach the database. Check your connection and try again.';
+  } finally {
+    go.disabled = false;
+  }
+}
+
+// After the device is unlocked: load the Database tab if it is the one showing.
+function db_afterUnlock() {
+  const view = document.getElementById('tool-database');
+  if (view && view.classList.contains('active') && !db_state.loaded && !db_state.loading) db_load();
+}
+
+async function db_bootAuth() {
+  db_buildLock();
+  if (!db_getToken()) { db_showLock(''); return; }
+  db_showLock('Checking this device…', 'checking');
+  try {
+    const res = await fetch(DB_API + '/session', { headers: { Authorization: 'Bearer ' + db_getToken() }, cache: 'no-store' });
+    if (res.ok) { db_hideLock(); db_afterUnlock(); }
+    else if (res.status === 401) { db_setToken(''); db_showLock('This device is not signed in. Enter the password to continue.'); }
+    else db_showLock('The database answered with an error (' + res.status + ').', 'retry');
+  } catch (e) {
+    db_showLock('Could not reach the database. Check your connection.', 'retry');
+  }
+}
+
+async function db_lockDevice() {
+  try { await db_api('/logout', { method: 'POST', body: {} }); } catch (e) { /* already signed out */ }
+  db_setToken('');
+  const s = db_state;
+  s.loaded = false; s.rows = []; s.filtered = []; s.csvText = ''; s.sel = null; s.undoStack = [];
+  db_setStatus('Not loaded yet', '');
+  db_showLock('This device is locked. Enter the password to open the tools again.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EDITING — only works while "Edit mode" is ticked. Every change is saved to the
+// database straight away, together with the old value, so it can be undone from
+// the History window (or with Ctrl+Z for the most recent one).
+// ═══════════════════════════════════════════════════════════════════════════
+// Which columns can be edited: grid column name -> row property, database column name,
+// whether it must be a whole number, and whether it may be blank. WHEN is read-only.
+const DB_EDIT_MAP = {
+  'JUDGE': { k: 'judge', f: 'Judge' },
+  'EVENT': { k: 'event', f: 'Tournament', req: true },
+  'MATCH': { k: 'match', f: 'Match', req: true },
+  'P1': { k: 'p1', f: 'P1', req: true },
+  'P1 SIDE': { k: 'p1Side', f: 'P1Side' },
+  'P2': { k: 'p2', f: 'P2', req: true },
+  'P2 SIDE': { k: 'p2Side', f: 'P2Side' },
+  'SET': { k: 'set', f: 'Set', int: true },
+  'SHUFFLE': { k: 'shuffle', f: 'Shuffle', int: true },
+  'SLOT': { k: 'slot', f: 'Slot', int: true },
+  'WINNER': { k: 'winner', f: 'Winner', req: true },
+  'WINNING COMBO': { k: 'winnerCombo', f: 'WinnerCombo' },
+  'FINISH': { k: 'finish', f: 'FinishType' },
+  'PTS': { k: 'points', f: 'Points', int: true },
+  'PENALTY': { k: 'penalty', f: 'Penalty', int: true },
+  'P1 SCORE': { k: 'p1Score', f: 'P1Score', int: true },
+  'P2 SCORE': { k: 'p2Score', f: 'P2Score', int: true },
+  'P1 COMBO': { k: 'p1Combo', f: 'P1Combo' },
+  'P2 COMBO': { k: 'p2Combo', f: 'P2Combo' }
+};
+const DB_CHUNK = 1500;      // cells per request (the Worker's limit)
+const DB_DEL_CHUNK = 800;   // rows per delete request
+
+function db_makeHay(r) {
+  return [r.judge, r.p1, r.p2, r.winner, r.winnerCombo, r.p1Combo, r.p2Combo, r.event, r.match].join('\u0001').toLowerCase();
+}
+function db_newGroup() { return 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function db_plural(n, word) { return db_fmtNum(n) + ' ' + word + (n === 1 ? '' : 's'); }
+
+// ---------- messages & pop-up windows ----------
+function db_modal(opts) {
+  if (db_state.modalClose) db_state.modalClose(null);   // only one window at a time
+  return new Promise(function (resolve) {
+    const root = document.getElementById('db-modal');
+    const box = root.querySelector('.db-modal-box');
+    const wide = opts.wide ? ' wide' : '';
+    let btns = '';
+    (opts.buttons || [{ label: 'OK', value: true, primary: true }]).forEach(function (b, i) {
+      btns += '<button type="button" class="db-btn' + (b.primary ? ' primary' : '') + (b.danger ? ' danger' : '') + '" data-mb="' + i + '">' + db_esc(b.label) + '</button>';
+    });
+    box.className = 'db-modal-box' + wide;
+    box.innerHTML = '<div class="db-modal-title">' + db_esc(opts.title || '') + '</div><div class="db-modal-body" id="db-modal-body">' + (opts.html || '') +
+      '</div><div class="db-modal-foot" id="db-modal-foot">' + btns + '</div>';
+    root.hidden = false;
+    let closed = false;
+    const close = function (value) {
+      if (closed) return;
+      closed = true;
+      if (db_state.modalClose === close) db_state.modalClose = null;
+      root.hidden = true;
+      box.innerHTML = '';
+      root.onclick = null;
+      document.removeEventListener('keydown', onKey, true);
+      resolve(value);
+    };
+    db_state.modalClose = close;
+    const onKey = function (e) { if (e.key === 'Escape') { e.stopPropagation(); close(null); } };
+    document.addEventListener('keydown', onKey, true);
+    root.onclick = function (e) {
+      if (e.target === root) { close(null); return; }
+      const b = e.target.closest('[data-mb]');
+      if (!b || b.disabled) return;
+      const def = (opts.buttons || [{ value: true }])[parseInt(b.getAttribute('data-mb'), 10)];
+      if (def.value !== null && opts.validate && !opts.validate(box, def.value)) return;
+      close(def.value);
+    };
+    if (opts.onOpen) opts.onOpen(box, close);
+  });
+}
+
+async function db_confirm(title, html, confirmLabel, danger) {
+  const v = await db_modal({ title: title, html: html, buttons: [{ label: 'Cancel', value: null }, { label: confirmLabel, value: true, primary: !danger, danger: !!danger }] });
+  return v === true;
+}
+
+// ---------- edit mode ----------
+function db_setEditMode(on) {
+  const s = db_state;
+  if (s.editing) db_closeEditor(true);
+  s.editMode = !!on;
+  document.getElementById('db-edit-toggle').checked = s.editMode;
+  document.getElementById('db-edit-bar').hidden = !s.editMode;
+  document.getElementById('db-grid').classList.toggle('editing', s.editMode);
+  db_syncEditBar();
+  db_renderStatus();
+}
+
+function db_syncEditBar() {
+  const s = db_state;
+  const sel = db_selRange();
+  document.getElementById('db-del-rows').disabled = !(s.editMode && sel);
+  document.getElementById('db-del-event').disabled = !(s.editMode && s.event);
+  document.getElementById('db-undo-last').disabled = !(s.editMode && s.undoStack.length);
+  document.getElementById('db-fix-btn').disabled = !(s.editMode && s.loaded);
+}
+
+// ---------- the in-cell editor ----------
+function db_colX(ci) {
+  let x = DB_NUM_W;
+  for (let i = 0; i < ci; i++) x += db_colW(db_state.cols[i]);
+  return x;
+}
+
+function db_openEditor(r, c, initial) {
+  const s = db_state;
+  if (!s.editMode || !s.cols || !s.filtered[r]) return;
+  const col = s.cols[c];
+  if (!DB_EDIT_MAP[col.l]) { db_setStatus(col.l + ' is read-only.', ''); return; }
+  if (s.editing) db_closeEditor(true);
+  db_ensureVisible(r, c);
+  const ed = document.getElementById('db-g-editor');
+  const row = s.filtered[r];
+  ed.style.top = (DB_HEAD_H + r * DB_ROW_H) + 'px';
+  ed.style.left = db_colX(c) + 'px';
+  ed.style.width = Math.max(db_colW(col), 160) + 'px';
+  ed.value = initial !== undefined ? initial : String(col.v(row) == null ? '' : col.v(row));
+  ed.hidden = false;
+  s.editing = { r: r, c: c, row: row, label: col.l };
+  ed.focus();
+  if (initial === undefined) ed.select(); else ed.setSelectionRange(ed.value.length, ed.value.length);
+}
+
+function db_closeEditor(commit) {
+  const s = db_state;
+  const e = s.editing;
+  if (!e) return;
+  s.editing = null;
+  const ed = document.getElementById('db-g-editor');
+  const val = ed.value;
+  ed.hidden = true;
+  ed.value = '';
+  if (commit) db_applyEdits([{ row: e.row, label: e.label, value: val }]);
+  document.getElementById('db-grid').focus({ preventScroll: true });
+}
+
+function db_editorKey(e) {
+  const s = db_state;
+  if (!s.editing) return;
+  const k = e.key;
+  if (k === 'Enter' || k === 'Tab') {
+    e.preventDefault();
+    e.stopPropagation();
+    const { r, c } = s.editing;
+    db_closeEditor(true);
+    let nr = r, nc = c;
+    if (k === 'Enter') nr = e.shiftKey ? r - 1 : r + 1;
+    else nc = e.shiftKey ? c - 1 : c + 1;
+    if (nc > s.cols.length - 1) { nc = 0; nr = r + 1; }
+    nr = Math.max(0, Math.min(s.filtered.length - 1, nr));
+    nc = Math.max(0, Math.min(s.cols.length - 1, nc));
+    db_setSel(nr, nc, nr, nc);
+    db_ensureVisible(nr, nc);
+  } else if (k === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    db_closeEditor(false);
+  }
+}
+
+// ---------- saving edits ----------
+// items: [{ row, label, value }] — label is the grid column name.
+// Shows the new values at once, then saves them in the background; if the save
+// fails the old values are put back and the reason is shown.
+function db_applyEdits(items) {
+  const s = db_state;
+  const changes = [];
+  const errs = [];
+  items.forEach(function (it) {
+    const m = DB_EDIT_MAP[it.label];
+    if (!m) return;
+    const v = String(it.value == null ? '' : it.value).trim();
+    if (v === '') { if (m.req) { errs.push(it.label + " can't be blank."); return; } }
+    else if (m.int && !/^-?\d{1,9}$/.test(v)) { errs.push(it.label + ' must be a whole number.'); return; }
+    else if ((m.f === 'P1' || m.f === 'P2') && v.indexOf('~P~') !== -1) { errs.push("The ~P~ marker can't be typed into a name."); return; }
+    else if (v.length > 500) { errs.push(it.label + ' is too long.'); return; }
+    const old = String(it.row[m.k] == null ? '' : it.row[m.k]);
+    if (old === v) return;
+    if (!it.row.id) { errs.push('These rows have no id yet — press Refresh and try again.'); return; }
+    changes.push({ row: it.row, k: m.k, f: m.f, old: old, value: v });
+  });
+  if (errs.length) {
+    db_setStatus(errs[0] + (errs.length > 1 ? ' (+' + (errs.length - 1) + ' more)' : '') + ' Nothing was changed.', 'error');
+    return Promise.resolve(false);
+  }
+  if (!changes.length) return Promise.resolve(true);
+
+  changes.forEach(function (c) { c.row[c.k] = c.value; c.row.hay = db_makeHay(c.row); });
+  db_afterLocalChange(changes);
+
+  const group = changes.length > DB_CHUNK ? db_newGroup() : null;
+  db_setStatus('Saving ' + db_plural(changes.length, 'change') + '…', '');
+  s.pending++;
+  s.queue = s.queue.then(async function () {
+    let saved = 0;
+    try {
+      for (let i = 0; i < changes.length; i += DB_CHUNK) {
+        const part = changes.slice(i, i + DB_CHUNK);
+        const res = await db_apiJson('/edit', { method: 'POST', body: { group: group, changes: part.map(function (c) { return { id: c.row.id, field: c.f, value: c.value }; }) } });
+        if (res && res.changeId) s.undoStack.push(res.changeId);
+        saved += part.length;
+      }
+      s.pending--;
+      if (!s.pending) db_setStatus('✓ Saved ' + db_plural(changes.length, 'change') + ' · Ctrl+Z undoes it', 'ok');
+    } catch (err) {
+      s.pending--;
+      changes.slice(saved).forEach(function (c) { c.row[c.k] = c.old; c.row.hay = db_makeHay(c.row); });
+      db_afterLocalChange(changes.slice(saved));
+      db_setStatus('Could not save: ' + (err && err.message ? err.message : err) + ' The old value' + (changes.length - saved === 1 ? ' was' : 's were') + ' put back.', 'error');
+    }
+    db_syncEditBar();
+  });
+  db_syncEditBar();
+  return s.queue.then(function () { return true; });
+}
+
+// Keeps the screen in step after cell values changed in memory.
+function db_afterLocalChange(changes) {
+  const s = db_state;
+  if (changes.some(function (c) { return c.k === 'event'; })) {
+    s.events = db_buildEvents(s.rows);
+  }
+  if (changes.some(function (c) { return c.k === 'event' || c.k === 'finish'; })) db_buildControls();
+  s.sanity = null;
+  db_renderSanity();
+  db_paint();
+  db_renderEvents();
+  db_renderStatus();
+}
+
+// ---------- clearing, pasting, filling ----------
+function db_selectedCells() {
+  const s = db_state;
+  const sel = db_selRange();
+  const out = [];
+  if (!sel) return out;
+  for (let r = sel.r1; r <= sel.r2; r++) for (let c = sel.c1; c <= sel.c2; c++) out.push({ r: r, c: c, row: s.filtered[r], label: s.cols[c].l });
+  return out;
+}
+
+async function db_clearSelection() {
+  const cells = db_selectedCells().filter(function (x) { return DB_EDIT_MAP[x.label]; });
+  if (!cells.length) return;
+  const blocked = cells.filter(function (x) { return DB_EDIT_MAP[x.label].req; });
+  if (blocked.length) {
+    db_setStatus("Some selected columns can't be blank (" + Array.from(new Set(blocked.map(function (x) { return x.label; }))).join(', ') + '). Nothing was cleared. To remove whole rows use Delete selected rows.', 'error');
+    return;
+  }
+  if (cells.length > 50 && !(await db_confirm('Clear ' + db_plural(cells.length, 'cell') + '?', 'They will be emptied. You can undo this from History.', 'Clear cells'))) return;
+  db_applyEdits(cells.map(function (x) { return { row: x.row, label: x.label, value: '' }; }));
+}
+
+async function db_fillDown() {
+  const s = db_state;
+  const sel = db_selRange();
+  if (!sel || sel.r2 === sel.r1) return;
+  const items = [];
+  for (let c = sel.c1; c <= sel.c2; c++) {
+    const label = s.cols[c].l;
+    if (!DB_EDIT_MAP[label]) continue;
+    const top = String(s.cols[c].v(s.filtered[sel.r1]) == null ? '' : s.cols[c].v(s.filtered[sel.r1]));
+    for (let r = sel.r1 + 1; r <= sel.r2; r++) items.push({ row: s.filtered[r], label: label, value: top });
+  }
+  if (items.length > 50 && !(await db_confirm('Fill down ' + db_plural(items.length, 'cell') + '?', 'The top cell of each column is copied down the selection. You can undo this from History.', 'Fill down'))) return;
+  db_applyEdits(items);
+}
+
+function db_parseClipboard(text) {
+  const t = String(text).replace(/\r\n?/g, '\n').replace(/\n$/, '');
+  if (t === '') return [['']];
+  return t.split('\n').map(function (line) {
+    return line.split('\t').map(function (cell) {
+      return cell.length > 1 && cell[0] === '"' && cell[cell.length - 1] === '"' ? cell.slice(1, -1).replace(/""/g, '"') : cell;
+    });
+  });
+}
+
+async function db_pasteText(text) {
+  const s = db_state;
+  const sel = db_selRange();
+  if (!s.editMode || !sel) return;
+  const grid = db_parseClipboard(text);
+  const items = [];
+  let skipped = 0;
+  const single = grid.length === 1 && grid[0].length === 1;
+  const multiSel = (sel.r2 > sel.r1) || (sel.c2 > sel.c1);
+  const place = function (r, c, v) {
+    if (r > s.filtered.length - 1 || c > s.cols.length - 1) return;
+    if (!DB_EDIT_MAP[s.cols[c].l]) { skipped++; return; }
+    items.push({ row: s.filtered[r], label: s.cols[c].l, value: v });
+  };
+  if (single && multiSel) {
+    for (let r = sel.r1; r <= sel.r2; r++) for (let c = sel.c1; c <= sel.c2; c++) place(r, c, grid[0][0]);
+  } else {
+    grid.forEach(function (line, i) { line.forEach(function (v, j) { place(sel.r1 + i, sel.c1 + j, v); }); });
+  }
+  if (!items.length) { db_setStatus('Nothing to paste into (read-only columns were skipped).', ''); return; }
+  if (items.length > 50 && !(await db_confirm('Paste ' + db_plural(items.length, 'cell') + '?', 'They will overwrite what is there now. You can undo this from History.' + (skipped ? ' (' + db_plural(skipped, 'cell') + ' in read-only columns will be skipped.)' : ''), 'Paste'))) return;
+  const ok = await db_applyEdits(items);
+  if (ok && !single) {
+    const nr = Math.min(s.filtered.length - 1, sel.r1 + grid.length - 1);
+    const nc = Math.min(s.cols.length - 1, sel.c1 + Math.max.apply(null, grid.map(function (l) { return l.length; })) - 1);
+    db_setSel(sel.r1, sel.c1, nr, nc);
+  }
+}
+
+// ---------- deleting rows ----------
+function db_selectedRows() {
+  const s = db_state;
+  const sel = db_selRange();
+  const out = [];
+  if (!sel) return out;
+  for (let r = sel.r1; r <= sel.r2; r++) out.push(s.filtered[r]);
+  return out;
+}
+
+async function db_deleteRows(rows, title, bodyHtml, needTyping) {
+  const s = db_state;
+  if (!rows.length) return;
+  if (rows.some(function (r) { return !r.id; })) { db_setStatus('These rows have no id yet — press Refresh and try again.', 'error'); return; }
+  const answer = await db_modal({
+    title: title,
+    html: bodyHtml + (needTyping ? '<p class="db-m-p">To go ahead, type <b>DELETE</b> below.</p><input class="db-input" id="db-m-confirm" autocomplete="off">' : ''),
+    buttons: [{ label: 'Cancel', value: null }, { label: 'Delete ' + db_plural(rows.length, 'row'), value: true, danger: true }],
+    validate: function (box) { return !needTyping || box.querySelector('#db-m-confirm').value.trim() === 'DELETE'; },
+    onOpen: function (box) { const i = box.querySelector('#db-m-confirm'); if (i) i.focus(); }
+  });
+  if (answer !== true) return;
+  const group = rows.length > DB_DEL_CHUNK ? db_newGroup() : null;
+  db_setStatus('Deleting ' + db_plural(rows.length, 'row') + '…', '');
+  s.pending++;
+  let deleted = 0;
+  const ids = rows.map(function (r) { return r.id; });
+  s.queue = s.queue.then(async function () {
+    try {
+      for (let i = 0; i < ids.length; i += DB_DEL_CHUNK) {
+        const res = await db_apiJson('/delete', { method: 'POST', body: { group: group, ids: ids.slice(i, i + DB_DEL_CHUNK) } });
+        if (res && res.changeId) s.undoStack.push(res.changeId);
+        deleted += ids.slice(i, i + DB_DEL_CHUNK).length;
+      }
+      s.pending--;
+      db_setStatus('✓ Deleted ' + db_plural(deleted, 'row') + ' · it is in History if you need it back', 'ok');
+    } catch (err) {
+      s.pending--;
+      db_setStatus('Could not delete: ' + (err && err.message ? err.message : err) + (deleted ? ' (' + db_plural(deleted, 'row') + ' were deleted before the problem.)' : ''), 'error');
+    }
+    // drop the rows that really went away
+    const gone = new Set(ids.slice(0, deleted));
+    s.rows = s.rows.filter(function (r) { return !gone.has(r.id); });
+    s.events = db_buildEvents(s.rows);
+    if (s.event && !s.events.some(function (e) { return e.name === s.event; })) { s.event = ''; document.getElementById('db-filter-event').value = ''; }
+    db_buildControls();
+    s.sanity = null;
+    db_renderSanity();
+    db_applyFilters();
+    db_syncEditBar();
+  });
+  return s.queue;
+}
+
+function db_deleteSelectedRows() {
+  const rows = db_selectedRows();
+  if (!rows.length) return;
+  const byEvent = {};
+  rows.forEach(function (r) { byEvent[r.event] = (byEvent[r.event] || 0) + 1; });
+  const list = Object.keys(byEvent).slice(0, 6).map(function (e) { return '<li>' + db_esc(e) + ' — ' + db_plural(byEvent[e], 'battle') + '</li>'; }).join('');
+  return db_deleteRows(rows, 'Delete ' + db_plural(rows.length, 'row') + '?',
+    '<p class="db-m-p">These battles will be removed from the database:</p><ul class="db-m-list">' + list + (Object.keys(byEvent).length > 6 ? '<li>…and more events</li>' : '') +
+    '</ul><p class="db-m-p">They are saved in the change log, so you can bring them back from History.</p>', rows.length > 25);
+}
+
+function db_deleteEventRows() {
+  const s = db_state;
+  if (!s.event) return;
+  const rows = s.rows.filter(function (r) { return r.event === s.event; });
+  return db_deleteRows(rows, 'Delete the whole event?',
+    '<p class="db-m-p">This removes <b>every</b> battle of <b>' + db_esc(s.event) + '</b> (' + db_plural(rows.length, 'battle') + ') — not only the ones you can see right now.</p>' +
+    '<p class="db-m-p">They are saved in the change log, so you can bring them back from History.</p>', true);
+}
+
+// ---------- undo ----------
+// Undoes logged changes (newest first). Asks before overwriting cells that were changed again since.
+async function db_undoChanges(ids) {
+  const s = db_state;
+  let force = false;
+  let restored = 0;
+  const todo = ids.slice();
+  while (todo.length) {
+    const part = todo.slice(0, 4);
+    try {
+      const res = await db_apiJson('/undo', { method: 'POST', body: { changeIds: part, force: force } });
+      restored += res.restored || 0;
+      todo.splice(0, part.length);
+    } catch (err) {
+      if (err.status === 409 && err.data && err.data.conflict) {
+        const done = (err.data.done || []).length;
+        todo.splice(0, done);
+        const c = err.data.conflict;
+        const go = await db_confirm('Some of this was changed again',
+          '<p class="db-m-p">' + (c.sample && c.sample.length ? db_plural(c.count, 'cell') + ' of ' + c.of + ' were edited again after this change (or the row is gone).' : db_plural(c.count, 'row') + ' already exist again.') +
+          ' Going ahead puts the old values back over the newer ones.</p>', 'Undo anyway', false);
+        if (!go) { db_setStatus('Undo stopped. ' + db_plural(restored, 'item') + ' restored before that.', ''); return { stopped: true, restored: restored }; }
+        force = true;
+      } else {
+        db_setStatus('Could not undo: ' + err.message, 'error');
+        return { stopped: true, error: err.message, restored: restored };
+      }
+    }
+  }
+  s.undoStack = s.undoStack.filter(function (id) { return ids.indexOf(id) === -1; });
+  db_setStatus('✓ Undone · ' + db_plural(restored, 'item') + ' restored', 'ok');
+  await db_load();
+  return { restored: restored };
+}
+
+async function db_undoLast() {
+  const s = db_state;
+  if (!s.editMode || !s.undoStack.length || s.editing) return;
+  await s.queue;
+  const id = s.undoStack[s.undoStack.length - 1];
+  await db_undoChanges([id]);
+  db_syncEditBar();
+}
+
+// ---------- Fix tools ----------
+function db_ratchetParts(v) {
+  const m = /\s+\d+-\d+(?=\s|$)/.exec(v);
+  if (!m) return null;
+  return { blade: v.slice(0, m.index).trim(), without: (v.slice(0, m.index) + v.slice(m.index + m[0].length)).replace(/\s+/g, ' ').trim() };
+}
+const DB_COMBO_LABELS = ['WINNING COMBO', 'P1 COMBO', 'P2 COMBO'];
+
+function db_scopeRows(scope) {
+  const s = db_state;
+  if (scope === 'all') return s.rows;
+  if (scope === 'selected') return db_selectedRows();
+  return s.filtered;
+}
+
+function db_getVal(row, label) { const v = row[DB_EDIT_MAP[label].k]; return v == null ? '' : String(v); }
+
+// Pure planners — they only work out what WOULD change; nothing is saved here.
+function db_planFindReplace(rows, label, find, repl, whole, matchCase) {
+  const out = [];
+  if (find === '' && !whole) return out;
+  const f = matchCase ? find : find.toLowerCase();
+  rows.forEach(function (row) {
+    const cur = db_getVal(row, label);
+    const cmp = matchCase ? cur : cur.toLowerCase();
+    let next = null;
+    if (whole) { if (cmp === f) next = repl; }
+    else if (cmp.indexOf(f) !== -1) {
+      let res = '';
+      let i = 0;
+      for (;;) {
+        const j = cmp.indexOf(f, i);
+        if (j === -1) { res += cur.slice(i); break; }
+        res += cur.slice(i, j) + repl;
+        i = j + f.length;
+      }
+      next = res;
+    }
+    if (next !== null && next !== cur) out.push({ row: row, label: label, old: cur, value: next });
+  });
+  return out;
+}
+
+function db_planRatchets(rows, bladeSet, alsoNoRatchet) {
+  const out = [];
+  rows.forEach(function (row) {
+    DB_COMBO_LABELS.forEach(function (label) {
+      const cur = db_getVal(row, label);
+      if (!cur) return;
+      let next = cur;
+      const p = db_ratchetParts(cur);
+      if (p && bladeSet.has(p.blade)) next = p.without;
+      if (alsoNoRatchet && /\bNo Ratchet\b/i.test(next)) next = next.replace(/\s*\bNo Ratchet\b\s*/i, ' ').replace(/\s+/g, ' ').trim();
+      if (next !== cur) out.push({ row: row, label: label, old: cur, value: next });
+    });
+  });
+  return out;
+}
+
+// Blades seen with a ratchet in these rows, with counts.
+function db_bladeSurvey(rows, allRows) {
+  const withR = {};
+  rows.forEach(function (row) {
+    DB_COMBO_LABELS.forEach(function (label) {
+      const p = db_ratchetParts(db_getVal(row, label));
+      if (p && p.blade) withR[p.blade] = (withR[p.blade] || 0) + 1;
+    });
+  });
+  const names = Object.keys(withR);
+  const without = {};
+  names.forEach(function (n) { without[n] = 0; });
+  allRows.forEach(function (row) {
+    DB_COMBO_LABELS.forEach(function (label) {
+      const v = db_getVal(row, label);
+      if (!v || db_ratchetParts(v)) return;
+      names.forEach(function (n) { if (v.indexOf(n + ' ') === 0) without[n]++; });
+    });
+  });
+  return names.sort(function (a, b) { return withR[b] - withR[a] || (a < b ? -1 : 1); }).map(function (n) { return { name: n, count: withR[n], without: without[n] }; });
+}
+
+function db_sampleHtml(plan, n) {
+  if (!plan.length) return '<div class="db-m-none">Nothing would change.</div>';
+  return '<div class="db-m-sample">' + plan.slice(0, n).map(function (c) {
+    return '<div><span class="o">' + db_esc(c.old === '' ? '(blank)' : c.old) + '</span> <span class="a">→</span> <span class="n">' + db_esc(c.value === '' ? '(blank)' : c.value) + '</span></div>';
+  }).join('') + (plan.length > n ? '<div class="db-m-more">…and ' + db_fmtNum(plan.length - n) + ' more</div>' : '') + '</div>';
+}
+
+async function db_openFixTools(startTab) {
+  const s = db_state;
+  if (!s.editMode || !s.loaded) return;
+  const hasSel = !!db_selRange();
+  const scopeOpts = function (def) {
+    return '<select class="db-select" data-f="scope">' +
+      '<option value="shown"' + (def === 'shown' ? ' selected' : '') + '>Rows shown now (' + db_fmtNum(s.filtered.length) + ')</option>' +
+      '<option value="selected"' + (def === 'selected' ? ' selected' : '') + (hasSel ? '' : ' disabled') + '>Selected rows' + (hasSel ? ' (' + db_fmtNum(db_selectedRows().length) + ')' : ' (none selected)') + '</option>' +
+      '<option value="all"' + (def === 'all' ? ' selected' : '') + '>The whole database (' + db_fmtNum(s.rows.length) + ')</option></select>';
+  };
+  const colOpts = Object.keys(DB_EDIT_MAP).map(function (l) { return '<option value="' + db_esc(l) + '">' + db_esc(l) + '</option>'; }).join('');
+  const html =
+    '<div class="db-m-tabs"><button type="button" class="db-m-tab" data-tab="fr">Find &amp; replace</button><button type="button" class="db-m-tab" data-tab="rr">Remove ratchets</button></div>' +
+    '<div class="db-m-pane" data-pane="fr" hidden>' +
+    '<div class="db-m-grid"><label>Column</label><select class="db-select" data-f="col">' + colOpts + '</select>' +
+    '<label>Find</label><input class="db-input" data-f="find" autocomplete="off">' +
+    '<label>Replace with</label><input class="db-input" data-f="repl" autocomplete="off" placeholder="(leave empty to delete the found text)">' +
+    '<label>Where</label>' + scopeOpts('shown') + '</div>' +
+    '<label class="db-check"><input type="checkbox" data-f="whole"> Only cells that are exactly this text</label> ' +
+    '<label class="db-check"><input type="checkbox" data-f="case"> Match capital letters exactly</label>' +
+    '<div class="db-m-preview" data-prev="fr"></div></div>' +
+    '<div class="db-m-pane" data-pane="rr" hidden>' +
+    '<p class="db-m-p">For beys that have no ratchet (CXE). This takes the ratchet out of the winning combo, P1 combo and P2 combo together, so <b>Blade 9-60 Bit</b> becomes <b>Blade Bit</b>. Tick the blades that should have no ratchet:</p>' +
+    '<div class="db-m-grid"><label>Where</label>' + scopeOpts('all') + '<label>Find blade</label><input class="db-input" data-f="bsearch" placeholder="Type to filter the list" autocomplete="off"></div>' +
+    '<div class="db-m-blades" data-f="blades"></div>' +
+    '<div><button type="button" class="db-btn" data-act="bladeAll">Tick all shown</button> <button type="button" class="db-btn" data-act="bladeNone">Untick all</button></div>' +
+    '<label class="db-check"><input type="checkbox" data-f="alsoNo"> Also remove the words “No Ratchet” from combos (they are in some older entries)</label>' +
+    '<div class="db-m-preview" data-prev="rr"></div></div>';
+
+  let plan = [];
+  const ticked = new Set();
+  let tab = startTab || 'fr';
+
+  await db_modal({
+    title: 'Fix tools', wide: true, html: html,
+    buttons: [{ label: 'Close', value: null }, { label: 'Apply changes', value: true, primary: true }],
+    validate: function () { return plan.length > 0; },
+    onOpen: function (box) {
+      const q = function (sel) { return box.querySelector(sel); };
+      const apply = q('#db-modal-foot [data-mb="1"]');
+      const refresh = function () {
+        box.querySelectorAll('.db-m-tab').forEach(function (t) { t.classList.toggle('on', t.getAttribute('data-tab') === tab); });
+        box.querySelectorAll('.db-m-pane').forEach(function (p) { p.hidden = p.getAttribute('data-pane') !== tab; });
+        if (tab === 'fr') {
+          const pane = q('[data-pane="fr"]');
+          const rows = db_scopeRows(pane.querySelector('[data-f="scope"]').value);
+          plan = db_planFindReplace(rows, pane.querySelector('[data-f="col"]').value, pane.querySelector('[data-f="find"]').value, pane.querySelector('[data-f="repl"]').value,
+            pane.querySelector('[data-f="whole"]').checked, pane.querySelector('[data-f="case"]').checked);
+          q('[data-prev="fr"]').innerHTML = '<div class="db-m-count">' + (plan.length ? db_plural(plan.length, 'cell') + ' will change' : 'Nothing to change yet') + '</div>' + (plan.length ? db_sampleHtml(plan, 8) : '');
+        } else {
+          const pane = q('[data-pane="rr"]');
+          const rows = db_scopeRows(pane.querySelector('[data-f="scope"]').value);
+          const survey = db_bladeSurvey(rows, s.rows);
+          const needle = pane.querySelector('[data-f="bsearch"]').value.trim().toLowerCase();
+          const shown = survey.filter(function (b) { return !needle || b.name.toLowerCase().indexOf(needle) !== -1; });
+          pane.querySelector('[data-f="blades"]').innerHTML = shown.length ? shown.map(function (b) {
+            return '<label class="db-m-blade"><input type="checkbox" data-blade="' + db_esc(b.name) + '"' + (ticked.has(b.name) ? ' checked' : '') + '> <span>' + db_esc(b.name) + '</span>' +
+              '<i>' + db_plural(b.count, 'cell') + ' with a ratchet' + (b.without ? ' · also seen ' + db_fmtNum(b.without) + '× without' : '') + '</i></label>';
+          }).join('') : '<div class="db-m-none">No blades with a ratchet in these rows.</div>';
+          plan = db_planRatchets(rows, ticked, pane.querySelector('[data-f="alsoNo"]').checked);
+          q('[data-prev="rr"]').innerHTML = '<div class="db-m-count">' + (plan.length ? db_plural(plan.length, 'cell') + ' will change' : 'Tick a blade to see what would change') + '</div>' + (plan.length ? db_sampleHtml(plan, 8) : '');
+        }
+        apply.disabled = !plan.length;
+      };
+      box.addEventListener('input', function (e) { if (e.target.matches('[data-f="bsearch"]')) { refresh(); return; } refresh(); });
+      box.addEventListener('change', function (e) {
+        if (e.target.matches('[data-blade]')) { const n = e.target.getAttribute('data-blade'); if (e.target.checked) ticked.add(n); else ticked.delete(n); }
+        refresh();
+      });
+      box.addEventListener('click', function (e) {
+        const t = e.target.closest('.db-m-tab');
+        if (t) { tab = t.getAttribute('data-tab'); refresh(); return; }
+        const a = e.target.closest('[data-act]');
+        if (a) {
+          box.querySelectorAll('[data-blade]').forEach(function (cb) { const n = cb.getAttribute('data-blade'); if (a.getAttribute('data-act') === 'bladeAll') ticked.add(n); else ticked.delete(n); });
+          if (a.getAttribute('data-act') === 'bladeNone') ticked.clear();
+          refresh();
+        }
+      });
+      refresh();
+    }
+  }).then(async function (v) {
+    if (v !== true || !plan.length) return;
+    const n = plan.length;
+    if (n > 50 && !(await db_confirm('Apply ' + db_plural(n, 'change') + '?', 'Every change is saved with its old value, so you can undo all of it from History.', 'Apply'))) return;
+    await db_applyEdits(plan.map(function (c) { return { row: c.row, label: c.label, value: c.value }; }));
+  });
+}
+
+// ---------- History window ----------
+async function db_openHistory() {
+  const s = db_state;
+  let data, devs;
+  db_modal({ title: 'History', wide: true, html: '<div class="db-m-none">Loading…</div>', buttons: [{ label: 'Close', value: null }] });
+  try {
+    data = await db_apiJson('/changes?limit=300');
+    devs = await db_apiJson('/devices');
+  } catch (err) {
+    document.getElementById('db-modal-body').innerHTML = '<div class="db-m-none">Could not load the history. ' + db_esc(err.message) + '</div>';
+    return;
+  }
+  // join the parts of one big action into a single line
+  const lines = [];
+  const byGroup = {};
+  data.changes.forEach(function (c) {
+    if (c.groupId && byGroup[c.groupId]) { const L = byGroup[c.groupId]; L.ids.push(c.id); L.parts++; L.n += c.n; L.undone = L.undone && !!c.undoneAt; return; }
+    const L = { ids: [c.id], at: c.at, who: c.who, kind: c.kind, summary: c.summary, n: c.n, parts: 1, undone: !!c.undoneAt };
+    lines.push(L);
+    if (c.groupId) byGroup[c.groupId] = L;
+  });
+  const rowsHtml = lines.map(function (L, i) {
+    const can = (L.kind === 'edit' || L.kind === 'delete') && !L.undone;
+    return '<div class="db-h-row' + (L.undone ? ' undone' : '') + (L.kind === 'undo' ? ' isundo' : '') + '">' +
+      '<div class="db-h-main"><div class="db-h-sum">' + db_esc(L.summary) + (L.parts > 1 ? ' <i>(+ ' + (L.parts - 1) + ' more part' + (L.parts > 2 ? 's' : '') + ', ' + db_plural(L.n, 'item') + ' in all)</i>' : '') + '</div>' +
+      '<div class="db-h-meta">' + db_esc(db_fmtTime(L.at)) + ' · ' + db_esc(L.who || 'unknown device') + (L.undone ? ' · undone' : '') + '</div></div>' +
+      (can ? '<div class="db-h-btns"><button type="button" class="db-btn" data-hu="' + i + '">Undo</button><button type="button" class="db-btn" data-hr="' + i + '" title="Undoes this change and every change made after it">Undo this and everything after</button></div>' : '<div class="db-h-btns"></div>') + '</div>';
+  }).join('') || '<div class="db-m-none">No changes have been made yet.</div>';
+  const devHtml = devs.devices.map(function (d) {
+    return '<div class="db-h-dev"><span>' + db_esc(d.label) + (d.you ? ' <b>(this device)</b>' : '') + '<i> · first signed in ' + db_esc(db_fmtDate(d.createdAt)) + ' · last seen ' + db_esc(d.lastSeen ? db_fmtTime(d.lastSeen) : '—') + '</i></span>' +
+      (d.you ? '' : '<button type="button" class="db-btn" data-hd="' + d.id + '">Remove access</button>') + '</div>';
+  }).join('');
+  document.getElementById('db-modal-body').innerHTML =
+    '<div class="db-h-list">' + rowsHtml + '</div><div class="db-h-devtitle">DEVICES WITH ACCESS</div><div class="db-h-devs">' + devHtml + '</div>';
+
+  const body = document.getElementById('db-modal-body');
+  body.onclick = async function (e) {
+    const u = e.target.closest('[data-hu]');
+    const r = e.target.closest('[data-hr]');
+    const d = e.target.closest('[data-hd]');
+    if (d) {
+      if (!(await db_confirm('Remove this device?', '<p class="db-m-p">It will have to enter the password again to get back in.</p>', 'Remove access', true))) { db_openHistory(); return; }
+      try { await db_apiJson('/devices/remove', { method: 'POST', body: { id: parseInt(d.getAttribute('data-hd'), 10) } }); } catch (err) { db_setStatus(err.message, 'error'); }
+      db_openHistory();
+      return;
+    }
+    if (!u && !r) return;
+    if (!s.editMode) { db_setEditMode(true); }
+    let ids;
+    if (u) {
+      ids = lines[parseInt(u.getAttribute('data-hu'), 10)].ids.slice().sort(function (a, b) { return b - a; });
+    } else {
+      const L = lines[parseInt(r.getAttribute('data-hr'), 10)];
+      const from = Math.min.apply(null, L.ids);
+      ids = data.changes.filter(function (c) { return c.id >= from && (c.kind === 'edit' || c.kind === 'delete') && !c.undoneAt; }).map(function (c) { return c.id; }).sort(function (a, b) { return b - a; });
+      if (!(await db_confirm('Undo ' + db_plural(ids.length, 'change') + '?', '<p class="db-m-p">This undoes the change you picked and everything that was done after it, newest first.</p>', 'Undo them all', true))) { db_openHistory(); return; }
+    }
+    if (db_state.modalClose) db_state.modalClose(null);
+    await db_undoChanges(ids);
+    db_openHistory();
+  };
+}
+
+function db_initEditing() {
+  const s = db_state;
+  document.getElementById('db-edit-toggle').addEventListener('change', function (e) { db_setEditMode(e.target.checked); });
+  document.getElementById('db-fix-btn').addEventListener('click', function () { db_openFixTools(); });
+  document.getElementById('db-del-rows').addEventListener('click', db_deleteSelectedRows);
+  document.getElementById('db-del-event').addEventListener('click', db_deleteEventRows);
+  document.getElementById('db-undo-last').addEventListener('click', db_undoLast);
+  document.getElementById('db-history-btn').addEventListener('click', db_openHistory);
+  document.getElementById('db-lock-btn').addEventListener('click', db_lockDevice);
+  const ed = document.getElementById('db-g-editor');
+  ed.addEventListener('keydown', db_editorKey);
+  ed.addEventListener('blur', function () { if (s.editing) db_closeEditor(true); });
+  document.getElementById('db-grid').addEventListener('dblclick', function (e) {
+    const c = e.target.closest('[data-r]');
+    if (c && s.editMode) db_openEditor(parseInt(c.getAttribute('data-r'), 10), parseInt(c.getAttribute('data-c'), 10));
+  });
+  document.addEventListener('paste', function (e) {
+    if (!s.editMode || s.editing || document.activeElement !== document.getElementById('db-grid')) return;
+    const text = (e.clipboardData || window.clipboardData).getData('text');
+    e.preventDefault();
+    db_pasteText(text);
+  });
+}
+
 function db_init() {
   const s = db_state;
   const sharedPanel = document.querySelector('.shell-data-panel');
@@ -10342,12 +11310,13 @@ function db_init() {
     tab.addEventListener('click', function () {
       const isDb = tab.dataset.tool === 'database';
       if (sharedPanel) sharedPanel.style.display = isDb ? 'none' : '';
-      if (isDb && !s.loaded && !s.loading) db_load();
+      if (isDb && !s.loaded && !s.loading && db_getToken()) db_load();
     });
   });
 
   db_initSanity();
   db_initGrid();
+  db_initEditing();
   document.getElementById('db-refresh-btn').addEventListener('click', db_load);
   document.getElementById('db-download-btn').addEventListener('click', db_downloadCSV);
   document.getElementById('db-filter-clear').addEventListener('click', db_clearFilters);
@@ -10370,6 +11339,7 @@ function db_init() {
 }
 
 db_init();
+db_bootAuth();
 </script>
 
 </body>
