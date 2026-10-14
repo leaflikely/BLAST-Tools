@@ -3146,7 +3146,7 @@ function cs_parseFormatA(lines) {
     const pts = ft === 'Xtreme Finish' ? 3
               : ft === 'Over Finish'   ? 2
               : ft === 'Burst Finish'  ? 2
-              : ft === 'Own Finish'    ? 2
+              : ft === 'Own Finish'    ? (parseInt(get('Points'),10) === 3 ? 3 : 2)
               : ft === 'Spin Finish'   ? 1
               : 0;
     rows.push({
@@ -3189,7 +3189,7 @@ function cs_parseFormatB(lines) {
     const winnerIsP1 = winner.toLowerCase() === p1.toLowerCase();
     // Derive point value from finish type
     const ft = (v[13]||'').trim();
-    const pts = ft === 'Xtreme Finish' ? 3 : ft === 'Over Finish' ? 2 : ft === 'Burst Finish' ? 2 : ft === 'Own Finish' ? 2 : ft === 'Spin Finish' ? 1 : 0;
+    const pts = ft === 'Xtreme Finish' ? 3 : ft === 'Over Finish' ? 2 : ft === 'Burst Finish' ? 2 : ft === 'Own Finish' ? (parseInt(v[14],10) === 3 ? 3 : 2) : ft === 'Spin Finish' ? 1 : 0;
     rows.push({
       tournament:  (v[2]||'').trim(),
       match:       (v[3]||'').trim(),
@@ -4358,8 +4358,9 @@ function ph_ftPoints(ft){
   return ft==='Xtreme Finish'?3:ft==='Over Finish'?2:ft==='Burst Finish'?2:ft==='Own Finish'?2:ft==='Spin Finish'?1:0;
 }
 
-function ph_makeRow(tournament,match,p1,p2,p1side,p2side,p1score,p2score,shuffle,round,winner,p1combo,p2combo,ft,isB){
-  const pts=ph_ftPoints(ft);
+function ph_makeRow(tournament,match,p1,p2,p1side,p2side,p1score,p2score,shuffle,round,winner,p1combo,p2combo,ft,isB,pointsRaw){
+  // Own Finish is worth 2 or 3 points; the Points column says which.
+  const pts=(ft==='Own Finish'&&parseInt(pointsRaw,10)===3)?3:ph_ftPoints(ft);
   const wIsP1=winner.toLowerCase()===p1.toLowerCase();
   return{
     tournament,match,p1,p2,p1side,p2side,
@@ -4390,7 +4391,7 @@ function ph_parseCSV(lines){
       g(v,'Tournament'),g(v,'Match'),ph_p1,ph_p2,
       g(v,'P1Side'),g(v,'P2Side'),g(v,'P1Score'),g(v,'P2Score'),
       g(v,'Shuffle','0'),g(v,'Round'),g(v,'Winner'),
-      g(v,'P1Combo'),g(v,'P2Combo'),ft,false
+      g(v,'P1Combo'),g(v,'P2Combo'),ft,false,g(v,'Points')
     );
     ph_rowObj.p1Priority=ph_p1tag?true:ph_p2tag?false:null;
     rows.push(ph_rowObj);
@@ -4418,7 +4419,7 @@ function ph_parseTSV(lines){
       (v[2]||'').trim(),(v[3]||'').trim(),p1,p2tsv,
       (v[5]||'').trim(),(v[7]||'').trim(),v[8],v[9],
       '0',v[10],winner,
-      wIsP1?wCombo:'',wIsP1?'':wCombo,ft,true
+      wIsP1?wCombo:'',wIsP1?'':wCombo,ft,true,v[14]
     );
     row.p1Priority=pht_p1tag?true:pht_p2tag?false:null;
     rows.push(row);
@@ -5583,6 +5584,11 @@ async function tr_downloadPNGs() {
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function tr_round1(n){return Math.round(n*10)/10;}
 function tr_round2(n){return Math.round(n*100)/100;}
+function tr_finishPtsR(r){
+  const ft=(r.FinishType||'').trim();
+  if(ft==='Own Finish'&&parseInt(r.Points,10)===3) return 3;
+  return tr_finishPts(ft);
+}
 function tr_finishPts(ft){
   if(ft==='Xtreme Finish') return 3;
   if(ft==='Over Finish')   return 2;
@@ -5665,7 +5671,7 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
     if (!pRows.length) return null;
     let tw=0,tl=0,ptsS=0,ptsA=0;
     pRows.forEach(r=>{
-      const pts=tr_finishPts((r.FinishType||'').trim());
+      const pts=tr_finishPtsR(r);
       if(iWon(r)){tw++;ptsS+=pts;}else{tl++;ptsA+=pts;}
     });
     const total=tw+tl;
@@ -5745,7 +5751,7 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
     const p1side = (r.P1Side||'').trim();
     const p2side = (r.P2Side||'').trim();
     const p1won  = (r.Winner||'').trim().toLowerCase() === (r.P1||'').trim().toLowerCase();
-    const pts    = tr_finishPts((r.FinishType||'').trim());
+    const pts    = tr_finishPtsR(r);
     ['B','X'].forEach(side => {
       if (p1side===side) {
         sideStats[side].battles++;
@@ -5777,7 +5783,7 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
       const won = idx===0
         ? (r.Winner||'').toLowerCase()===(r.P1||'').toLowerCase()
         : (r.Winner||'').toLowerCase()===(r.P2||'').toLowerCase();
-      const pts = tr_finishPts((r.FinishType||'').trim());
+      const pts = tr_finishPtsR(r);
       if (!combo || !player) return;
       if (!comboMap[combo]) comboMap[combo] = {battles:0,wins:0,ptsS:0,ptsA:0,players:{}};
       comboMap[combo].battles++;
@@ -7151,7 +7157,7 @@ function rg_downloadJSON() {
             const oppSide   = isP1(r) ? (r.P2Side||'') : (r.P1Side||'');
             const won       = iWon(r);
             const finishType = (r.FinishType||'').trim();
-            const pts       = rg_finishPts(finishType);
+            const pts       = rg_finishPtsR(r);
             const winnerCombo = (r.WinnerCombo||'').trim();
 
             if (won) myPts += pts; else oppPts += pts;
@@ -7419,6 +7425,12 @@ function rg_waitForPaintThenPrint() {
   });
 }
 
+// Own Finish is worth 2 or 3 points depending on the match; the Points column says which.
+function rg_finishPtsR(r){
+  const ft=(r.FinishType||'').trim();
+  if(ft==='Own Finish'&&parseInt(r.Points,10)===3) return 3;
+  return rg_finishPts(ft);
+}
 function rg_round1(n){return Math.round(n*10)/10;}
 function rg_round2(n){return Math.round(n*100)/100;}
 function rg_finishPts(ft){
@@ -7512,7 +7524,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
     const combo=isP1(r)?r.P1Combo:r.P2Combo;
     if(!combo) return;
     const won=iWon(r);
-    const pts=rg_finishPts((r.FinishType||'').trim());
+    const pts=rg_finishPtsR(r);
     if(!comboStats[combo]) comboStats[combo]={w:0,l:0,ptsS:0,ptsA:0};
     const cs=comboStats[combo];
     if(won){cs.w++;cs.ptsS+=pts;}else{cs.l++;cs.ptsA+=pts;}
@@ -7540,7 +7552,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
   // Overall battle stats
   let totalW=0,totalL=0,totalPtsS=0,totalPtsA=0;
   battleRows.forEach(r=>{
-    const won=iWon(r);const pts=rg_finishPts((r.FinishType||'').trim());
+    const won=iWon(r);const pts=rg_finishPtsR(r);
     if(won){totalW++;totalPtsS+=pts;}else{totalL++;totalPtsA+=pts;}
   });
   const totalBattles=totalW+totalL;
@@ -7554,7 +7566,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
   allTRows.forEach(r=>{
     const ft=(r.FinishType||'').trim();const pts=parseInt(r.Points||'0',10);
     if((ft==='LER Strike'||ft==='Launch Error')&&pts===0) return;
-    fPtsS+=rg_finishPts(ft);fW++;
+    fPtsS+=rg_finishPtsR(r);fW++;
   });
   const fieldPPW=fW>0?rg_round2(fPtsS/fW):0;
 
@@ -7567,7 +7579,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
   battleRows.forEach(r=>{
     const mk=rg_getMatchKey(r,_mkMap);const s=parseInt(r.Set||'0',10);const key=mk+'|||'+s;
     if(!setAccum[key]) setAccum[key]={my:0,op:0,match:mk,ts:new Date(r.Timestamp||0).getTime()};
-    const pts=rg_finishPts((r.FinishType||'').trim());
+    const pts=rg_finishPtsR(r);
     if(iWon(r)) setAccum[key].my+=pts; else setAccum[key].op+=pts;
     const ts=new Date(r.Timestamp||0).getTime();
     if(ts>setAccum[key].ts) setAccum[key].ts=ts;
@@ -7602,7 +7614,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
   const scoredFinishes={};const allowedFinishes={};
   const finishMap={'Xtreme Finish':{type:'Xtreme',pts:3,label:'X'},'Over Finish':{type:'Over',pts:2,label:'O'},'Burst Finish':{type:'Burst',pts:2,label:'B'},'Spin Finish':{type:'Spin',pts:1,label:'S'}};
   battleRows.forEach(r=>{
-    const ft=(r.FinishType||'').trim();const pts=rg_finishPts(ft);const won=iWon(r);
+    const ft=(r.FinishType||'').trim();const pts=rg_finishPtsR(r);const won=iWon(r);
     if(ft==='Own Finish'){
       if(!won){if(!allowedFinishes['Own'])allowedFinishes['Own']={type:'Own (self-KO)',count:0,pts,label:'OO',negative:true};allowedFinishes['Own'].count++;}
       else{if(!scoredFinishes['Own_opp'])scoredFinishes['Own_opp']={type:'Own (opp KO)',count:0,pts,label:'O'};scoredFinishes['Own_opp'].count++;}
@@ -7622,7 +7634,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
     const combo=isP1(r)?r.P1Combo:r.P2Combo;
     if(!combo||!deckCombos.includes(combo)) return;
     const bucket=comboFinishStats[combo];
-    const ft=(r.FinishType||'').trim();const pts=rg_finishPts(ft);const won=iWon(r);
+    const ft=(r.FinishType||'').trim();const pts=rg_finishPtsR(r);const won=iWon(r);
     if(ft==='Own Finish'){
       if(!won){if(!bucket.allowed['Own'])bucket.allowed['Own']={type:'Own (self-KO)',count:0,pts,label:'OO',negative:true};bucket.allowed['Own'].count++;}
       else{if(!bucket.scored['Own_opp'])bucket.scored['Own_opp']={type:'Own (opp KO)',count:0,pts,label:'O'};bucket.scored['Own_opp'].count++;}
@@ -7653,7 +7665,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
   });
   battleRows.forEach(r=>{
     const side=isP1(r)?r.P1Side:r.P2Side;const sd=side==='B'?sideB:sideX;
-    const won=iWon(r);const pts=rg_finishPts((r.FinishType||'').trim());
+    const won=iWon(r);const pts=rg_finishPtsR(r);
     sd.battles++;if(won){sd.wins++;sd.ptsS+=pts;}else sd.ptsA+=pts;
   });
   const sides=[
@@ -7677,7 +7689,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
     if(slotNum<1||slotNum>6) return;
     const combo=isP1(r)?r.P1Combo:r.P2Combo;
     if(!deckCombos.includes(combo)) return;
-    const won=iWon(r);const pts=rg_finishPts((r.FinishType||'').trim());
+    const won=iWon(r);const pts=rg_finishPtsR(r);
     const sd=comboSlotStats[combo][slotNum];
     if(won){sd.w++;sd.ptsS+=pts;}else{sd.l++;sd.ptsA+=pts;}
   });
@@ -7702,7 +7714,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
     const slotNum=deckCombos.indexOf(myCombo)+1;if(slotNum<1) return;
     const key=slotNum+'|||'+oppCombo;
     if(!matchupMap[key]) matchupMap[key]={yourCombo:slotNum,yourComboName:myCombo,oppCombo,w:0,l:0,ptsS:0,ptsA:0};
-    const won=iWon(r);const pts=rg_finishPts((r.FinishType||'').trim());
+    const won=iWon(r);const pts=rg_finishPtsR(r);
     if(won){matchupMap[key].w++;matchupMap[key].ptsS+=pts;}else{matchupMap[key].l++;matchupMap[key].ptsA+=pts;}
   });
   const recurringMatchups=Object.values(matchupMap).filter(m=>(m.w+m.l)>=3).map(m=>{
@@ -7729,7 +7741,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
         if(combo!==targetCombo||!pname) return;
         const winner=(r.Winner||'').trim();
         const won=winner.toLowerCase()===pname.toLowerCase()||winner.toLowerCase().includes(pname.toLowerCase());
-        const p2=rg_finishPts(ft);
+        const p2=rg_finishPtsR(r);
         if(!peerMap[pname]) peerMap[pname]={w:0,l:0,ptsS:0,ptsA:0};
         const pm=peerMap[pname];
         if(won){pm.w++;pm.ptsS+=p2;}else{pm.l++;pm.ptsA+=p2;}
@@ -7773,7 +7785,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
     let oppEverLed=false,oppEver2Up=false;
     {let myRun=0,opRun=0;
     for(const r of setRows){
-      const pts=rg_finishPts((r.FinishType||'').trim());
+      const pts=rg_finishPtsR(r);
       if(iWon(r)) myRun+=pts; else opRun+=pts;
       if(!oppEverLed&&opRun>myRun) oppEverLed=true;
       if(!oppEver2Up&&opRun>=myRun+2) oppEver2Up=true;
@@ -7814,7 +7826,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
       const otherSide=side==='P1'?'P2':'P1';
       const winner=(r.Winner||'').trim();
       const oppWon=winner.toLowerCase()===pname.toLowerCase()||winner.toLowerCase().includes(pname.toLowerCase());
-      const p3=rg_finishPts(ft);
+      const p3=rg_finishPtsR(r);
       if(!eventOppComboStats[combo]) eventOppComboStats[combo]={w:0,l:0,ptsS:0,ptsA:0};
       const eo=eventOppComboStats[combo];
       if(oppWon){eo.w++;eo.ptsS+=p3;}else{eo.l++;eo.ptsA+=p3;}
@@ -7826,7 +7838,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
   const matchRecap=matchOrder.map(([matchName,res])=>{
     const mRows=sortedBattleRows.filter(r=>rg_getMatchKey(r,_mkMap)===matchName);
     let mPtsS=0,mPtsA=0;
-    mRows.forEach(r=>{const pts=rg_finishPts((r.FinishType||'').trim());if(iWon(r))mPtsS+=pts;else mPtsA+=pts;});
+    mRows.forEach(r=>{const pts=rg_finishPtsR(r);if(iWon(r))mPtsS+=pts;else mPtsA+=pts;});
     const firstRow=mRows[0]||tRows.find(r=>rg_getMatchKey(r,_mkMap)===matchName);
     const oppName=firstRow?(isP1(firstRow)?(firstRow.P2||'').trim():(firstRow.P1||'').trim()):'—';
     // Track opponent combos with pts so PPB is match-specific, not event-wide
@@ -7834,7 +7846,7 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
     mRows.forEach(r=>{
       const oppCombo=isP1(r)?r.P2Combo:r.P1Combo;if(!oppCombo) return;
       const oppWon=!iWon(r);
-      const pts=rg_finishPts((r.FinishType||'').trim());
+      const pts=rg_finishPtsR(r);
       if(!mOppComboStats[oppCombo]) mOppComboStats[oppCombo]={w:0,l:0,ptsS:0,ptsA:0};
       const ms=mOppComboStats[oppCombo];
       if(oppWon){ms.w++;ms.ptsS+=pts;}else{ms.l++;ms.ptsA+=pts;}
@@ -7858,10 +7870,10 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
   matchRecap.forEach(m=>{if(m.net>dominantNet){dominantNet=m.net;dominantMatch=m.setW+'-'+m.setL+' vs '+m.opponent;}});
   const wonBattles=sortedBattleRows.filter(r=>iWon(r));
   let biggestWin=null;
-  if(wonBattles.length>0){const scored=wonBattles.map(r=>({r,pts:rg_finishPts((r.FinishType||'').trim())})).sort((a,b)=>b.pts-a.pts);const bw=scored[0];const myC=isP1(bw.r)?bw.r.P1Combo:bw.r.P2Combo;const opC=isP1(bw.r)?bw.r.P2Combo:bw.r.P1Combo;biggestWin={opponent:isP1(bw.r)?(bw.r.P2||'').trim():(bw.r.P1||'').trim(),yourCombo:(myC||'—').split('\u00b7')[0].trim(),oppCombo:(opC||'—').split('\u00b7')[0].trim(),finish:(bw.r.FinishType||'').replace(' Finish',''),pts:bw.pts,side:isP1(bw.r)?bw.r.P1Side:bw.r.P2Side};}
+  if(wonBattles.length>0){const scored=wonBattles.map(r=>({r,pts:rg_finishPtsR(r)})).sort((a,b)=>b.pts-a.pts);const bw=scored[0];const myC=isP1(bw.r)?bw.r.P1Combo:bw.r.P2Combo;const opC=isP1(bw.r)?bw.r.P2Combo:bw.r.P1Combo;biggestWin={opponent:isP1(bw.r)?(bw.r.P2||'').trim():(bw.r.P1||'').trim(),yourCombo:(myC||'—').split('\u00b7')[0].trim(),oppCombo:(opC||'—').split('\u00b7')[0].trim(),finish:(bw.r.FinishType||'').replace(' Finish',''),pts:bw.pts,side:isP1(bw.r)?bw.r.P1Side:bw.r.P2Side};}
   const lostBattles=sortedBattleRows.filter(r=>!iWon(r));
   let toughestLoss=null;
-  if(lostBattles.length>0){const scored=lostBattles.map(r=>({r,pts:rg_finishPts((r.FinishType||'').trim())})).sort((a,b)=>b.pts-a.pts);const tl=scored[0];const myC=isP1(tl.r)?tl.r.P1Combo:tl.r.P2Combo;const opC=isP1(tl.r)?tl.r.P2Combo:tl.r.P1Combo;toughestLoss={opponent:isP1(tl.r)?(tl.r.P2||'').trim():(tl.r.P1||'').trim(),yourCombo:(myC||'—').split('\u00b7')[0].trim(),oppCombo:(opC||'—').split('\u00b7')[0].trim(),finish:(tl.r.FinishType||'').replace(' Finish',''),pts:tl.pts,side:isP1(tl.r)?tl.r.P1Side:tl.r.P2Side};}
+  if(lostBattles.length>0){const scored=lostBattles.map(r=>({r,pts:rg_finishPtsR(r)})).sort((a,b)=>b.pts-a.pts);const tl=scored[0];const myC=isP1(tl.r)?tl.r.P1Combo:tl.r.P2Combo;const opC=isP1(tl.r)?tl.r.P2Combo:tl.r.P1Combo;toughestLoss={opponent:isP1(tl.r)?(tl.r.P2||'').trim():(tl.r.P1||'').trim(),yourCombo:(myC||'—').split('\u00b7')[0].trim(),oppCombo:(opC||'—').split('\u00b7')[0].trim(),finish:(tl.r.FinishType||'').replace(' Finish',''),pts:tl.pts,side:isP1(tl.r)?tl.r.P1Side:tl.r.P2Side};}
   const highlights={longestSet,maxStreak,xtremeCount,dominantMatch,biggestWin,toughestLoss};
 
   // Highlight callout
@@ -7930,7 +7942,7 @@ function rg_computeFieldPressureAverages(allRows, tournament) {
       const s = parseInt(r.Set||'0', 10);
       const key = mk+'|||'+s;
       if(!setAccumFP[key]) setAccumFP[key]={my:0, op:0, match:mk};
-      const pts = rg_finishPts((r.FinishType||'').trim());
+      const pts = rg_finishPtsR(r);
       if(iWon(r)) setAccumFP[key].my+=pts; else setAccumFP[key].op+=pts;
     });
     const setFinals = setAccumFP;
@@ -7953,7 +7965,7 @@ function rg_computeFieldPressureAverages(allRows, tournament) {
       let oppEverLed=false,oppEver2Up=false;
       {let myRun=0,opRun=0;
       for(const r of setRows){
-        const pts=rg_finishPts((r.FinishType||'').trim());
+        const pts=rg_finishPtsR(r);
         if(iWon(r)) myRun+=pts; else opRun+=pts;
         if(!oppEverLed&&opRun>myRun) oppEverLed=true;
         if(!oppEver2Up&&opRun>=myRun+2) oppEver2Up=true;
@@ -8090,7 +8102,7 @@ function rg_computeAllArchetypes(allRows, tournament, allReportData) {
     bRows.forEach(r=>{
       const c=isP1(r)?r.P1Combo:r.P2Combo;if(!c)return;
       if(!cs[c])cs[c]={w:0,l:0,ps:0,pa:0};
-      const pts=(()=>{const ft=(r.FinishType||'').trim();if(ft==='Xtreme Finish')return 3;if(['Over Finish','Burst Finish','Own Finish'].includes(ft))return 2;return 1;})();
+      const pts=rg_finishPtsR(r);
       if(iWon(r)){cs[c].w++;cs[c].ps+=pts;}else{cs[c].l++;cs[c].pa+=pts;}
     });
     const ppbs=top3.map(c=>{const s=cs[c]||{w:0,l:0,ps:0,pa:0};const t=s.w+s.l;return t>=2?(s.ps-s.pa)/t:null;}).filter(v=>v!=null);
@@ -8138,7 +8150,7 @@ function rg_computeAllArchetypes(allRows, tournament, allReportData) {
     // not just those selected for report generation.
     let bPtsS=0,bPtsA=0;
     bRows.forEach(r=>{
-      const pts2=(()=>{const ft=(r.FinishType||'').trim();if(ft==='Xtreme Finish')return 3;if(['Over Finish','Burst Finish','Own Finish'].includes(ft))return 2;return 1;})();
+      const pts2=rg_finishPtsR(r);
       if(iWon(r))bPtsS+=pts2;else bPtsA+=pts2;
     });
     const ppb=bRows.length>0?(bPtsS-bPtsA)/bRows.length:0;
