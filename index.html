@@ -2276,6 +2276,9 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
     #tool-database .db-status { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
     #tool-database .db-status.ok { color: var(--teal); }
     #tool-database .db-status.error { color: var(--danger); }
+    #tool-database .db-live { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
+    #tool-database .db-live.on { color: var(--teal); }
+    #tool-database .db-live.off { color: var(--danger); }
     #tool-database .db-btn {
       font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.06em;
       color: var(--text); background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
@@ -2887,11 +2890,11 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         </div>
         <div class="db-actions">
           <span class="db-status" id="db-status">Not loaded yet</span>
+          <span class="db-live" id="db-live">● Connecting…</span>
           <label class="db-check db-edit-toggle"><input type="checkbox" id="db-edit-toggle"> Edit mode</label>
           <button class="db-btn" id="db-sanity-btn" type="button" disabled>Run Sanity Checks</button>
           <button class="db-btn" id="db-history-btn" type="button">History</button>
           <button class="db-btn" id="db-download-btn" type="button" disabled>Download CSV</button>
-          <button class="db-btn" id="db-refresh-btn" type="button">Refresh</button>
           <button class="db-btn" id="db-lock-btn" type="button" title="Sign this device out">Lock</button>
         </div>
       </div>
@@ -9530,7 +9533,18 @@ const db_state = {
   editing: null,     // the cell currently open in the editor
   undoStack: [],     // change numbers saved this visit, newest last (for Ctrl+Z)
   queue: Promise.resolve(),   // saves go to the database one after another, in order
-  pending: 0
+  pending: 0,
+  cursor: null,      // the database's change counter as of the data held here (null = live updates not available)
+  started: false,    // has the first open (saved copy or download) begun
+  syncing: false,    // a "what changed?" check is running right now
+  ticking: false,    // the live loop is in the middle of a turn
+  liveStarted: false,
+  syncTimer: null,
+  syncFails: 0,      // checks in a row that could not reach the database
+  lastCheck: 0,      // when the last successful check finished
+  lastVerify: 0,     // when the exact battle count was last compared
+  catchingUp: false, // showing the saved copy and waiting for the first check
+  cacheTimer: null
 };
 
 function db_esc(s) {
@@ -9635,44 +9649,369 @@ function db_setStatus(text, kind) {
   el.className = 'db-status' + (kind ? ' ' + kind : '');
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// LOADING AND STAYING LIVE
+// The tab keeps a copy of the battles saved on this device (in the browser), so it
+// opens instantly. It then asks the database only for what changed since that copy
+// was made. While the tab is open it keeps asking every few seconds, so new matches
+// sent by BLAST and edits made anywhere appear on their own — there is no Refresh button.
+// A full download only happens the first time on a device, or if too much changed at once.
+// ═══════════════════════════════════════════════════════════════════════════
+const DB_POLL_MS = 5000;                      // how often the open tab asks "anything new?"
+const DB_POLL_SLOW_MS = 20000;                // the same, after several failed tries in a row
+const DB_VERIFY_EVERY_MS = 30 * 60 * 1000;    // how often the exact battle count is double-checked
+const DB_CACHE_DB = 'ncblast-db-cache';
+const DB_CACHE_STORE = 'snapshot';
+const DB_CACHE_KEY = 'main';
+const DB_CACHE_VERSION = 1;                   // raise this if the shape of a row ever changes
+const DB_ROW_KEYS = ['ts', 'judge', 'event', 'match', 'p1', 'p1Side', 'p2', 'p2Side', 'set', 'shuffle', 'slot',
+  'winner', 'winnerCombo', 'finish', 'points', 'penalty', 'p1Score', 'p2Score', 'p1Combo', 'p2Combo', 'p1Priority'];
+
+// The small "● Live" note beside the status line.
+function db_setLive(mode) {
+  const el = document.getElementById('db-live');
+  if (!el) return;
+  const s = db_state;
+  const look = {
+    connecting: ['● Connecting…', ''],
+    saved: ['● Saved copy · catching up…', ''],
+    live: ['● Live', 'on'],
+    off: ['● Offline · retrying…', 'off'],
+    nolive: ['● Not live yet · the database Worker needs its update', 'off']
+  }[mode] || ['', ''];
+  el.textContent = look[0];
+  el.className = 'db-live' + (look[1] ? ' ' + look[1] : '');
+  el.title = mode === 'live' && s.lastCheck
+    ? 'Checked for new data at ' + new Date(s.lastCheck).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })
+    : '';
+}
+
+// ---------- the copy saved on this device ----------
+function db_cacheOpen() {
+  return new Promise(function (resolve) {
+    try {
+      if (!window.indexedDB) { resolve(null); return; }
+      const req = indexedDB.open(DB_CACHE_DB, 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore(DB_CACHE_STORE); };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { resolve(null); };
+      req.onblocked = function () { resolve(null); };
+    } catch (e) { resolve(null); }
+  });
+}
+
+async function db_cacheRead() {
+  const dbh = await db_cacheOpen();
+  if (!dbh) return null;
+  return new Promise(function (resolve) {
+    try {
+      const rq = dbh.transaction(DB_CACHE_STORE, 'readonly').objectStore(DB_CACHE_STORE).get(DB_CACHE_KEY);
+      rq.onsuccess = function () {
+        dbh.close();
+        const v = rq.result;
+        resolve(v && v.v === DB_CACHE_VERSION && Array.isArray(v.rows) && typeof v.cursor === 'number' ? v : null);
+      };
+      rq.onerror = function () { dbh.close(); resolve(null); };
+    } catch (e) { try { dbh.close(); } catch (e2) { /* already closed */ } resolve(null); }
+  });
+}
+
+async function db_cacheSave() {
+  const s = db_state;
+  clearTimeout(s.cacheTimer);
+  if (!s.loaded || s.cursor === null || !s.unlocked) return;
+  // never save while a change is still on its way to the database
+  if (s.pending > 0 || s.editing) { db_cacheSoon(); return; }
+  const dbh = await db_cacheOpen();
+  if (!dbh) return;
+  try {
+    const tx = dbh.transaction(DB_CACHE_STORE, 'readwrite');
+    tx.objectStore(DB_CACHE_STORE).put({ v: DB_CACHE_VERSION, rows: s.rows, cursor: s.cursor, savedAt: Date.now() }, DB_CACHE_KEY);
+    tx.oncomplete = function () { dbh.close(); };
+    tx.onerror = function () { dbh.close(); };
+    tx.onabort = function () { dbh.close(); };
+  } catch (e) { try { dbh.close(); } catch (e2) { /* already closed */ } }
+}
+
+function db_cacheSoon() {
+  const s = db_state;
+  clearTimeout(s.cacheTimer);
+  s.cacheTimer = setTimeout(db_cacheSave, 2500);
+}
+
+// Erases the saved copy (used when a device is locked or signed out).
+async function db_cacheClear() {
+  clearTimeout(db_state.cacheTimer);
+  const dbh = await db_cacheOpen();
+  if (!dbh) return;
+  try {
+    const tx = dbh.transaction(DB_CACHE_STORE, 'readwrite');
+    tx.objectStore(DB_CACHE_STORE).delete(DB_CACHE_KEY);
+    tx.oncomplete = function () { dbh.close(); };
+    tx.onerror = function () { dbh.close(); };
+    tx.onabort = function () { dbh.close(); };
+  } catch (e) { try { dbh.close(); } catch (e2) { /* already closed */ } }
+}
+
+function db_rowOrder(a, b) { return a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : a.n - b.n; }
+
+// What to do once the battles are in memory, whether they came from the saved copy or a download.
+function db_dataReady() {
+  const s = db_state;
+  s.events = db_buildEvents(s.rows);
+  s.loaded = true;
+  if (s.event && !s.events.some(e => e.name === s.event)) s.event = '';
+  db_buildControls();
+  db_applyFilters();
+  document.getElementById('db-download-btn').disabled = false;
+  document.getElementById('db-sanity-btn').disabled = false;
+  s.sanity = null;
+  db_renderSanity();
+}
+
+// Downloads everything from the database. Only used the first time on a device,
+// or when too much changed for a quick catch-up.
 async function db_load() {
   const s = db_state;
   if (s.loading) return;
   s.loading = true;
-  const refreshBtn = document.getElementById('db-refresh-btn');
-  refreshBtn.disabled = true;
   db_setStatus('Loading from the database…', '');
   if (!s.loaded) {
+    db_setLive('connecting');
     db_gridMessage('Loading battles from the database…');
   }
   try {
     const res = await db_api('/export.csv?ids=1');
     if (!res.ok) throw new Error('The database answered with an error (' + res.status + ').');
+    const cur = res.headers.get('X-Change-Cursor');
     const text = await res.text();
     const rows = db_rowsFromCSV(text);
-    rows.sort((a, b) => (a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : a.n - b.n));
+    rows.sort(db_rowOrder);
     s.rows = rows;
-    s.events = db_buildEvents(rows);
-    s.csvText = text;
-    s.loaded = true;
-    if (s.event && !s.events.some(e => e.name === s.event)) s.event = '';
-    db_buildControls();
-    db_applyFilters();
-    document.getElementById('db-download-btn').disabled = false;
-    document.getElementById('db-sanity-btn').disabled = false;
-    s.sanity = null;
-    db_renderSanity();
+    s.cursor = cur !== null && /^\d+$/.test(cur) ? parseInt(cur, 10) : null;
+    s.lastVerify = Date.now();
+    s.lastCheck = Date.now();
+    s.syncFails = 0;
+    s.catchingUp = false;
+    db_dataReady();
+    db_cacheSoon();
     db_setStatus('✓ Loaded ' + db_fmtNum(rows.length) + ' battles · ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), 'ok');
+    db_setLive(s.cursor === null ? 'nolive' : 'live');
   } catch (err) {
     const msg = err && err.message ? err.message : String(err);
     db_setStatus('Could not load the database. ' + msg, 'error');
+    db_setLive('off');
     if (!s.loaded) {
-      db_gridMessage('Could not reach the database. Check your connection and press Refresh.');
+      db_gridMessage('Could not reach the database. Trying again shortly…');
     }
   } finally {
     s.loading = false;
-    refreshBtn.disabled = false;
   }
+}
+
+// Opens the tab's data: the saved copy first (instant), then a quick catch-up.
+// Safe to call more than once; it only starts once. Runs as soon as the device is unlocked,
+// so the data is usually ready before the Database tab is even clicked.
+async function db_open() {
+  const s = db_state;
+  if (s.started || s.loaded || s.loading || !db_getToken()) return;
+  s.started = true;
+  db_setLive('connecting');
+  db_setStatus('Opening…', '');
+  try {
+    const saved = await db_cacheRead();
+    if (saved && saved.rows.length) {
+      s.rows = saved.rows;
+      s.cursor = saved.cursor;
+      s.lastVerify = 0;
+      s.catchingUp = true;
+      db_dataReady();
+      db_setLive('saved');
+      db_setStatus('Showing the copy saved on this device · checking for new data…', '');
+      await db_sync({ verify: true });
+    } else {
+      await db_load();
+    }
+  } finally {
+    if (!s.loaded) s.started = false;
+  }
+}
+
+// ---------- catching up with changes ----------
+function db_rowDiffers(a, b) {
+  for (let i = 0; i < DB_ROW_KEYS.length; i++) {
+    if (a[DB_ROW_KEYS[i]] !== b[DB_ROW_KEYS[i]]) return true;
+  }
+  return false;
+}
+
+// Folds the database's answer into the rows held here. Existing rows are updated IN PLACE
+// (the same objects), so nothing that points at a row — a selection, an edit being saved — is broken.
+function db_applyDelta(data) {
+  const s = db_state;
+  const incoming = db_rowsFromCSV(data.csv);
+  const byId = new Map();
+  let maxN = 0;
+  s.rows.forEach(function (r) { byId.set(r.id, r); if (r.n > maxN) maxN = r.n; });
+  const present = new Set();
+  const fresh = [];
+  let changed = 0;
+  let timeMoved = false;
+  incoming.forEach(function (inc) {
+    present.add(inc.id);
+    const cur = byId.get(inc.id);
+    if (!cur) { inc.n = ++maxN; fresh.push(inc); return; }
+    if (db_rowDiffers(cur, inc)) {
+      if (cur.ts !== inc.ts) timeMoved = true;
+      const keepN = cur.n;
+      Object.assign(cur, inc);
+      cur.n = keepN;
+      changed++;
+    }
+  });
+  let gone = null;
+  (data.affected || []).forEach(function (id) {
+    if (!present.has(id) && byId.has(id)) { if (!gone) gone = new Set(); gone.add(id); }
+  });
+  if (gone) s.rows = s.rows.filter(function (r) { return !gone.has(r.id); });
+  if (fresh.length) s.rows = s.rows.concat(fresh);
+  if (fresh.length || timeMoved) s.rows.sort(db_rowOrder);
+  return { added: fresh.length, changed: changed, removed: gone ? gone.size : 0 };
+}
+
+// Redraws after live changes WITHOUT jumping: the selection stays on the same rows (or is dropped
+// if that can't be guaranteed), and the grid keeps showing the same rows unless you are at the top.
+function db_refreshKeep() {
+  const s = db_state;
+  const sc = document.getElementById('db-g-scroll');
+  const oldTop = sc.scrollTop;
+  const oldIdx = s.filtered.length ? Math.min(s.filtered.length - 1, Math.floor(oldTop / DB_ROW_H)) : -1;
+  const anchorRow = oldIdx >= 0 ? s.filtered[oldIdx] : null;
+  const anchorOff = oldTop - Math.max(0, oldIdx) * DB_ROW_H;
+  const sel = s.sel;
+  const keepSel = sel ? { a: s.filtered[sel.ar], f: s.filtered[sel.fr], span: Math.abs(sel.fr - sel.ar), ac: sel.ac, fc: sel.fc } : null;
+
+  s.events = db_buildEvents(s.rows);
+  if (s.event && !s.events.some(function (e) { return e.name === s.event; })) s.event = '';
+  db_buildControls();
+  s.filtered = db_computeFiltered();
+  s.sel = null;
+  if (keepSel && keepSel.a && keepSel.f) {
+    const ia = s.filtered.indexOf(keepSel.a);
+    const ifr = s.filtered.indexOf(keepSel.f);
+    if (ia >= 0 && ifr >= 0 && Math.abs(ifr - ia) === keepSel.span) s.sel = { ar: ia, ac: keepSel.ac, fr: ifr, fc: keepSel.fc };
+  }
+  db_render();
+  if (oldTop > DB_ROW_H && anchorRow) {
+    const ni = s.filtered.indexOf(anchorRow);
+    if (ni >= 0) sc.scrollTop = ni * DB_ROW_H + anchorOff;
+  }
+  db_paint();
+}
+
+// One "what changed since I last looked?" check. Returns true if the check went through.
+async function db_sync(opts) {
+  opts = opts || {};
+  const s = db_state;
+  if (!s.loaded || s.loading || s.syncing || !s.unlocked || s.cursor === null) return false;
+  // never swap data under a cell being edited or saved, or while a pop-up window is open
+  if (s.pending > 0 || s.editing || s.modalClose) return false;
+  s.syncing = true;
+  let reset = false;
+  try {
+    let hi = 0;
+    for (let i = 0; i < s.rows.length; i++) if (s.rows[i].id > hi) hi = s.rows[i].id;
+    const wantCount = !!opts.verify || Date.now() - s.lastVerify > DB_VERIFY_EVERY_MS;
+    const res = await db_api('/sync?c=' + s.cursor + '&hi=' + hi + (wantCount ? '&count=1' : ''));
+    if (res.status === 404) { s.cursor = null; db_setLive('nolive'); return false; }
+    if (!res.ok) throw new Error('The database answered with an error (' + res.status + ').');
+    const data = await res.json();
+    if (data.reset) { reset = true; return false; }
+    s.syncFails = 0;
+    s.lastCheck = Date.now();
+    let msg = '';
+    if (!data.same) {
+      let out;
+      try {
+        out = db_applyDelta(data);
+      } catch (err) {
+        reset = true;   // the answer made no sense; start over from a full download
+        return false;
+      }
+      if (out.added || out.changed || out.removed) {
+        db_refreshKeep();
+        s.sanity = null;
+        db_renderSanity();
+        const parts = [];
+        if (out.added) parts.push(db_plural(out.added, 'new battle'));
+        if (out.changed) parts.push(db_plural(out.changed, 'row') + ' updated');
+        if (out.removed) parts.push(db_plural(out.removed, 'row') + ' removed');
+        msg = '↻ ' + parts.join(' · ') + ' · ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      }
+    }
+    if (typeof data.c === 'number') s.cursor = data.c;
+    if (wantCount) {
+      s.lastVerify = Date.now();
+      if (typeof data.count === 'number' && data.count !== s.rows.length) { reset = true; return false; }
+    }
+    if (msg) db_setStatus(msg, 'ok');
+    else if (s.catchingUp) db_setStatus('✓ Up to date · ' + db_fmtNum(s.rows.length) + ' battles', 'ok');
+    s.catchingUp = false;
+    if (!data.same || opts.save) db_cacheSoon();
+    db_setLive('live');
+    return true;
+  } catch (err) {
+    if (err && err.status === 401) return false;   // the lock screen is already showing
+    s.syncFails++;
+    db_setLive('off');
+    return false;
+  } finally {
+    s.syncing = false;
+    if (reset) await db_load();
+  }
+}
+
+// After our own change (an undo, say): wait for any check in progress, then check again right away.
+async function db_syncSoon() {
+  const s = db_state;
+  if (s.cursor === null) return db_load();
+  for (let i = 0; i < 50 && (s.syncing || s.loading); i++) await new Promise(function (r) { setTimeout(r, 100); });
+  return db_sync({ save: true });
+}
+
+// ---------- the live loop ----------
+function db_liveActive() {
+  const view = document.getElementById('tool-database');
+  return db_state.unlocked && !!view && view.classList.contains('active') && document.visibilityState === 'visible';
+}
+
+async function db_liveTick() {
+  const s = db_state;
+  if (s.ticking) return;
+  s.ticking = true;
+  try {
+    if (s.unlocked && !s.loaded && !s.loading && !s.started) db_open();   // an earlier first load failed: try again
+    else if (db_liveActive()) await db_sync();
+  } catch (e) { /* the next turn tries again */ }
+  s.ticking = false;
+  clearTimeout(s.syncTimer);
+  s.syncTimer = setTimeout(db_liveTick, s.syncFails >= 3 ? DB_POLL_SLOW_MS : DB_POLL_MS);
+}
+
+function db_syncNow() {
+  clearTimeout(db_state.syncTimer);
+  db_liveTick();
+}
+
+function db_startLive() {
+  const s = db_state;
+  if (s.liveStarted) return;
+  s.liveStarted = true;
+  s.syncTimer = setTimeout(db_liveTick, DB_POLL_MS);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') db_syncNow();
+    else db_cacheSave();
+  });
 }
 
 // Fills the cards and the Event / Finish dropdowns after a load.
@@ -9704,7 +10043,8 @@ function db_buildControls() {
   fSel.value = s.finish;
 }
 
-function db_applyFilters() {
+// The rows that match the current filters, in display order.
+function db_computeFiltered() {
   const s = db_state;
   const q = s.search.trim().toLowerCase();
   const out = s.rows.filter(r =>
@@ -9712,7 +10052,12 @@ function db_applyFilters() {
     (!s.finish || r.finish === s.finish) &&
     (!q || r.hay.indexOf(q) !== -1));
   if (s.sort === 'new') out.reverse();
-  s.filtered = out;
+  return out;
+}
+
+function db_applyFilters() {
+  const s = db_state;
+  s.filtered = db_computeFiltered();
   s.sel = null;
   document.getElementById('db-g-scroll').scrollTop = 0;
   db_render();
@@ -10531,6 +10876,7 @@ async function db_api(path, opts) {
   const res = await fetch(DB_API + path, { method: opts.method || 'GET', headers: headers, body: body, cache: 'no-store' });
   if (res.status === 401) {
     db_setToken('');
+    db_cacheClear();   // the saved copy is private to staff: erase it when this device is signed out
     db_showLock('This device was signed out. Enter the password to continue.');
     const err = new Error('Not signed in.');
     err.status = 401;
@@ -10631,10 +10977,12 @@ async function db_submitLogin() {
   }
 }
 
-// After the device is unlocked: load the Database tab if it is the one showing.
+// After the device is unlocked: start getting the database ready in the background,
+// whichever tab is showing, so it is already there when the Database tab is opened.
 function db_afterUnlock() {
-  const view = document.getElementById('tool-database');
-  if (view && view.classList.contains('active') && !db_state.loaded && !db_state.loading) db_load();
+  const s = db_state;
+  if (s.loaded) { db_cacheSoon(); db_syncNow(); }
+  else db_open();
 }
 
 async function db_bootAuth() {
@@ -10655,8 +11003,11 @@ async function db_lockDevice() {
   try { await db_api('/logout', { method: 'POST', body: {} }); } catch (e) { /* already signed out */ }
   db_setToken('');
   const s = db_state;
-  s.loaded = false; s.rows = []; s.filtered = []; s.csvText = ''; s.sel = null; s.undoStack = [];
+  db_cacheClear();   // erase the copy saved on this device
+  s.loaded = false; s.started = false; s.cursor = null; s.catchingUp = false;
+  s.rows = []; s.filtered = []; s.csvText = ''; s.sel = null; s.undoStack = [];
   db_setStatus('Not loaded yet', '');
+  db_setLive('connecting');
   db_showLock('This device is locked. Enter the password to open the tools again.');
 }
 
@@ -10918,7 +11269,7 @@ function db_applyEdits(items) {
     else if (v.length > 500) { errs.push(it.label + ' is too long.'); return; }
     const old = String(it.row[m.k] == null ? '' : it.row[m.k]);
     if (old === v) return;
-    if (!it.row.id) { errs.push('These rows have no id yet — press Refresh and try again.'); return; }
+    if (!it.row.id) { errs.push('These rows have no id yet — reload the page and try again.'); return; }
     changes.push({ row: it.row, k: m.k, f: m.f, old: old, value: v });
   });
   if (errs.length) {
@@ -11059,7 +11410,7 @@ function db_selectedRows() {
 async function db_deleteRows(rows, title, bodyHtml, needTyping) {
   const s = db_state;
   if (!rows.length) return;
-  if (rows.some(function (r) { return !r.id; })) { db_setStatus('These rows have no id yet — press Refresh and try again.', 'error'); return; }
+  if (rows.some(function (r) { return !r.id; })) { db_setStatus('These rows have no id yet — reload the page and try again.', 'error'); return; }
   const answer = await db_modal({
     title: title,
     html: bodyHtml + (needTyping ? '<p class="db-m-p">To go ahead, type <b>DELETE</b> below.</p><input class="db-input" id="db-m-confirm" autocomplete="off">' : ''),
@@ -11151,7 +11502,7 @@ async function db_undoChanges(ids) {
   }
   s.undoStack = s.undoStack.filter(function (id) { return ids.indexOf(id) === -1; });
   db_setStatus('✓ Undone · ' + db_plural(restored, 'item') + ' restored', 'ok');
-  await db_load();
+  await db_syncSoon();
   return { restored: restored };
 }
 
@@ -11456,20 +11807,22 @@ function db_init() {
   const s = db_state;
   const sharedPanel = document.querySelector('.shell-data-panel');
 
-  // Load once, the first time the Database tab is opened. The shared "Upload New CSV"
-  // bar belongs to the other four tools, so it is hidden while this tab is showing.
+  // The data starts loading as soon as the device is unlocked (see db_afterUnlock), so opening the
+  // tab just shows it and checks for anything new. The shared "Upload New CSV" bar belongs to the
+  // other four tools, so it is hidden while this tab is showing.
   document.querySelectorAll('.shell-tab').forEach(function (tab) {
     tab.addEventListener('click', function () {
       const isDb = tab.dataset.tool === 'database';
       if (sharedPanel) sharedPanel.style.display = isDb ? 'none' : '';
-      if (isDb && !s.loaded && !s.loading && db_getToken()) db_load();
+      if (!isDb) return;
+      if (s.loaded) { db_paint(); db_syncNow(); }
+      else if (!s.started && db_getToken()) db_open();
     });
   });
 
   db_initSanity();
   db_initGrid();
   db_initEditing();
-  document.getElementById('db-refresh-btn').addEventListener('click', db_load);
   document.getElementById('db-download-btn').addEventListener('click', db_downloadCSV);
   document.getElementById('db-filter-clear').addEventListener('click', db_clearFilters);
   document.getElementById('db-filter-event').addEventListener('change', function (e) { db_setEvent(e.target.value); });
@@ -11491,6 +11844,7 @@ function db_init() {
 }
 
 db_init();
+db_startLive();
 db_bootAuth();
 </script>
 
