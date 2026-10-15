@@ -4361,9 +4361,14 @@ function ph_ftPoints(ft){
   return ft==='Xtreme Finish'?3:ft==='Over Finish'?2:ft==='Burst Finish'?2:ft==='Own Finish'?2:ft==='Spin Finish'?1:0;
 }
 
-function ph_makeRow(tournament,match,p1,p2,p1side,p2side,p1score,p2score,shuffle,round,winner,p1combo,p2combo,ft,isB,pointsRaw){
+function ph_makeRow(tournament,match,p1,p2,p1side,p2side,p1score,p2score,shuffle,round,winner,p1combo,p2combo,ft,isB,pointsRaw,extra){
   // Own Finish is worth 2 or 3 points; the Points column says which.
   const pts=(ft==='Own Finish'&&parseInt(pointsRaw,10)===3)?3:ph_ftPoints(ft);
+  // Points used only for rebuilding set scores: an unrecognized finish name (a typo or
+  // abbreviation such as "OVR") falls back to the Points column the judge recorded.
+  const knownFt=['Xtreme Finish','Over Finish','Burst Finish','Spin Finish','Own Finish'].includes(ft);
+  const rawPts=parseInt(pointsRaw,10);
+  const setPts=(knownFt||isNaN(rawPts))?pts:rawPts;
   const wIsP1=winner.toLowerCase()===p1.toLowerCase();
   return{
     tournament,match,p1,p2,p1side,p2side,
@@ -4373,7 +4378,12 @@ function ph_makeRow(tournament,match,p1,p2,p1side,p2side,p1score,p2score,shuffle
     p1combo:p1combo||'',p2combo:p2combo||'',
     winnerCombo:wIsP1?(p1combo||''):(p2combo||''),
     loserCombo:wIsP1?(p2combo||''):(p1combo||''),
-    finishType:ft,points:pts,formatB:isB,
+    finishType:ft,points:pts,setPts,formatB:isB,
+    // Set number, slot and timestamp (when the file has them). ph_computeSetFinals uses these
+    // to rebuild each set's score instead of trusting the stored P1Score/P2Score columns.
+    set:parseInt((extra&&extra.set)||0,10)||0,
+    slot:parseInt((extra&&extra.slot)||0,10)||0,
+    ts:(extra&&extra.ts)||'',
   };
 }
 
@@ -4394,7 +4404,8 @@ function ph_parseCSV(lines){
       g(v,'Tournament'),g(v,'Match'),ph_p1,ph_p2,
       g(v,'P1Side'),g(v,'P2Side'),g(v,'P1Score'),g(v,'P2Score'),
       g(v,'Shuffle','0'),g(v,'Round'),g(v,'Winner'),
-      g(v,'P1Combo'),g(v,'P2Combo'),ft,false,g(v,'Points')
+      g(v,'P1Combo'),g(v,'P2Combo'),ft,false,g(v,'Points'),
+      {set:g(v,'Set'),slot:g(v,'Slot'),ts:g(v,'Timestamp')}
     );
     ph_rowObj.p1Priority=ph_p1tag?true:ph_p2tag?false:null;
     rows.push(ph_rowObj);
@@ -4730,6 +4741,43 @@ function ph_computePlayerStats(playerName,rows){
 }
 
 function ph_computeSetFinals(rows,pLow){
+  // PREFERRED METHOD (every row knows its Set number): rebuild each set's score by adding up
+  // who won each battle and what it was worth. The stored P1Score/P2Score columns are not used.
+  // A set ends the moment a side reaches 4 points, so the score is capped at 4 (same as before).
+  // If the same two players meet again under the same match name and set number, the next battle
+  // after a finished set starts a fresh set. A battle copied twice (same time, slot, winner and
+  // finish) is counted once.
+  if(rows.length&&rows.every(r=>r.set>0)){
+    const groups={};
+    rows.forEach(r=>{
+      const gk=r.tournament+'|||'+r.match+'|||'+r.set;
+      if(!groups[gk])groups[gk]=[];
+      groups[gk].push(r);
+    });
+    const rebuilt={};
+    Object.entries(groups).forEach(([gk,gRows])=>{
+      const ordered=gRows.slice().sort((a,b)=>a.ts<b.ts?-1:a.ts>b.ts?1:a.slot-b.slot);
+      let c1=0,c2=0,part=0,prevSig='';
+      ordered.forEach(r=>{
+        const sig=r.ts+'|'+r.slot+'|'+r.winner+'|'+r.finishType;
+        if(r.ts&&sig===prevSig)return;
+        prevSig=sig;
+        if(c1>=4||c2>=4){c1=0;c2=0;part++;}
+        const w=r.winner.toLowerCase();
+        if(w===r.p1.toLowerCase())c1+=r.setPts;
+        else if(w===r.p2.toLowerCase())c2+=r.setPts;
+        const iP1=r.p1.toLowerCase()===pLow;
+        rebuilt[gk+'|||'+part]={
+          my:Math.min(iP1?c1:c2,4),
+          op:Math.min(iP1?c2:c1,4),
+          side:iP1?r.p1side:r.p2side
+        };
+      });
+    });
+    return rebuilt;
+  }
+
+  // OLDER FILES (no Set column): original method, unchanged.
   // Group rows by (tournament, match) then sort by round to find set boundaries.
   // A new set starts whenever the score resets to a lower total than the previous row.
   const byMatch={};
@@ -5601,6 +5649,16 @@ function tr_finishPts(ft){
   return 1;
 }
 
+// Points one battle adds to a set's running score. Normal finish names use the usual values.
+// An unrecognized finish name (a typo or abbreviation such as "OVR") falls back to the Points
+// column, which is what the judge actually recorded.
+function tr_rebuiltPts(r) {
+  const ft = (r.FinishType||'').trim();
+  if (['Xtreme Finish','Over Finish','Burst Finish','Spin Finish','Own Finish','Launch Error','LER Strike'].includes(ft)) return tr_finishPtsR(r);
+  const p = parseInt(r.Points, 10);
+  return isNaN(p) ? tr_finishPtsR(r) : p;
+}
+
 // ── MATCH KEY RESOLVER ───────────────────────────────────────────────────────
 function tr_buildMatchKeyMap(tRows) {
   const byName = {};
@@ -5729,16 +5787,44 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
   const metaTag = hardFinishPct >= 55 ? 'AGGRESSIVE META' : hardFinishPct <= 35 ? 'DEFENSIVE META' : 'BALANCED META';
 
   const sideStats = {B:{battles:0,wins:0,ptsS:0,ptsA:0,sets:0,setWins:0}, X:{battles:0,wins:0,ptsS:0,ptsA:0,sets:0,setWins:0}};
+  // Each set's score is rebuilt by adding up who won every battle and what it was worth
+  // (the stored P1Score/P2Score columns are not used). A set ends the moment a side
+  // reaches 4 points. A battle copied twice (same time, slot, winner and finish) counts once.
   const setMap = {};
+  const _setRowsByKey = {};
   battleRows.forEach(r => {
     const mk = tr_getMatchKey(r, mkMap);
     const setKey = mk+'|||'+(r.Set||'0');
-    if (!setMap[setKey]) setMap[setKey] = {p1score:0,p2score:0,p1side:'',p2side:''};
-    const sm = setMap[setKey];
-    const p1s=parseInt(r.P1Score||'0',10), p2s=parseInt(r.P2Score||'0',10);
-    if((p1s+p2s) > (sm.p1score+sm.p2score)){ sm.p1score=p1s; sm.p2score=p2s; }
-    if(!sm.p1side && r.P1Side) sm.p1side=r.P1Side;
-    if(!sm.p2side && r.P2Side) sm.p2side=r.P2Side;
+    if (!_setRowsByKey[setKey]) _setRowsByKey[setKey] = [];
+    _setRowsByKey[setKey].push(r);
+  });
+  Object.entries(_setRowsByKey).forEach(([setKey, sRows]) => {
+    sRows.sort((a,b) => {
+      const ta = a.Timestamp||'', tb = b.Timestamp||'';
+      return ta < tb ? -1 : ta > tb ? 1 : (parseInt(a.Slot||'0',10) - parseInt(b.Slot||'0',10));
+    });
+    let sm = {p1score:0,p2score:0,p1side:'',p2side:''};
+    let part = 0, prevSig = '';
+    sRows.forEach(r => {
+      const ts = r.Timestamp||'';
+      const sig = ts+'|'+(r.Slot||'')+'|'+(r.Winner||'')+'|'+(r.FinishType||'');
+      if (ts && sig===prevSig) return;
+      prevSig = sig;
+      // A finished set: if the same pairing reuses this set number (a rematch inside the
+      // time window), the next battle starts a fresh set.
+      if (sm.p1score >= 4 || sm.p2score >= 4) {
+        setMap[setKey+'|||'+part] = sm;
+        part++;
+        sm = {p1score:0,p2score:0,p1side:'',p2side:''};
+      }
+      if(!sm.p1side && r.P1Side) sm.p1side=r.P1Side;
+      if(!sm.p2side && r.P2Side) sm.p2side=r.P2Side;
+      const w = (r.Winner||'').trim().toLowerCase();
+      const pts = tr_rebuiltPts(r);
+      if (w === (r.P1||'').trim().toLowerCase()) sm.p1score += pts;
+      else if (w === (r.P2||'').trim().toLowerCase()) sm.p2score += pts;
+    });
+    setMap[setKey+'|||'+part] = sm;
   });
   Object.values(setMap).forEach(sm => {
     const p1won = sm.p1score >= 4;
@@ -7434,6 +7520,15 @@ function rg_finishPtsR(r){
   if(ft==='Own Finish'&&parseInt(r.Points,10)===3) return 3;
   return rg_finishPts(ft);
 }
+// Points one battle adds to a set's running score. Normal finish names use the usual values.
+// An unrecognized finish name (a typo or abbreviation such as "OVR") falls back to the Points
+// column, which is what the judge actually recorded.
+function rg_rebuiltPts(r){
+  const ft=(r.FinishType||'').trim();
+  if(['Xtreme Finish','Over Finish','Burst Finish','Spin Finish','Own Finish','Launch Error','LER Strike'].includes(ft)) return rg_finishPtsR(r);
+  const p=parseInt(r.Points,10);
+  return isNaN(p)?rg_finishPtsR(r):p;
+}
 function rg_round1(n){return Math.round(n*10)/10;}
 function rg_round2(n){return Math.round(n*100)/100;}
 function rg_finishPts(ft){
@@ -7769,8 +7864,8 @@ function rg_computeStats(allRows, tournament, player, placements, swissRounds) {
   }).filter(g=>g.players.length>0);
 
   // Set dynamics: close-out, lead conversion, comeback (score-based), shut-out (score-based)
-  // For comeback and shut-out we walk each set's battles in round order using cumulative
-  // P1Score/P2Score columns to determine whether the opponent ever held a lead at any point.
+  // For comeback and shut-out we walk each set's battles in time order, rebuilding the running
+  // score from Winner + FinishType, to determine whether the opponent ever held a lead at any point.
   // Each set is counted at most once per population regardless of how many times the lead changed.
   let closedOut=0,wonLeadBattle=0,closeoutTotal=0;
   let comebackWins=0,comebackTotal=0;
@@ -8111,27 +8206,33 @@ function rg_computeAllArchetypes(allRows, tournament, allReportData) {
     const ppbs=top3.map(c=>{const s=cs[c]||{w:0,l:0,ps:0,pa:0};const t=s.w+s.l;return t>=2?(s.ps-s.pa)/t:null;}).filter(v=>v!=null);
     const deckRaw=ppbs.length>=2?Math.max(...ppbs)-Math.min(...ppbs):999;
 
-    // Clutch: win rate in sets where the opponent ever held a lead (score-based, set-level)
-    // A set enters the population if at any row the opponent's cumulative score exceeded
-    // the player's. Each set counted once. clutchGap = that rate minus baseline win rate.
+    // Clutch: win rate in sets where the opponent ever held a 2+ point lead (set-level)
+    // The running score is rebuilt by adding up who won each battle and what it was worth
+    // (the stored P1Score/P2Score columns are not used). A set ends the moment a side reaches
+    // 4 points; the score is capped at 4 when checking the lead, same as the stored scores were.
+    // Each set counted once. clutchGap = that rate minus baseline win rate.
     const setMap={};
     sorted.forEach(r=>{const k=(r.Match||'')+'|||'+(r.Set||'');if(!setMap[k])setMap[k]=[];setMap[k].push(r);});
     let dw=0,dl=0;
     Object.values(setMap).forEach(sRows=>{
-      const inOrder=sRows.slice().sort((a,b)=>parseInt(a.Round||a.Slot||0)-parseInt(b.Round||b.Slot||0));
-      // Determine if player won the set (final row has the definitive cumulative score)
-      const last=inOrder[inOrder.length-1];
-      const myFinal=isP1(last)?parseInt(last.P1Score||'0',10):parseInt(last.P2Score||'0',10);
-      const opFinal=isP1(last)?parseInt(last.P2Score||'0',10):parseInt(last.P1Score||'0',10);
-      const iWonSet=myFinal>=4&&myFinal>opFinal;
-      // Clutch uses the 2-point deficit threshold (same as Comeback Rate)
-      let oppEver2Up=false;
-      for(const r of inOrder){
-        const myS=isP1(r)?parseInt(r.P1Score||'0',10):parseInt(r.P2Score||'0',10);
-        const opS=isP1(r)?parseInt(r.P2Score||'0',10):parseInt(r.P1Score||'0',10);
-        if(opS>=myS+2){oppEver2Up=true;break;}
-      }
-      if(oppEver2Up){if(iWonSet)dw++;else dl++;}
+      // sRows is already in time order. If the same pairing meets again under the same
+      // set number, the battle after a finished set starts a fresh set. A battle copied twice
+      // (same time, slot, winner and finish) is counted once.
+      let myRun=0,opRun=0,open2Up=false,inSet=false,prevSig='';
+      const closeSet=won=>{if(open2Up){if(won)dw++;else dl++;}myRun=0;opRun=0;open2Up=false;inSet=false;};
+      sRows.forEach(r=>{
+        const ts=r.Timestamp||'';
+        const sig=ts+'|'+(r.Slot||'')+'|'+(r.Winner||'')+'|'+(r.FinishType||'');
+        if(ts&&sig===prevSig)return;
+        prevSig=sig;
+        inSet=true;
+        const pts=rg_rebuiltPts(r);
+        if(iWon(r))myRun+=pts;else opRun+=pts;
+        if(Math.min(opRun,4)>=Math.min(myRun,4)+2)open2Up=true;
+        if(myRun>=4)closeSet(true);else if(opRun>=4)closeSet(false);
+      });
+      // A set that never reached 4 points counts as not won (same as before).
+      if(inSet)closeSet(false);
     });
     const downTotal=dw+dl;
     const clutchRaw=downTotal>0?dw/downTotal*100:winPct;
@@ -10509,8 +10610,26 @@ const DB_CHECKS = [
   { id: 4, title: 'Each match has 2 players' },
   { id: 5, title: 'No player has more than 3 combos in a match' },
   { id: 6, title: 'First set of a match has a pick priority marker' },
-  { id: 7, title: 'All matches of an event are from the same day' }
+  { id: 7, title: 'All matches of an event are from the same day' },
+  { id: 8, title: 'Finish type is blank or not a full finish name' },
+  { id: 9, title: 'No row has an exact duplicate (same value in every cell)' }
 ];
+
+// The cells compared by check 9. Pick priority is included because it is stored on the
+// P1/P2 name (the "~P~" tag), so two rows that differ only by that tag are not identical.
+const DB_DUP_FIELDS = ['ts', 'judge', 'event', 'match', 'p1', 'p1Side', 'p2', 'p2Side', 'set', 'shuffle', 'slot',
+  'winner', 'winnerCombo', 'finish', 'points', 'penalty', 'p1Score', 'p2Score', 'p1Combo', 'p2Combo', 'p1Priority'];
+
+// The finish names the tools understand. Anything else (blank, an abbreviation, a typo)
+// makes the stats misread that battle, so check 8 flags it.
+const DB_FINISH_NAMES = ['Xtreme Finish', 'Over Finish', 'Burst Finish', 'Spin Finish', 'Own Finish', 'LER Strike', 'Launch Error'];
+// Abbreviations seen in the data, mapped to the full name they stand for. The key is the
+// text in capitals with everything except letters removed (so "LER-STRIKE" becomes "LERSTRIKE").
+const DB_FINISH_ABBREV = {
+  OVR: 'Over Finish', OVER: 'Over Finish', BST: 'Burst Finish', BURST: 'Burst Finish',
+  SPF: 'Spin Finish', SPIN: 'Spin Finish', XTR: 'Xtreme Finish', XTREME: 'Xtreme Finish',
+  OWN: 'Own Finish', LERSTRIKE: 'LER Strike', LAUNCHERROR: 'Launch Error'
+};
 
 function db_canonName(n) {
   return Object.prototype.hasOwnProperty.call(DB_NAME_ALIASES, n) ? DB_NAME_ALIASES[n] : n;
@@ -10712,6 +10831,42 @@ function db_runChecks(rows) {
     if (mm.day !== main) {
       flag(7, mm.first, 'Played on ' + fmtDay(mm.day) + ', but most of this event (' + days[main] + ' of ' + total + ' matches) is on ' + fmtDay(main), mm.sets[0].setNo);
     }
+  });
+
+  // 8 — finish type is a full, recognized name. A blank or abbreviated finish ("OVR", "SPF")
+  // makes the tools misread what the battle was worth. Rows with nothing filled in at all are
+  // skipped here (check 4 already reports those).
+  rows.forEach(function (r) {
+    const ft = String(r.finish == null ? '' : r.finish);
+    if (DB_FINISH_NAMES.indexOf(ft) !== -1) return;
+    if (ft.trim() === '' && String(r.p1).trim() === '' && String(r.p2).trim() === '' && String(r.winner).trim() === '') return;
+    let detail;
+    if (ft.trim() === '') {
+      detail = 'Finish type is blank (Points says ' + (String(r.points).trim() === '' ? 'nothing' : r.points) + ')';
+    } else {
+      const guess = DB_FINISH_ABBREV[ft.toUpperCase().replace(/[^A-Z]/g, '')];
+      detail = 'Finish type "' + ft + '" is not a full name' + (guess ? ' — should be "' + guess + '"' : '') + ' (Points says ' + r.points + ')';
+    }
+    flag(8, r, detail, r.set);
+  });
+
+  // 9 — no exact duplicate rows. Two rows are duplicates only when every cell matches exactly
+  // (no trimming, no case changes). One flag per repeated battle, however many copies it has.
+  // The first copy is the one to keep; the rest are the extras. Rows with nothing filled in at
+  // all are skipped (check 4 already reports those).
+  const dupSeen = {};
+  const dupOrder = [];
+  rows.forEach(function (r) {
+    const key = DB_DUP_FIELDS.map(function (f) { return String(r[f] == null ? '' : r[f]); }).join('\u0001');
+    if (DB_DUP_FIELDS.every(function (f) { return r[f] == null || r[f] === ''; })) return;
+    if (dupSeen[key]) dupSeen[key].count++;
+    else { dupSeen[key] = { first: r, count: 1 }; dupOrder.push(key); }
+  });
+  dupOrder.forEach(function (key) {
+    const d = dupSeen[key];
+    if (d.count < 2) return;
+    const r = d.first;
+    flag(9, r, 'Slot ' + r.slot + ' (' + r.winner + ', ' + r.finish + ') appears ' + d.count + ' times with identical values — keep the first, delete ' + (d.count - 1), r.set);
   });
 
   const lostCount = rows.filter(function (r) { return r.judge === DB_LOST_JUDGE; }).length;
