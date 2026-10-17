@@ -2441,6 +2441,51 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
     #db-lock #db-lock-retry { margin-top: 8px; width: 100%; }
     #db-lock #db-lock-retry[hidden] { display: none; }
 
+    /* MATCH TIMING — a second view inside the Database tool (prefix dbt-). While it is showing, the
+       battle-grid parts of the page are hidden (not removed), so switching back finds them as they were. */
+    #tool-database .dbt-views { display: flex; gap: 8px; margin: 0 0 18px; }
+    #tool-database .dbt-view { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.06em; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); border-radius: 8px; padding: 7px 18px; cursor: pointer; }
+    #tool-database .dbt-view:hover { color: #fff; }
+    #tool-database .dbt-view.on { color: #fff; border-color: var(--teal); }
+    #tool-database .dbt-pane { display: none; }
+    #tool-database .db-app.dbt-on .dbt-pane { display: block; }
+    #tool-database .db-app.dbt-on .db-editbar,
+    #tool-database .db-app.dbt-on .db-sanity,
+    #tool-database .db-app.dbt-on .db-cards,
+    #tool-database .db-app.dbt-on .db-layout,
+    #tool-database .db-app.dbt-on .db-edit-toggle,
+    #tool-database .db-app.dbt-on #db-sanity-btn,
+    #tool-database .db-app.dbt-on #db-history-btn,
+    #tool-database .db-app.dbt-on #db-download-btn { display: none !important; }
+    #tool-database .dbt-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+    #tool-database .dbt-count { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+    #tool-database .dbt-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: auto; max-height: 72vh; }
+    #tool-database .dbt-table { width: 100%; min-width: 1000px; border-collapse: collapse; font-size: 13px; }
+    #tool-database .dbt-table th { position: sticky; top: 0; z-index: 1; background: var(--surface2); font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.12em; color: var(--muted); text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    #tool-database .dbt-table th.dbt-r, #tool-database .dbt-table td.dbt-r { text-align: right; }
+    #tool-database .dbt-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    #tool-database .dbt-table tr:last-child td { border-bottom: none; }
+    #tool-database .dbt-table td.dbt-r { font-family: 'IBM Plex Mono', monospace; font-size: 12px; white-space: nowrap; }
+    #tool-database .dbt-name { color: #fff; font-weight: 600; }
+    #tool-database .dbt-sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 3px; font-weight: 400; white-space: normal; }
+    #tool-database .dbt-avg { cursor: pointer; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+    #tool-database .dbt-avg:hover:not(:disabled) { border-color: var(--teal); color: #fff; }
+    #tool-database .dbt-avg:disabled { cursor: default; opacity: 0.55; }
+    #tool-database .dbt-chip { display: inline-block; font-family: 'Barlow', sans-serif; font-size: 9px; font-weight: 700; color: #0e1512; background: var(--accent); border-radius: 3px; padding: 1px 5px; margin-left: 6px; vertical-align: 1px; }
+    #tool-database .dbt-ok { color: var(--teal); }
+    #tool-database .dbt-warn { color: var(--accent); cursor: help; }
+    #tool-database .dbt-msg { padding: 40px 16px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    #tool-database .dbt-msg.dbt-bad { color: var(--danger); }
+    #tool-database .dbt-note { margin-top: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; line-height: 1.6; color: var(--muted); }
+    #tool-database .dbt-bt { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+    #tool-database .dbt-bt th { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.12em; color: var(--muted); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    #tool-database .dbt-bt td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    #tool-database .dbt-bt .dbt-r { text-align: right; font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
+    #tool-database .dbt-bt tr.dbt-out td { background: rgba(246, 211, 53, 0.14); }
+    #tool-database .dbt-bt tr.dbt-out .dbt-flag { color: var(--accent); font-weight: 700; }
+    #tool-database .dbt-bt tr.dbt-skip td { color: var(--muted); }
+    #tool-database .dbt-flag { font-size: 11px; white-space: nowrap; }
+
     @media (max-width: 900px) {
       #tool-database .db-app { padding: 16px 14px 48px; }
       #tool-database .db-cards { grid-template-columns: repeat(2, 1fr); }
@@ -2899,6 +2944,11 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         </div>
       </div>
 
+      <div class="dbt-views" id="dbt-views">
+        <button class="dbt-view on" type="button" data-dbt-view="battles">Battles</button>
+        <button class="dbt-view" type="button" data-dbt-view="timing">Match timing</button>
+      </div>
+
       <div class="db-editbar" id="db-edit-bar" hidden>
         <button class="db-btn" id="db-fix-btn" type="button" disabled>Fix tools</button>
         <button class="db-btn danger" id="db-del-rows" type="button" disabled>Delete selected rows</button>
@@ -2960,9 +3010,26 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         </section>
       </div>
 
+      <div class="dbt-pane" id="dbt-pane">
+        <div class="dbt-bar">
+          <select class="db-select" id="dbt-event" title="Event"></select>
+          <input class="db-input" id="dbt-search" type="search" placeholder="Search player or judge…" autocomplete="off">
+          <button class="db-btn" id="dbt-reload" type="button">Reload</button>
+          <span class="db-status" id="dbt-status"></span>
+        </div>
+        <div class="dbt-count" id="dbt-count"></div>
+        <div class="dbt-wrap" id="dbt-wrap"></div>
+        <div class="dbt-note">
+          SETUP = Start to Match Complete markers (decks, priority, side selection, shuffles, the Match Complete press). BATTLES = time spent on battles.
+          LAUNCH ERRORS = time lost to launch errors. FIXES = time inside an Undo / Reset fix window (it counts only here, never also as battle time).
+          The four parts always add up to TOTAL; ✓ means they do and the data is consistent. Click an average to see every battle time.
+        </div>
+      </div>
+
     </div>
 
     <div class="db-modal" id="db-modal" hidden><div class="db-modal-box"></div></div>
+    <div class="db-modal" id="dbt-modal" hidden><div class="db-modal-box wide"></div></div>
   </div>
 </main>
 
@@ -11998,7 +12065,396 @@ function db_init() {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// MATCH TIMING — a second view inside the Database tool · JS prefix dbt_ · element IDs dbt-
+// Shows the judging app's per-match stopwatch (the match_timing table behind ncblast-db).
+// It reads two routes on the database Worker with this device's key, exactly like the
+// Battles view: GET /timing/events and GET /timing?tournament=... It never writes.
+// Every number is worked out here from the raw stopwatch lines, so a rule change never needs
+// the data re-sent. It does not touch db_state, the battle grid, or SHARED_CSV_LISTENERS.
+// ═══════════════════════════════════════════════════════════════════════════
+// ── the math (pure: no screen, no network) ────────────────────────────────
+// A "clock line" is one that sits on the stopwatch itself: Start, Decks Recorded, Priority,
+// Side Selection, Shuffle, Battle, Launch Error, Match Complete. Undo/Reset presses and Fix
+// lines are notes ABOUT the clock (a Fix describes a window that overlaps other lines), so
+// they are not part of the chain of gaps that adds up to the total match time.
+const DBT_CLOCK = { start: 1, decks: 1, priority: 1, side: 1, shuffle: 1, battle: 1, launch_error: 1, complete: 1 };
+const DBT_IN_AVG = { counted: 1, undone: 1, correction: 1 };   // "replaced" battles are not in the average
+const DBT_EPS = 0.06;                                           // seconds are stored to 0.01, so allow a hair of rounding
+
+// Seconds as 23.4s / 1:05.2 / 1:02:05.0
+function dbt_fmt(sec) {
+  if (sec === null || sec === undefined || isNaN(sec)) return '—';
+  const neg = sec < 0;
+  const s = Math.round(Math.abs(sec) * 10) / 10;
+  const sign = neg ? '-' : '';
+  if (s < 60) return sign + s.toFixed(1) + 's';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s - h * 3600) / 60);
+  const r = s - h * 3600 - m * 60;
+  const rs = (r < 10 ? '0' : '') + r.toFixed(1);
+  return sign + (h ? h + ':' + (m < 10 ? '0' : '') + m : String(m)) + ':' + rs;
+}
+
+// q-th quantile of an already sorted list, by straight-line interpolation (the same method as
+// Excel's QUARTILE.INC and the default in most stats tools)
+function dbt_quantile(sorted, q) {
+  const pos = (sorted.length - 1) * q;
+  const lo = Math.floor(pos), hi = Math.ceil(pos);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+}
+
+// Everything the tab shows about ONE match, worked out from its raw stopwatch lines.
+function dbt_analyze(lines) {
+  const L = lines.slice().sort(function (a, b) { return a.seq - b.seq; });
+  const first = L[0] || {};
+  const m = {
+    key: first.matchKey, event: first.tournament, match: first.match, judge: first.judge,
+    p1: first.p1 || '', p2: first.p2 || '', startedAt: first.startedAt || '',
+    problems: []
+  };
+  const clock = L.filter(function (l) { return DBT_CLOCK[l.kind]; });
+  const fixLines = L.filter(function (l) { return l.kind === 'fix'; });
+
+  // 1. each clock line's own time = seconds since the previous clock line
+  let prevT = 0, backwards = 0, sinceMismatch = 0;
+  const timed = clock.map(function (l) {
+    const a = prevT, b = l.t, gap = b - a;
+    prevT = b;
+    if (gap < 0) backwards++;
+    if (l.sincePrev !== null && l.sincePrev !== undefined && Math.abs(l.sincePrev - gap) > DBT_EPS) sinceMismatch++;
+    return { l: l, a: a, b: b, gap: gap };
+  });
+  const completeLine = clock.filter(function (l) { return l.kind === 'complete'; })[0];
+  m.complete = !!completeLine;
+  m.total = completeLine ? completeLine.t : (clock.length ? clock[clock.length - 1].t : 0);
+  if (!clock.some(function (l) { return l.kind === 'start'; })) m.problems.push('There is no Start line.');
+  if (!m.complete) m.problems.push('There is no Match Complete line, so the total is the last line recorded.');
+  if (backwards) m.problems.push(backwards + ' line(s) are earlier than the line before them.');
+  if (sinceMismatch) m.problems.push(sinceMismatch + ' line(s) have a "seconds since previous" that does not match the clock times.');
+
+  // 2. fix windows (merged if they overlap, and kept inside the match)
+  let noticeSum = 0, repairSum = 0, clipped = false;
+  const raw = [];
+  fixLines.forEach(function (f) {
+    if (f.fixStart === null || f.fixEnd === null || f.fixStart === undefined || f.fixEnd === undefined) return;
+    noticeSum += f.notice || 0;
+    repairSum += f.repair || 0;
+    const s = Math.max(0, f.fixStart), e = Math.min(m.total, f.fixEnd);
+    if (e < f.fixEnd - DBT_EPS) clipped = true;
+    if (e > s) raw.push({ s: s, e: e });
+  });
+  raw.sort(function (x, y) { return x.s - y.s; });
+  const wins = [];
+  raw.forEach(function (w) {
+    const last = wins[wins.length - 1];
+    if (last && w.s <= last.e) last.e = Math.max(last.e, w.e);
+    else wins.push({ s: w.s, e: w.e });
+  });
+  const winTotal = wins.reduce(function (t, w) { return t + (w.e - w.s); }, 0);
+  if (clipped) m.problems.push('A fix window runs past the end of the match.');
+  m.fixCount = fixLines.length;
+  m.notice = noticeSum;
+  m.repair = repairSum;
+  m.undoCount = L.filter(function (l) { return l.kind === 'fix_press' && l.press === 'undo'; }).length;
+  m.resetCount = L.filter(function (l) { return l.kind === 'fix_press' && l.press === 'reset'; }).length;
+
+  // 3. split the total into four buckets. Time inside a fix window counts ONLY as "fixes";
+  //    the rest of each gap goes to the bucket of the line that ended it.
+  const cats = { setup: 0, battles: 0, launch: 0, fixes: 0 };
+  timed.forEach(function (x) {
+    let inside = 0;
+    if (x.gap > 0) {
+      wins.forEach(function (w) {
+        const lo = Math.max(x.a, w.s), hi = Math.min(x.b, w.e);
+        if (hi > lo) inside += hi - lo;
+      });
+    }
+    cats.fixes += inside;
+    const bucket = x.l.kind === 'battle' ? 'battles' : x.l.kind === 'launch_error' ? 'launch' : 'setup';
+    cats[bucket] += x.gap - inside;
+  });
+  m.cats = cats;
+  m.sum = cats.setup + cats.battles + cats.launch + cats.fixes;
+  if (Math.abs(m.sum - m.total) > DBT_EPS) m.problems.push('The four parts add up to ' + dbt_fmt(m.sum) + ', not the total ' + dbt_fmt(m.total) + '.');
+  if (Math.abs(winTotal - cats.fixes) > DBT_EPS) m.problems.push('A fix window does not line up with the clock lines.');
+  if (Math.abs((noticeSum + repairSum) - winTotal) > 0.1) m.problems.push('Fix notice + repair (' + dbt_fmt(noticeSum + repairSum) + ') is not the same as the fix window time (' + dbt_fmt(winTotal) + ').');
+  m.launchCount = clock.filter(function (l) { return l.kind === 'launch_error'; }).length;
+
+  // 4. battle times, average, and outliers (this match only; none with fewer than 4 battles)
+  m.battles = timed.filter(function (x) { return x.l.kind === 'battle'; }).map(function (x) {
+    return { seq: x.l.seq, label: x.l.label, set: x.l.setNo, finish: x.l.finishType || '', status: x.l.status, t: x.gap, inAvg: !!DBT_IN_AVG[x.l.status], outlier: null };
+  });
+  const used = m.battles.filter(function (b) { return b.inAvg; });
+  m.battleCount = used.length;
+  m.avg = used.length ? used.reduce(function (t, b) { return t + b.t; }, 0) / used.length : null;
+  m.fences = null;
+  m.outlierCount = 0;
+  if (used.length >= 4) {
+    const sorted = used.map(function (b) { return b.t; }).sort(function (x, y) { return x - y; });
+    const q1 = dbt_quantile(sorted, 0.25), q3 = dbt_quantile(sorted, 0.75), iqr = q3 - q1;
+    const lo = q1 - 1.5 * iqr, hi = q3 + 1.5 * iqr;
+    m.fences = { q1: q1, q3: q3, lo: lo, hi: hi };
+    used.forEach(function (b) {
+      if (b.t < lo) b.outlier = 'low';
+      else if (b.t > hi) b.outlier = 'high';
+      if (b.outlier) m.outlierCount++;
+    });
+  }
+  return m;
+}
+
+// Group a whole event's lines by match and work each one out, newest match first.
+function dbt_buildMatches(lines) {
+  const by = {}, order = [];
+  lines.forEach(function (l) {
+    if (!by[l.matchKey]) { by[l.matchKey] = []; order.push(l.matchKey); }
+    by[l.matchKey].push(l);
+  });
+  return order.map(function (k) { return dbt_analyze(by[k]); }).sort(function (a, b) {
+    return a.startedAt < b.startedAt ? 1 : a.startedAt > b.startedAt ? -1 : 0;
+  });
+}
+
+// ── the screen ─────────────────────────────────────────────────────────────
+const dbt_state = {
+  view: 'battles',   // which view of the Database tool is showing: 'battles' or 'timing'
+  events: [],        // [{ tournament, matches, lines, latest }] newest first
+  event: '',         // the event picked in the drop-down
+  matches: [],       // every match of that event, worked out (dbt_analyze), newest first
+  search: '',
+  loadedAt: 0,       // when timing data was last fetched (quick flips between views do not re-download)
+  error: '',
+  ticket: 0          // bumped on every download so a slow, older one can never overwrite a newer one
+};
+
+function dbt_setStatus(text, kind) {
+  const el = document.getElementById('dbt-status');
+  if (!el) return;
+  el.textContent = text || '';
+  el.className = 'db-status' + (kind ? ' ' + kind : '');
+}
+
+// Timing data is private to staff and lives only in memory: forget it when the device is locked or signed out.
+function dbt_clear() {
+  const s = dbt_state;
+  s.events = []; s.event = ''; s.matches = []; s.loadedAt = 0; s.error = ''; s.ticket++;
+  dbt_renderEvents();
+  dbt_render();
+}
+
+function dbt_setView(view) {
+  const s = dbt_state;
+  s.view = view === 'timing' ? 'timing' : 'battles';
+  const app = document.querySelector('#tool-database .db-app');
+  app.classList.toggle('dbt-on', s.view === 'timing');
+  document.querySelectorAll('#dbt-views [data-dbt-view]').forEach(function (b) {
+    b.classList.toggle('on', b.getAttribute('data-dbt-view') === s.view);
+  });
+  if (s.view === 'timing') dbt_open(false);
+  else if (db_state.loaded) db_paint();   // the grid was hidden: draw it again at the right size
+}
+
+function dbt_open(force) {
+  const s = dbt_state;
+  if (!db_state.unlocked) return;
+  if (!force && s.loadedAt && Date.now() - s.loadedAt < 30000) { dbt_render(); return; }
+  dbt_refresh(true);
+}
+
+async function dbt_loadLines(ev) {
+  const s = dbt_state;
+  const ticket = ++s.ticket;
+  let after = 0, all = [];
+  for (let page = 0; page < 80; page++) {
+    const d = await db_apiJson('/timing?tournament=' + encodeURIComponent(ev) + '&after=' + after);
+    if (ticket !== s.ticket) return false;   // a newer download replaced this one
+    all = all.concat(d.lines || []);
+    if (!d.next) break;
+    after = d.next;
+  }
+  s.matches = dbt_buildMatches(all);
+  return true;
+}
+
+async function dbt_refresh(reloadEvents) {
+  const s = dbt_state;
+  if (!db_state.unlocked) return;
+  dbt_setStatus('Loading…', '');
+  s.error = '';
+  try {
+    if (reloadEvents || !s.events.length) {
+      const ev = await db_apiJson('/timing/events');
+      s.events = ev.events || [];
+    }
+    if (!s.events.length) {
+      s.event = ''; s.matches = []; s.ticket++;
+    } else {
+      if (!s.events.some(function (e) { return e.tournament === s.event; })) s.event = s.events[0].tournament;
+      dbt_renderEvents();
+      const done = await dbt_loadLines(s.event);
+      if (!done) return;   // a newer download is in charge now
+    }
+    s.loadedAt = Date.now();
+    dbt_setStatus('Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), 'ok');
+  } catch (e) {
+    if (e && e.status === 401) { dbt_clear(); dbt_setStatus('', ''); return; }   // the lock screen is up
+    s.error = e && e.status === 404
+      ? 'The database Worker does not have the match-timing routes yet. Deploy the updated ncblast-db Worker (see the deploy steps), then press Reload.'
+      : ((e && e.message) || 'Could not load match timing.');
+    dbt_setStatus('Could not load', 'error');
+  }
+  dbt_renderEvents();
+  dbt_render();
+}
+
+function dbt_renderEvents() {
+  const s = dbt_state;
+  const sel = document.getElementById('dbt-event');
+  if (!sel) return;
+  sel.innerHTML = s.events.length
+    ? s.events.map(function (e) {
+      return '<option value="' + db_esc(e.tournament) + '"' + (e.tournament === s.event ? ' selected' : '') + '>' +
+        db_esc(e.tournament) + ' · ' + db_fmtNum(e.matches) + ' match' + (e.matches === 1 ? '' : 'es') + '</option>';
+    }).join('')
+    : '<option value="">No timing data yet</option>';
+}
+
+function dbt_title(m) {
+  return (m.p1 || m.p2) ? m.p1 + ' vs ' + m.p2 : (m.match || m.key || 'Match');
+}
+
+function dbt_row(m, i) {
+  const bt = m.battleCount;
+  const avgCell = bt
+    ? '<button type="button" class="dbt-avg" data-i="' + i + '" title="Show every battle time for this match">' + dbt_fmt(m.avg) + '</button>' +
+      (m.outlierCount ? '<span class="dbt-chip">' + m.outlierCount + ' outlier' + (m.outlierCount === 1 ? '' : 's') + '</span>' : '') +
+      '<div class="dbt-sub">' + bt + ' battle' + (bt === 1 ? '' : 's') + '</div>'
+    : '<span class="dbt-sub">no battles</span>';
+  const fixSub = m.fixCount
+    ? '<div class="dbt-sub">notice ' + dbt_fmt(m.notice) + ' · repair ' + dbt_fmt(m.repair) + '<br>' + m.fixCount + ' fix' + (m.fixCount === 1 ? '' : 'es') +
+      (m.undoCount ? ' · ' + m.undoCount + ' undo' + (m.undoCount === 1 ? '' : 's') : '') + (m.resetCount ? ' · ' + m.resetCount + ' reset' + (m.resetCount === 1 ? '' : 's') : '') + '</div>'
+    : '';
+  const launchSub = m.launchCount ? '<div class="dbt-sub">' + m.launchCount + ' error' + (m.launchCount === 1 ? '' : 's') + '</div>' : '';
+  const check = m.problems.length
+    ? '<span class="dbt-warn" title="' + db_esc(m.problems.join('\n')) + '">⚠ check data</span>' +
+      m.problems.slice(0, 2).map(function (p) { return '<div class="dbt-sub">' + db_esc(p) + '</div>'; }).join('')
+    : '<span class="dbt-ok" title="Setup + battles + launch errors + fixes = total">✓ adds up</span>';
+  return '<tr>' +
+    '<td><div class="dbt-name">' + db_esc(dbt_title(m)) + '</div>' +
+      '<div class="dbt-sub">' + db_esc(m.judge ? m.judge + ' · ' : '') + db_esc(m.startedAt ? db_fmtTime(m.startedAt) : '') + '</div></td>' +
+    '<td class="dbt-r">' + dbt_fmt(m.total) + '</td>' +
+    '<td class="dbt-r">' + avgCell + '</td>' +
+    '<td class="dbt-r">' + dbt_fmt(m.cats.setup) + '</td>' +
+    '<td class="dbt-r">' + dbt_fmt(m.cats.battles) + '</td>' +
+    '<td class="dbt-r">' + dbt_fmt(m.cats.launch) + launchSub + '</td>' +
+    '<td class="dbt-r">' + dbt_fmt(m.cats.fixes) + fixSub + '</td>' +
+    '<td>' + check + '</td>' +
+    '</tr>';
+}
+
+function dbt_render() {
+  const s = dbt_state;
+  const wrap = document.getElementById('dbt-wrap');
+  const count = document.getElementById('dbt-count');
+  if (!wrap) return;
+  if (s.error) { count.textContent = ''; wrap.innerHTML = '<div class="dbt-msg dbt-bad">' + db_esc(s.error) + '</div>'; return; }
+  if (!s.events.length) {
+    count.textContent = '';
+    wrap.innerHTML = '<div class="dbt-msg">No match timing has been received yet. Once the judging app starts sending it, every match shows up here.</div>';
+    return;
+  }
+  const q = s.search.trim().toLowerCase();
+  const list = [];
+  s.matches.forEach(function (m, i) {
+    if (!q || (m.p1 + ' ' + m.p2 + ' ' + m.judge + ' ' + m.match).toLowerCase().indexOf(q) !== -1) list.push({ m: m, i: i });
+  });
+  count.textContent = q
+    ? db_fmtNum(list.length) + ' of ' + db_fmtNum(s.matches.length) + ' matches'
+    : db_fmtNum(s.matches.length) + ' match' + (s.matches.length === 1 ? '' : 'es');
+  if (!list.length) { wrap.innerHTML = '<div class="dbt-msg">No matches fit that search.</div>'; return; }
+  wrap.innerHTML = '<table class="dbt-table"><thead><tr>' +
+    '<th>MATCH</th><th class="dbt-r">TOTAL</th><th class="dbt-r">AVERAGE BATTLE TIME</th>' +
+    '<th class="dbt-r">SETUP</th><th class="dbt-r">BATTLES</th><th class="dbt-r">LAUNCH ERRORS</th><th class="dbt-r">FIXES</th><th>CHECK</th>' +
+    '</tr></thead><tbody>' + list.map(function (x) { return dbt_row(x.m, x.i); }).join('') + '</tbody></table>';
+}
+
+// The menu that opens from an "average battle time" cell: every battle time of that match.
+function dbt_openBattles(i) {
+  const m = dbt_state.matches[i];
+  if (!m) return;
+  const modal = document.getElementById('dbt-modal');
+  const box = modal.querySelector('.db-modal-box');
+  const statusText = { counted: '', undone: 'Undone', correction: 'Correction', replaced: 'Replaced (not in average)' };
+  let h = '<div class="db-modal-title">Battle times · ' + db_esc(dbt_title(m)) + '</div><div class="db-modal-body">';
+  if (!m.battles.length) {
+    h += '<div class="db-m-none">This match has no battle lines.</div>';
+  } else {
+    h += '<p class="db-m-p">Average <b>' + dbt_fmt(m.avg) + '</b> over ' + m.battleCount + ' battle' + (m.battleCount === 1 ? '' : 's') + '. ' +
+      (m.fences
+        ? 'The normal range for this match is ' + dbt_fmt(Math.max(0, m.fences.lo)) + ' to ' + dbt_fmt(m.fences.hi) + '; a battle outside it is marked as an outlier.'
+        : 'With fewer than 4 battles, nothing is marked as an outlier.') + '</p>';
+    h += '<table class="dbt-bt"><thead><tr><th>BATTLE</th><th>SET</th><th>FINISH</th><th>STATUS</th><th class="dbt-r">TIME</th><th></th></tr></thead><tbody>';
+    m.battles.forEach(function (b) {
+      const cls = b.outlier ? ' class="dbt-out"' : (!b.inAvg ? ' class="dbt-skip"' : '');
+      const flag = b.outlier ? (b.outlier === 'high' ? 'High outlier' : 'Low outlier') : '';
+      h += '<tr' + cls + '><td>' + db_esc(b.label) + '</td><td>' + (b.set === null || b.set === undefined ? '' : db_esc(b.set)) + '</td><td>' + db_esc(b.finish) + '</td>' +
+        '<td>' + db_esc(statusText[b.status] || b.status) + '</td><td class="dbt-r">' + dbt_fmt(b.t) + '</td><td class="dbt-flag">' + flag + '</td></tr>';
+    });
+    h += '</tbody></table>';
+  }
+  h += '<p class="db-m-p dbt-sub">Each battle\'s time is the time since the line before it. The average includes undone battles and corrections; it leaves out launch errors (' +
+    m.launchCount + ' in this match) and replaced presses. Outliers are judged against this match\'s own battles only.</p>';
+  h += '</div><div class="db-modal-foot"><button class="db-btn" type="button" id="dbt-modal-close">Close</button></div>';
+  box.innerHTML = h;
+  modal.hidden = false;
+  document.addEventListener('keydown', dbt_modalKey, true);
+}
+
+function dbt_modalKey(e) {
+  if (e.key === 'Escape') { e.stopPropagation(); dbt_closeModal(); }
+}
+function dbt_closeModal() {
+  const modal = document.getElementById('dbt-modal');
+  if (modal) modal.hidden = true;
+  document.removeEventListener('keydown', dbt_modalKey, true);
+}
+
+function dbt_init() {
+  const s = dbt_state;
+  document.getElementById('dbt-views').addEventListener('click', function (e) {
+    const b = e.target.closest('[data-dbt-view]');
+    if (b) dbt_setView(b.getAttribute('data-dbt-view'));
+  });
+  document.getElementById('dbt-event').addEventListener('change', function (e) {
+    s.event = e.target.value;
+    dbt_refresh(false);
+  });
+  document.getElementById('dbt-reload').addEventListener('click', function () { dbt_refresh(true); });
+  let timer = null;
+  document.getElementById('dbt-search').addEventListener('input', function (e) {
+    const v = e.target.value;
+    clearTimeout(timer);
+    timer = setTimeout(function () { s.search = v; dbt_render(); }, 150);
+  });
+  document.getElementById('dbt-wrap').addEventListener('click', function (e) {
+    const b = e.target.closest('.dbt-avg');
+    if (b) dbt_openBattles(parseInt(b.getAttribute('data-i'), 10));
+  });
+  document.getElementById('dbt-modal').addEventListener('click', function (e) {
+    if (e.target.id === 'dbt-modal' || e.target.id === 'dbt-modal-close') dbt_closeModal();
+  });
+  // coming back to the Database tab while Match timing is showing: quietly freshen it
+  document.querySelectorAll('.shell-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      if (tab.dataset.tool === 'database' && s.view === 'timing') dbt_open(false);
+    });
+  });
+  document.getElementById('db-lock-btn').addEventListener('click', dbt_clear);
+}
+
 db_init();
+dbt_init();
 db_startLive();
 db_bootAuth();
 </script>
