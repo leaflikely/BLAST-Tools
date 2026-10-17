@@ -2460,7 +2460,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
     #tool-database .dbt-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
     #tool-database .dbt-count { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
     #tool-database .dbt-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: auto; max-height: 72vh; }
-    #tool-database .dbt-table { width: 100%; min-width: 1000px; border-collapse: collapse; font-size: 13px; }
+    #tool-database .dbt-table { width: 100%; min-width: 1380px; border-collapse: collapse; font-size: 13px; }
     #tool-database .dbt-table th { position: sticky; top: 0; z-index: 1; background: var(--surface2); font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.12em; color: var(--muted); text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
     #tool-database .dbt-table th.dbt-r, #tool-database .dbt-table td.dbt-r { text-align: right; }
     #tool-database .dbt-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -3020,9 +3020,10 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         <div class="dbt-count" id="dbt-count"></div>
         <div class="dbt-wrap" id="dbt-wrap"></div>
         <div class="dbt-note">
-          SETUP = Start to Match Complete markers (decks, priority, side selection, shuffles, the Match Complete press). BATTLES = time spent on battles.
-          LAUNCH ERRORS = time lost to launch errors. FIXES = time inside an Undo / Reset fix window (it counts only here, never also as battle time).
-          The four parts always add up to TOTAL; ✓ means they do and the data is consistent. Click an average to see every battle time.
+          Each step is the time since the step before it. DECK BUILDING = Start to Decks Recorded. PRIORITY = picking the priority player. SIDE SELECTION and SHUFFLES = all of the match's
+          side picks / shuffles added together (the small line shows how many). BATTLES = time spent on battles. LAUNCH ERRORS = time lost to launch errors.
+          FIXES = time inside an Undo / Reset fix window (it counts only here, never also as battle time). SUBMIT = the match-complete screen, up to Match Complete.
+          All the columns always add up to TOTAL; ✓ means they do and the data is consistent. Click an average to see every battle time.
         </div>
       </div>
 
@@ -12080,6 +12081,8 @@ function db_init() {
 // they are not part of the chain of gaps that adds up to the total match time.
 const DBT_CLOCK = { start: 1, decks: 1, priority: 1, side: 1, shuffle: 1, battle: 1, launch_error: 1, complete: 1 };
 const DBT_IN_AVG = { counted: 1, undone: 1, correction: 1 };   // "replaced" battles are not in the average
+// which setup step a clock line's time belongs to (the time BEFORE that line, back to the line before it)
+const DBT_PART = { start: 'other', decks: 'decks', priority: 'priority', side: 'side', shuffle: 'shuffle', complete: 'submit' };
 const DBT_EPS = 0.06;                                           // seconds are stored to 0.01, so allow a hair of rounding
 
 // Seconds as 23.4s / 1:05.2 / 1:02:05.0
@@ -12162,6 +12165,9 @@ function dbt_analyze(lines) {
   // 3. split the total into four buckets. Time inside a fix window counts ONLY as "fixes";
   //    the rest of each gap goes to the bucket of the line that ended it.
   const cats = { setup: 0, battles: 0, launch: 0, fixes: 0 };
+  // "setup" is split into its steps: deck building (Start to Decks Recorded), priority, side selection(s),
+  // shuffle(s) and the submit screen (up to Match Complete). They always add up to cats.setup.
+  const parts = { decks: 0, priority: 0, side: 0, shuffle: 0, submit: 0, other: 0 };
   timed.forEach(function (x) {
     let inside = 0;
     if (x.gap > 0) {
@@ -12171,10 +12177,15 @@ function dbt_analyze(lines) {
       });
     }
     cats.fixes += inside;
-    const bucket = x.l.kind === 'battle' ? 'battles' : x.l.kind === 'launch_error' ? 'launch' : 'setup';
-    cats[bucket] += x.gap - inside;
+    const rest = x.gap - inside;
+    if (x.l.kind === 'battle') cats.battles += rest;
+    else if (x.l.kind === 'launch_error') cats.launch += rest;
+    else { parts[DBT_PART[x.l.kind] || 'other'] += rest; cats.setup += rest; }
   });
   m.cats = cats;
+  m.parts = parts;
+  m.sideCount = clock.filter(function (l) { return l.kind === 'side'; }).length;
+  m.shuffleCount = clock.filter(function (l) { return l.kind === 'shuffle'; }).length;
   m.sum = cats.setup + cats.battles + cats.launch + cats.fixes;
   if (Math.abs(m.sum - m.total) > DBT_EPS) m.problems.push('The four parts add up to ' + dbt_fmt(m.sum) + ', not the total ' + dbt_fmt(m.total) + '.');
   if (Math.abs(winTotal - cats.fixes) > DBT_EPS) m.problems.push('A fix window does not line up with the clock lines.');
@@ -12340,15 +12351,21 @@ function dbt_row(m, i) {
     ? '<span class="dbt-warn" title="' + db_esc(m.problems.join('\n')) + '">⚠ check data</span>' +
       m.problems.slice(0, 2).map(function (p) { return '<div class="dbt-sub">' + db_esc(p) + '</div>'; }).join('')
     : '<span class="dbt-ok" title="Setup + battles + launch errors + fixes = total">✓ adds up</span>';
+  const p = m.parts;
+  const stepSub = function (n, word) { return n ? '<div class="dbt-sub">' + n + ' ' + word + (n === 1 ? '' : 's') + '</div>' : ''; };
   return '<tr>' +
     '<td><div class="dbt-name">' + db_esc(dbt_title(m)) + '</div>' +
       '<div class="dbt-sub">' + db_esc(m.judge ? m.judge + ' · ' : '') + db_esc(m.startedAt ? db_fmtTime(m.startedAt) : '') + '</div></td>' +
     '<td class="dbt-r">' + dbt_fmt(m.total) + '</td>' +
     '<td class="dbt-r">' + avgCell + '</td>' +
-    '<td class="dbt-r">' + dbt_fmt(m.cats.setup) + '</td>' +
+    '<td class="dbt-r">' + dbt_fmt(p.decks) + '</td>' +
+    '<td class="dbt-r">' + dbt_fmt(p.priority) + '</td>' +
+    '<td class="dbt-r">' + dbt_fmt(p.side) + stepSub(m.sideCount, 'side pick') + '</td>' +
+    '<td class="dbt-r">' + dbt_fmt(p.shuffle) + stepSub(m.shuffleCount, 'shuffle') + '</td>' +
     '<td class="dbt-r">' + dbt_fmt(m.cats.battles) + '</td>' +
     '<td class="dbt-r">' + dbt_fmt(m.cats.launch) + launchSub + '</td>' +
     '<td class="dbt-r">' + dbt_fmt(m.cats.fixes) + fixSub + '</td>' +
+    '<td class="dbt-r">' + dbt_fmt(p.submit) + '</td>' +
     '<td>' + check + '</td>' +
     '</tr>';
 }
@@ -12375,7 +12392,8 @@ function dbt_render() {
   if (!list.length) { wrap.innerHTML = '<div class="dbt-msg">No matches fit that search.</div>'; return; }
   wrap.innerHTML = '<table class="dbt-table"><thead><tr>' +
     '<th>MATCH</th><th class="dbt-r">TOTAL</th><th class="dbt-r">AVERAGE BATTLE TIME</th>' +
-    '<th class="dbt-r">SETUP</th><th class="dbt-r">BATTLES</th><th class="dbt-r">LAUNCH ERRORS</th><th class="dbt-r">FIXES</th><th>CHECK</th>' +
+    '<th class="dbt-r">DECK BUILDING</th><th class="dbt-r">PRIORITY</th><th class="dbt-r">SIDE SELECTION</th><th class="dbt-r">SHUFFLES</th>' +
+    '<th class="dbt-r">BATTLES</th><th class="dbt-r">LAUNCH ERRORS</th><th class="dbt-r">FIXES</th><th class="dbt-r">SUBMIT</th><th>CHECK</th>' +
     '</tr></thead><tbody>' + list.map(function (x) { return dbt_row(x.m, x.i); }).join('') + '</tbody></table>';
 }
 
