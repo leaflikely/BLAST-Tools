@@ -167,7 +167,7 @@
       background: rgba(46,168,157,0.08);
     }
     .shell-data-btn:disabled { opacity: 0.5; cursor: default; pointer-events: none; }
-    #shell-file-input { display: none; }
+    .shell-data-btn.shell-update { border-color: var(--accent); color: var(--accent); }
 
     /* ═══ COMBO STATS TOOL (scoped) ═══ */
 
@@ -2521,11 +2521,10 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 <div class="shell-data-panel">
   <div class="shell-data-left">
     <div class="shell-data-icon">📊</div>
-    <div class="shell-data-status" id="shell-data-status">Checking for current file…</div>
+    <div class="shell-data-status" id="shell-data-status">Waiting for the database…</div>
   </div>
   <div>
-    <input type="file" id="shell-file-input" accept=".csv,.tsv,.txt">
-    <button class="shell-data-btn" id="shell-upload-btn">Upload New CSV</button>
+    <button class="shell-data-btn shell-update" id="shell-update-btn" hidden onclick="db_toolsPublish()">New data · Update tools</button>
   </div>
 </div>
 
@@ -3047,21 +3046,24 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
   });
 
   // ══════════════════════════════════════════════════════════════════════
-  // SHARED DATA SOURCE (Cloudflare Worker) — one upload feeds every tool.
+  // SHARED DATA SOURCE — the NCBLAST database feeds every tool.
+  // The Database tab's code (db_ prefix, further down) loads the battles
+  // from the database and hands them to the tools through SHARED_CSV_PUBLISH,
+  // in the same CSV layout the old Google Sheets export used, so the four
+  // tools read it exactly as before. The old "Upload New CSV" file is no
+  // longer used.
+  // WORKER_URL is still needed for Challonge and report links.
   // ══════════════════════════════════════════════════════════════════════
   const WORKER_URL = 'https://ncblast-data.danny61734.workers.dev';
 
   const shellStatus = document.getElementById('shell-data-status');
-  const shellUploadBtn = document.getElementById('shell-upload-btn');
-  const shellFileInput = document.getElementById('shell-file-input');
 
-  // Holds the raw CSV text + filename once loaded, so each tool section can
-  // read from here instead of fetching the Worker separately.
+  // Holds the CSV text + a label once loaded, so each tool section can
+  // read from here instead of fetching anything itself.
   window.SHARED_CSV = { text: null, filename: null };
 
-  // Each ported tool registers a callback here; when new data arrives
-  // (on page load or after a fresh upload), every registered tool gets
-  // notified and reloads itself from the shared text.
+  // Each tool registers a callback here; when data arrives (on page load,
+  // or when "Update tools" is clicked), every registered tool reloads.
   window.SHARED_CSV_LISTENERS = [];
 
   function notifySharedCSV() {
@@ -3071,62 +3073,19 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
     });
   }
 
-  function formatTimestamp(iso) {
-    try {
-      const d = new Date(iso);
-      return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-    } catch (e) { return iso; }
-  }
+  // Status line in the shared header. kind: '' (grey), 'has-file' (teal), 'error' (red)
+  window.SHARED_CSV_STATUS = function (text, kind) {
+    shellStatus.textContent = text;
+    shellStatus.className = 'shell-data-status' + (kind ? ' ' + kind : '');
+  };
 
-  async function refreshShellStatus() {
-    shellStatus.textContent = 'Checking for current file…';
-    shellStatus.className = 'shell-data-status';
-    try {
-      const res = await fetch(WORKER_URL + '/current');
-      if (res.status === 404) {
-        shellStatus.textContent = 'No file uploaded yet — click "Upload New CSV" to get started.';
-        return;
-      }
-      if (!res.ok) throw new Error('Server error (' + res.status + ')');
-      const data = await res.json();
-      shellStatus.textContent = '✓ ' + data.filename + ' · uploaded ' + formatTimestamp(data.uploadedAt);
-      shellStatus.className = 'shell-data-status has-file';
-      window.SHARED_CSV.text = data.content;
-      window.SHARED_CSV.filename = data.filename;
-      notifySharedCSV();
-    } catch (err) {
-      shellStatus.textContent = 'Could not reach data server. Tools will need manual upload.';
-      shellStatus.className = 'shell-data-status error';
-    }
-  }
-
-  shellUploadBtn.addEventListener('click', () => shellFileInput.click());
-
-  shellFileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    shellUploadBtn.disabled = true;
-    shellStatus.textContent = 'Uploading ' + file.name + '…';
-    shellStatus.className = 'shell-data-status';
-    try {
-      const text = await file.text();
-      const res = await fetch(WORKER_URL + '/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, content: text })
-      });
-      if (!res.ok) throw new Error('Upload failed (' + res.status + ')');
-      await refreshShellStatus();
-    } catch (err) {
-      shellStatus.textContent = 'Upload failed — check your connection and try again.';
-      shellStatus.className = 'shell-data-status error';
-    } finally {
-      shellUploadBtn.disabled = false;
-      shellFileInput.value = '';
-    }
-  });
-
-  refreshShellStatus();
+  // Called by the Database tab code with fresh data for all four tools.
+  window.SHARED_CSV_PUBLISH = function (text, label, statusText) {
+    window.SHARED_CSV.text = text;
+    window.SHARED_CSV.filename = label;
+    window.SHARED_CSV_STATUS(statusText || ('✓ ' + label), 'has-file');
+    notifySharedCSV();
+  };
 </script>
 
 <script>
@@ -10045,6 +10004,7 @@ function db_dataReady() {
   document.getElementById('db-sanity-btn').disabled = false;
   s.sanity = null;
   db_renderSanity();
+  db_toolsDataChanged();
 }
 
 // Downloads everything from the database. Only used the first time on a device,
@@ -10079,6 +10039,7 @@ async function db_load() {
     const msg = err && err.message ? err.message : String(err);
     db_setStatus('Could not load the database. ' + msg, 'error');
     db_setLive('off');
+    if (!s.toolsPublished) window.SHARED_CSV_STATUS('Could not reach the database. Trying again shortly…', 'error');
     if (!s.loaded) {
       db_gridMessage('Could not reach the database. Trying again shortly…');
     }
@@ -10113,6 +10074,7 @@ async function db_open() {
   } finally {
     if (!s.loaded) s.started = false;
   }
+  if (s.loaded && !s.toolsPublished) db_toolsPublish();
 }
 
 // ---------- catching up with changes ----------
@@ -10217,6 +10179,7 @@ async function db_sync(opts) {
         return false;
       }
       if (out.added || out.changed || out.removed) {
+        db_toolsDataChanged();
         db_refreshKeep();
         s.sanity = null;
         db_renderSanity();
@@ -10257,6 +10220,77 @@ async function db_syncSoon() {
   return db_sync({ save: true });
 }
 
+// ---------- feeding the other four tools ----------
+// FEEDING THE OTHER FOUR TOOLS. Player Report, Tournament Recap, Player Comparison and
+// Combo Comparison read the battles from the shared header (SHARED_CSV_PUBLISH), in the
+// same CSV layout the old Google Sheets export used. They get data once when the page
+// opens. Later changes do NOT reload them on their own (that would wipe a report in
+// progress); instead the "New data · Update tools" button appears in the header.
+const DB_TOOLS_LABEL = 'NCBLAST Database';
+const DB_TOOLS_CHECK_MS = 30000;   // how often to check for new data while another tool tab is showing
+const DB_TOOLS_COLS = [
+  ['Timestamp', 'ts'], ['Judge', 'judge'], ['Tournament', 'event'], ['Match', 'match'],
+  ['P1', 'p1'], ['P1Side', 'p1Side'], ['P2', 'p2'], ['P2Side', 'p2Side'],
+  ['Set', 'set'], ['Shuffle', 'shuffle'], ['Slot', 'slot'],
+  ['Winner', 'winner'], ['WinnerCombo', 'winnerCombo'], ['FinishType', 'finish'],
+  ['Points', 'points'], ['Penalty', 'penalty'], ['P1Score', 'p1Score'], ['P2Score', 'p2Score'],
+  ['P1Combo', 'p1Combo'], ['P2Combo', 'p2Combo']
+];
+
+// One CSV cell. Line breaks become spaces because the tools read one battle per line.
+function db_toolsCell(v) {
+  v = v == null ? '' : String(v).replace(/[\r\n]+/g, ' ');
+  return /[",]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+
+// The battles as CSV text. Pick priority goes back onto the name as ~P~,
+// which every tool's reader already strips off into P1Priority.
+function db_toolsCSV(rows) {
+  const lines = [DB_TOOLS_COLS.map(c => c[0]).join(',')];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    lines.push(DB_TOOLS_COLS.map(function (c) {
+      let v = r[c[1]];
+      if (c[1] === 'p1' && r.p1Priority === true) v = (v || '') + '~P~';
+      if (c[1] === 'p2' && r.p1Priority === false) v = (v || '') + '~P~';
+      return db_toolsCell(v);
+    }).join(','));
+  }
+  return lines.join('\n');
+}
+
+// Sends the current battles to all four tools (also the "Update tools" button).
+function db_toolsPublish() {
+  const s = db_state;
+  if (!s.loaded) return;
+  const btn = document.getElementById('shell-update-btn');
+  if (btn) btn.hidden = true;
+  s.toolsPublished = true;
+  s.toolsStale = false;
+  const when = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  window.SHARED_CSV_PUBLISH(db_toolsCSV(s.rows), DB_TOOLS_LABEL,
+    '✓ ' + DB_TOOLS_LABEL + ' · ' + db_fmtNum(s.rows.length) + ' battles · loaded ' + when);
+}
+
+// The battles changed. Before the first hand-off this does nothing (the tools will get the
+// newest data anyway); after it, the "Update tools" button appears.
+function db_toolsDataChanged() {
+  const s = db_state;
+  if (!s.toolsPublished) return;
+  s.toolsStale = true;
+  const btn = document.getElementById('shell-update-btn');
+  if (btn) btn.hidden = false;
+  window.SHARED_CSV_STATUS('New data in the database · the tools are showing data from before it', '');
+}
+
+// True when it is time for a background check while one of the four tools is showing.
+function db_toolsCheckDue() {
+  const s = db_state;
+  return s.unlocked && s.loaded && s.toolsPublished && !s.toolsStale &&
+    document.visibilityState === 'visible' &&
+    Date.now() - (s.lastCheck || 0) >= DB_TOOLS_CHECK_MS;
+}
+
 // ---------- the live loop ----------
 function db_liveActive() {
   const view = document.getElementById('tool-database');
@@ -10269,7 +10303,7 @@ async function db_liveTick() {
   s.ticking = true;
   try {
     if (s.unlocked && !s.loaded && !s.loading && !s.started) db_open();   // an earlier first load failed: try again
-    else if (db_liveActive()) await db_sync();
+    else if (db_liveActive() || db_toolsCheckDue()) await db_sync();
   } catch (e) { /* the next turn tries again */ }
   s.ticking = false;
   clearTimeout(s.syncTimer);
@@ -11182,8 +11216,8 @@ function db_initSanity() {
 // stored in this file); a correct password gives the device a long private key
 // that the browser remembers. After 5 wrong tries the Worker locks that internet
 // connection out for 15 minutes.
-// NOTE: this screen covers the whole page, but the data the OTHER four tools show
-// still comes from the old shared file until those tools are moved onto the database.
+// NOTE: this screen covers the whole page. The other four tools also get their data
+// from the database (see "FEEDING THE OTHER FOUR TOOLS"), only after unlocking.
 // The database itself (this tab) is protected by the key on every request.
 // ═══════════════════════════════════════════════════════════════════════════
 const DB_TOKEN_KEY = 'ncblast_db_key';
@@ -12140,8 +12174,8 @@ function db_init() {
   const sharedPanel = document.querySelector('.shell-data-panel');
 
   // The data starts loading as soon as the device is unlocked (see db_afterUnlock), so opening the
-  // tab just shows it and checks for anything new. The shared "Upload New CSV" bar belongs to the
-  // other four tools, so it is hidden while this tab is showing.
+  // tab just shows it and checks for anything new. The shared data bar (status + "Update tools")
+  // belongs to the other four tools, so it is hidden while this tab is showing.
   document.querySelectorAll('.shell-tab').forEach(function (tab) {
     tab.addEventListener('click', function () {
       const isDb = tab.dataset.tool === 'database';
