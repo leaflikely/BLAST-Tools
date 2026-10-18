@@ -2688,13 +2688,11 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 <!-- Share link overlay (shown after "Get Link" succeeds) -->
 <div id="rg-link-overlay" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.72);align-items:center;justify-content:center;">
   <div style="background:#1a2e28;border:1px solid #2ea89d;border-radius:12px;padding:32px 28px;max-width:520px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.5);">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;color:#fff;letter-spacing:0.04em;margin-bottom:8px;">📋 Shareable Link Ready</div>
-    <div style="font-size:13px;color:#8aada5;margin-bottom:20px;line-height:1.5;">Anyone with this link can open the report in their browser — no app needed. Works great for sending via text or DM.</div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <input id="rg-link-display" readonly style="flex:1;background:#0e1a17;border:1px solid #2ea89d;border-radius:6px;padding:10px 12px;color:#d4e8e0;font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;min-width:0;" />
-      <button id="rg-link-copy-btn" onclick="rg_copyReportLink()" style="background:#2ea89d;color:#fff;border:none;border-radius:6px;padding:10px 16px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.08em;white-space:nowrap;flex-shrink:0;">COPY</button>
-    </div>
+    <div id="rg-link-title" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;color:#fff;letter-spacing:0.04em;margin-bottom:8px;">📋 Shareable Link Ready</div>
+    <div style="font-size:13px;color:#8aada5;margin-bottom:20px;line-height:1.5;">Anyone with these links can open the report in their browser — no app needed. Works great for sending via text or DM.</div>
+    <div id="rg-link-list" style="display:flex;flex-direction:column;gap:12px;max-height:50vh;overflow-y:auto;"></div>
     <div style="margin-top:24px;text-align:right;">
+      <button id="rg-link-copy-all-btn" onclick="rg_copyAllReportLinks()" style="display:none;background:#2ea89d;color:#fff;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:0.08em;margin-right:8px;">COPY ALL</button>
       <button onclick="rg_closeLinkOverlay()" style="background:none;border:1px solid #3c5048;border-radius:6px;color:#8aada5;font-size:13px;padding:8px 18px;cursor:pointer;font-family:'IBM Plex Mono',monospace;letter-spacing:0.08em;">CLOSE</button>
     </div>
   </div>
@@ -7173,12 +7171,12 @@ function rg_backToTournament() {
 //   as-is — the inline styles already handle page sizing and breaks.
 //   Do NOT add wrapper divs, do NOT split/rejoin on class names.
 //
-function rg_buildReportHTML() {
+function rg_buildReportHTML(playerName) {
   const pagesEl = document.getElementById('rg-report-pages');
   const pagesHTML = pagesEl.innerHTML;
 
   const players = Array.from(rg_SELECTED_PLAYERS);
-  const stem = rg_buildFileStem(players[0] || 'Player', rg_SELECTED_TOURNAMENT);
+  const stem = rg_buildFileStem(playerName || players[0] || 'Player', rg_SELECTED_TOURNAMENT);
 
   // Only keep CSS from this tool's scoped rules; strip the #tool-reportgen
   // prefix since the exported file has no other tools to scope against.
@@ -7504,51 +7502,162 @@ function rg_downloadJSON() {
   });
 }
 
+// ── SHAREABLE LINKS ──────────────────────────────────────────────────────────
+// Makes one link per selected player (works the same for 1 or many players).
+// Each report is drawn on screen, saved as HTML, and uploaded one at a time.
+// The requested link name ("slug") is [PlayerName]-[EventAbbreviation], e.g.
+// "LeafLikely-SS". The Worker decides the final name (adds -2, -3... if taken).
+var rg_LINK_RESULTS = [];
+
+// Link name: same parts as the download filename, joined with a dash, and
+// limited to letters and numbers so it is safe inside a web address.
+function rg_buildLinkSlug(playerName, tournamentName) {
+  function cap(w){ return w.charAt(0).toUpperCase() + w.slice(1); }
+  // "José" -> "Jose": drop accent marks before removing non-letters
+  function plain(t){ return (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+  var namePart = plain(playerName)
+    .trim().split(/\s+/)
+    .map(function(w){ return cap(w.replace(/[^a-zA-Z0-9]/g,'')); })
+    .join('') || 'Player';
+  var eventPart = plain(tournamentName)
+    .trim().split(/\s+/)
+    .map(function(w){ return w.replace(/[^a-zA-Z0-9]/g,''); })
+    .filter(Boolean)
+    .map(function(w){ return w.charAt(0).toUpperCase(); })
+    .join('') || 'Event';
+  return namePart + '-' + eventPart;
+}
+
+// Resolves after React has painted the newly rendered report.
+function rg_waitForPaint() {
+  return new Promise(function(resolve) {
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { setTimeout(resolve, 150); });
+    });
+  });
+}
+
 async function rg_getShareableLink() {
   const btn = document.getElementById('rg-btn-get-link');
   const originalLabel = btn.textContent;
-  btn.textContent = 'Uploading\u2026';
+  const players = Array.from(rg_SELECTED_PLAYERS);
+  if (players.length === 0) return;
   btn.disabled = true;
 
+  const pagesEl = document.getElementById('rg-report-pages');
+  if (!window.__reportRoot) window.__reportRoot = ReactDOM.createRoot(pagesEl);
+
+  const results = [];
+  let serverDown = false;
   try {
-    const { html, stem } = rg_buildReportHTML();
+    for (let i = 0; i < players.length; i++) {
+      const player = players[i];
+      btn.textContent = players.length === 1 ? 'Uploading…' : 'Uploading ' + (i + 1) + ' of ' + players.length + '…';
 
-    const res = await fetch('https://ncblast-data.danny61734.workers.dev/report-link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename: stem + '.html', html }),
-    });
+      if (players.length > 1) {
+        renderReportInto(window.__reportRoot, rg_COMPUTED_STATS[player]);
+        await rg_waitForPaint();
+      }
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert('Could not create link: ' + (err.error || 'server error ' + res.status));
-      return;
+      try {
+        const { html, stem } = rg_buildReportHTML(player);
+        const res = await fetch('https://ncblast-data.danny61734.workers.dev/report-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: stem + '.html', html, slug: rg_buildLinkSlug(player, rg_SELECTED_TOURNAMENT) }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          results.push({ player: player, error: err.error || 'server error ' + res.status });
+          continue;
+        }
+        const data = await res.json();
+        results.push({ player: player, url: data.url });
+      } catch (err) {
+        serverDown = true;
+        results.push({ player: player, error: 'could not reach the data server' });
+      }
     }
-
-    const data = await res.json();
-    document.getElementById('rg-link-display').value = data.url;
-    document.getElementById('rg-link-copy-btn').textContent = 'COPY';
-    document.getElementById('rg-link-overlay').style.display = 'flex';
-
-  } catch (err) {
-    alert('Could not reach the data server. Check your connection and try again.');
   } finally {
+    // Put the first player's report back on screen (the one shown before).
+    if (players.length > 1) renderReportInto(window.__reportRoot, rg_COMPUTED_STATS[players[0]]);
     btn.textContent = originalLabel;
     btn.disabled = false;
   }
+
+  if (results.every(r => r.error)) {
+    alert(serverDown
+      ? 'Could not reach the data server. Check your connection and try again.'
+      : 'Could not create link: ' + results[0].error);
+    return;
+  }
+  rg_showLinkOverlay(results);
 }
 
-function rg_copyReportLink() {
-  const input = document.getElementById('rg-link-display');
-  const btn = document.getElementById('rg-link-copy-btn');
-  navigator.clipboard.writeText(input.value).then(() => {
-    btn.textContent = '\u2713 COPIED';
-    setTimeout(() => { btn.textContent = 'COPY'; }, 2000);
-  }).catch(() => {
-    input.select();
+// Fills the overlay with one row per player: name, link box, COPY button.
+function rg_showLinkOverlay(results) {
+  rg_LINK_RESULTS = results;
+  const okCount = results.filter(r => r.url).length;
+  document.getElementById('rg-link-title').textContent = results.length === 1
+    ? '📋 Shareable Link Ready'
+    : '📋 ' + okCount + ' of ' + results.length + ' Links Ready';
+  const list = document.getElementById('rg-link-list');
+  list.innerHTML = '';
+  results.forEach(r => {
+    const row = document.createElement('div');
+    if (results.length > 1) {
+      const label = document.createElement('div');
+      label.textContent = r.player;
+      label.style.cssText = "font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:#d4e8e0;margin-bottom:4px;";
+      row.appendChild(label);
+    }
+    if (r.error) {
+      const msg = document.createElement('div');
+      msg.textContent = 'Failed: ' + r.error;
+      msg.style.cssText = "font-family:'IBM Plex Mono',monospace;font-size:12px;color:#e89a90;";
+      row.appendChild(msg);
+    } else {
+      const line = document.createElement('div');
+      line.style.cssText = 'display:flex;gap:8px;align-items:center;';
+      const input = document.createElement('input');
+      input.readOnly = true;
+      input.value = r.url;
+      input.style.cssText = "flex:1;background:#0e1a17;border:1px solid #2ea89d;border-radius:6px;padding:10px 12px;color:#d4e8e0;font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;min-width:0;";
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = 'COPY';
+      copyBtn.style.cssText = "background:#2ea89d;color:#fff;border:none;border-radius:6px;padding:10px 16px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.08em;white-space:nowrap;flex-shrink:0;";
+      copyBtn.onclick = () => rg_copyText(r.url, copyBtn, 'COPY');
+      line.appendChild(input);
+      line.appendChild(copyBtn);
+      row.appendChild(line);
+    }
+    list.appendChild(row);
+  });
+  const allBtn = document.getElementById('rg-link-copy-all-btn');
+  allBtn.style.display = okCount > 1 ? 'inline-block' : 'none';
+  allBtn.textContent = 'COPY ALL';
+  document.getElementById('rg-link-overlay').style.display = 'flex';
+}
+
+// "Copy All" puts every link on its own line: "Player Name: link"
+function rg_copyAllReportLinks() {
+  const text = rg_LINK_RESULTS.filter(r => r.url).map(r => r.player + ': ' + r.url).join('\n');
+  rg_copyText(text, document.getElementById('rg-link-copy-all-btn'), 'COPY ALL');
+}
+
+function rg_copyText(text, btn, label) {
+  function done() {
+    btn.textContent = '✓ COPIED';
+    setTimeout(() => { btn.textContent = label; }, 2000);
+  }
+  navigator.clipboard.writeText(text).then(done).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
     document.execCommand('copy');
-    btn.textContent = '\u2713 COPIED';
-    setTimeout(() => { btn.textContent = 'COPY'; }, 2000);
+    document.body.removeChild(ta);
+    done();
   });
 }
 
