@@ -2568,6 +2568,39 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
     @media (max-width: 900px) {
       #tool-timingstats .ta-app { padding: 16px 14px 48px; }
     }
+
+    /* EXCLUDE TEST EVENTS checkbox (Player Comparison, Combo Comparison) and MARK TESTS (Database events list) */
+    #tool-combostats .tst-check, #tool-playerhub .tst-check {
+      display: flex; align-items: center; gap: 8px; margin: 0 0 10px; cursor: pointer; user-select: none;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--muted);
+    }
+    #tool-combostats .tst-check:hover, #tool-playerhub .tst-check:hover { color: var(--text); }
+    #tool-combostats .tst-check input, #tool-playerhub .tst-check input { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+    #tool-database .db-ptitle { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    #tool-database .db-ptitle-btns { display: flex; gap: 6px; }
+    #tool-database .db-mini {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.06em;
+      color: var(--text); background: var(--surface2); border: 1px solid var(--border); border-radius: 5px;
+      padding: 3px 9px; cursor: pointer; transition: border-color .15s, color .15s;
+    }
+    #tool-database .db-mini:hover:not(:disabled) { border-color: var(--teal); color: #fff; }
+    #tool-database .db-mini.primary { background: var(--teal); border-color: var(--teal); color: #08110e; }
+    #tool-database .db-mini.primary:hover:not(:disabled) { color: #08110e; filter: brightness(1.1); }
+    #tool-database .db-mini:disabled { opacity: 0.5; cursor: default; }
+    #tool-database .db-mini[hidden] { display: none; }
+    #tool-database .db-mark-msg { font-family: 'IBM Plex Mono', monospace; font-size: 10px; line-height: 1.5; color: var(--muted); padding: 8px 14px; border-bottom: 1px solid var(--border); }
+    #tool-database .db-mark-msg[hidden] { display: none; }
+    #tool-database .db-mark-msg.ok { color: var(--teal); }
+    #tool-database .db-mark-msg.error { color: var(--danger); }
+    #tool-database .db-ev.marking { justify-content: flex-start; }
+    #tool-database .db-ev.marking .db-ev-main { flex: 1 1 auto; }
+    #tool-database .db-ev.marking .db-ev-n { margin-left: auto; }
+    #tool-database .db-ev-cb { accent-color: var(--accent); width: 15px; height: 15px; flex-shrink: 0; pointer-events: none; }
+    #tool-database .db-ev-tag { display: inline-block; font-family: 'Barlow', sans-serif; font-size: 8px; font-weight: 700; color: #0e1512; background: var(--accent); border-radius: 3px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
+    #tool-timingstats .ta-check { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
+    #tool-timingstats .ta-check:hover { color: var(--text); }
+    #tool-timingstats .ta-check input { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+    #tool-timingstats .ta-check[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -2862,6 +2895,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         TOURNAMENTS
         <button class="sb-label-btn" id="ph-tourn-all-btn" onclick="ph_toggleAllTournaments()">DESELECT ALL</button>
       </div>
+      <label class="tst-check"><input type="checkbox" id="ph-excl-tests" checked onchange="ph_setExcludeTests(this.checked)"> Exclude Test Events</label>
       <div class="tourn-list" id="ph-tourn-list"></div>
     </div>
   </div>
@@ -2963,6 +2997,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
             TOURNAMENTS
             <button class="tourn-select-all" id="cs-tourn-all-btn" onclick="cs_toggleAllTournaments()">DESELECT ALL</button>
           </div>
+          <label class="tst-check"><input type="checkbox" id="cs-excl-tests" checked onchange="cs_setExcludeTests(this.checked)"> Exclude Test Events</label>
           <div class="tourn-list" id="cs-tourn-list"></div>
         </div>
 
@@ -3007,6 +3042,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
           <span class="ta-status" id="ta-status"></span>
           <label class="ta-evlabel" for="ta-event">EVENT</label>
           <select class="ta-select" id="ta-event"><option value="">All events</option></select>
+          <label class="ta-check" id="ta-excl-wrap" title="Leave out events marked as tests in the Database tab"><input type="checkbox" id="ta-excl-tests" checked> Exclude Test Events</label>
           <button class="ta-btn" id="ta-reload" type="button" title="Download the timing data again">Reload</button>
         </div>
       </div>
@@ -3077,7 +3113,15 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 
       <div class="db-layout">
         <aside class="db-panel db-events">
-          <div class="db-panel-title">EVENTS</div>
+          <div class="db-panel-title db-ptitle">
+            <span>EVENTS</span>
+            <span class="db-ptitle-btns">
+              <button class="db-mini" id="db-mark-btn" type="button" title="Choose which events are tests (left out of Player Comparison, Combo Comparison and Timing Analysis)">Mark Tests</button>
+              <button class="db-mini" id="db-mark-cancel" type="button" hidden>Cancel</button>
+              <button class="db-mini primary" id="db-mark-save" type="button" hidden>Save</button>
+            </span>
+          </div>
+          <div class="db-mark-msg" id="db-mark-msg" hidden></div>
           <div id="db-event-list"></div>
         </aside>
 
@@ -3189,6 +3233,44 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
     window.SHARED_CSV_STATUS(statusText || ('✓ ' + label), 'has-file');
     notifySharedCSV();
   };
+
+  // ══════════════════════════════════════════════════════════════════════
+  // TEST EVENTS — events staff have marked as "test" (Database tab > Mark Tests).
+  // Player Comparison, Combo Comparison and Timing Analysis leave them out of their samples
+  // while "Exclude Test Events" is ticked (it starts ticked). One shared setting: the checkbox
+  // in each of those tabs shows and changes the same value. The list itself is saved in the
+  // database (GET/POST /test-events on the database Worker) so every staff device sees it.
+  // Names are compared with surrounding spaces removed.
+  // ══════════════════════════════════════════════════════════════════════
+  window.NCBLAST_TESTS = (function () {
+    let names = new Set();
+    let exclude = true;
+    const listeners = [];
+    const norm = function (s) { return String(s == null ? '' : s).trim(); };
+    function fire(why) {
+      listeners.forEach(function (fn) { try { fn(why); } catch (err) { console.error('Test-event listener failed:', err); } });
+    }
+    return {
+      norm: norm,
+      isTest: function (n) { return names.has(norm(n)); },
+      skip: function (n) { return exclude && names.has(norm(n)); },   // true = leave this event out of the sample
+      list: function () { return Array.from(names); },
+      get exclude() { return exclude; },
+      setList: function (arr) {
+        const next = new Set((Array.isArray(arr) ? arr : []).map(norm).filter(Boolean));
+        const same = next.size === names.size && Array.from(next).every(function (n) { return names.has(n); });
+        names = next;
+        if (!same) fire('list');
+      },
+      setExclude: function (v) {
+        v = !!v;
+        if (v === exclude) return;
+        exclude = v;
+        fire('exclude');
+      },
+      onChange: function (fn) { listeners.push(fn); }
+    };
+  })();
 </script>
 
 <script>
@@ -3568,7 +3650,7 @@ function cs_buildTournamentList() {
   const counts = {};
   cs_ALL_ROWS.forEach(r => {
     const t = (r.tournament||'').trim();
-    if (t) counts[t] = (counts[t]||0) + 1;
+    if (t && !window.NCBLAST_TESTS.skip(t)) counts[t] = (counts[t]||0) + 1;   // test events are left out while "Exclude Test Events" is ticked
   });
 
   cs_ALL_TOURNAMENTS = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([t,n])=>({name:t,battles:n}));
@@ -3636,6 +3718,22 @@ function cs_updateTournAllBtn() {
   document.getElementById('cs-tourn-all-btn').textContent =
     cs_SELECTED_TOURNAMENTS.size === cs_ALL_TOURNAMENTS.length ? 'DESELECT ALL' : 'SELECT ALL';
 }
+
+// "Exclude Test Events": shared setting (see NCBLAST_TESTS in the shell). Test events drop out of the
+// tournament list, so every stat below ignores them. Changing it rebuilds the list (all remaining events selected).
+function cs_setExcludeTests(on) {
+  window.NCBLAST_TESTS.setExclude(on);
+}
+function cs_onTestsChanged(why) {
+  const box = document.getElementById('cs-excl-tests');
+  if (box) box.checked = window.NCBLAST_TESTS.exclude;
+  if (!cs_ALL_ROWS.length) return;
+  if (why === 'list' && !window.NCBLAST_TESTS.exclude) return;   // marks changed but tests are included anyway
+  cs_buildTournamentList();
+  cs_refreshDropdowns(document.getElementById('cs-sel-blade').value, document.getElementById('cs-sel-ratchet').value, document.getElementById('cs-sel-bit').value);
+  cs_runSearch();
+}
+window.NCBLAST_TESTS.onChange(cs_onTestsChanged);
 
 // ══════════════════════════════════════════════════════════════════════════
 //  SUB-TAB SWITCHING — "Build Stats" (combos played) vs "Matchup Stats"
@@ -4665,7 +4763,7 @@ if (window.SHARED_CSV_LISTENERS) {
 // ═══════════════════════════════════════════════════════════════
 function ph_buildTournamentList(){
   const counts={};
-  ph_ALL_ROWS.forEach(r=>{const t=(r.tournament||'').trim();if(t)counts[t]=(counts[t]||0)+1;});
+  ph_ALL_ROWS.forEach(r=>{const t=(r.tournament||'').trim();if(t&&!window.NCBLAST_TESTS.skip(t))counts[t]=(counts[t]||0)+1;});   // test events are left out while "Exclude Test Events" is ticked
   ph_ALL_TOURNAMENTS=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([n,c])=>({name:n,count:c}));
   ph_SELECTED_TOURNAMENTS=new Set(ph_ALL_TOURNAMENTS.map(t=>t.name));
   const list=document.getElementById('ph-tourn-list');
@@ -4679,6 +4777,18 @@ function ph_buildTournamentList(){
   });
   ph_updateTournBtn();
 }
+// "Exclude Test Events": shared setting (see NCBLAST_TESTS in the shell). Test events drop out of the
+// tournament list, so every stat ignores them. Changing it rebuilds the list (all remaining events selected).
+function ph_setExcludeTests(on){window.NCBLAST_TESTS.setExclude(on);}
+function ph_onTestsChanged(why){
+  const box=document.getElementById('ph-excl-tests');
+  if(box)box.checked=window.NCBLAST_TESTS.exclude;
+  if(!ph_ALL_ROWS.length)return;
+  if(why==='list'&&!window.NCBLAST_TESTS.exclude)return;   // marks changed but tests are included anyway
+  ph_buildTournamentList();
+  ph_refreshCurrentView();
+}
+window.NCBLAST_TESTS.onChange(ph_onTestsChanged);
 function ph_toggleTourn(name,el){
   if(ph_SELECTED_TOURNAMENTS.has(name)){ph_SELECTED_TOURNAMENTS.delete(name);el.classList.remove('checked');el.querySelector('.t-chk').textContent='';}
   else{ph_SELECTED_TOURNAMENTS.add(name);el.classList.add('checked');el.querySelector('.t-chk').textContent='✓';}
@@ -9884,7 +9994,9 @@ const db_state = {
   lastCheck: 0,      // when the last successful check finished
   lastVerify: 0,     // when the exact battle count was last compared
   catchingUp: false, // showing the saved copy and waiting for the first check
-  cacheTimer: null
+  cacheTimer: null,
+  markMode: false,   // "Mark Tests" is open: the events list shows a checkbox for each event
+  markDraft: null    // Set of event names ticked as tests while that mode is open (not saved until Save)
 };
 
 function db_esc(s) {
@@ -10480,17 +10592,103 @@ function db_applyFilters() {
 
 function db_renderEvents() {
   const s = db_state;
-  let html = '<button type="button" class="db-ev' + (!s.event ? ' on' : '') + '" data-event="">' +
+  const T = window.NCBLAST_TESTS;
+  let html = '<button type="button" class="db-ev' + (!s.event && !s.markMode ? ' on' : '') + '" data-event="">' +
     '<span class="db-ev-main"><span class="db-ev-name">All events</span></span>' +
     '<span class="db-ev-n">' + db_fmtNum(s.rows.length) + '</span></button>';
   s.events.forEach(e => {
-    html += '<button type="button" class="db-ev' + (s.event === e.name ? ' on' : '') + '" data-event="' + db_esc(e.name) + '">' +
+    const isTest = s.markMode ? s.markDraft.has(T.norm(e.name)) : T.isTest(e.name);
+    const tag = !s.markMode && isTest ? '<span class="db-ev-tag" title="Marked as a test event">TEST</span>' : '';
+    html += '<button type="button" class="db-ev' + (s.markMode ? ' marking' : (s.event === e.name ? ' on' : '')) + '" data-event="' + db_esc(e.name) + '">' +
+      (s.markMode ? '<input type="checkbox" class="db-ev-cb" tabindex="-1"' + (isTest ? ' checked' : '') + '>' : '') +
       '<span class="db-ev-main"><span class="db-ev-name" title="' + db_esc(e.name) + '">' + db_esc(e.name) + '</span>' +
-      '<span class="db-ev-date">' + db_esc(db_fmtDate(e.first)) + '</span></span>' +
+      '<span class="db-ev-date">' + db_esc(db_fmtDate(e.first)) + tag + '</span></span>' +
       '<span class="db-ev-n">' + db_fmtNum(e.count) + '</span></button>';
   });
   document.getElementById('db-event-list').innerHTML = html;
 }
+
+// ---------- Mark Tests ----------
+// Events marked as tests are left out of Player Comparison, Combo Comparison and Timing Analysis
+// (while their "Exclude Test Events" box is ticked). The list is saved in the database, by event name.
+function db_markMsg(text, kind) {
+  const el = document.getElementById('db-mark-msg');
+  if (!el) return;
+  el.textContent = text || '';
+  el.hidden = !text;
+  el.className = 'db-mark-msg' + (kind ? ' ' + kind : '');
+}
+
+function db_markBar() {
+  const on = !!db_state.markMode;
+  document.getElementById('db-mark-btn').hidden = on;
+  document.getElementById('db-mark-cancel').hidden = !on;
+  document.getElementById('db-mark-save').hidden = !on;
+}
+
+function db_markStart() {
+  const s = db_state;
+  s.markMode = true;
+  s.markDraft = new Set(window.NCBLAST_TESTS.list());
+  db_markMsg('Tick the events that are tests, then press Save.', '');
+  db_markBar();
+  db_renderEvents();
+}
+
+function db_markCancel() {
+  const s = db_state;
+  s.markMode = false;
+  s.markDraft = null;
+  db_markMsg('', '');
+  db_markBar();
+  db_renderEvents();
+}
+
+function db_markToggle(name, button) {
+  const s = db_state;
+  if (!s.markMode) return;
+  const n = window.NCBLAST_TESTS.norm(name);
+  if (s.markDraft.has(n)) s.markDraft.delete(n); else s.markDraft.add(n);
+  const cb = button && button.querySelector('.db-ev-cb');
+  if (cb) cb.checked = s.markDraft.has(n);   // change just this box so the list does not jump
+}
+
+async function db_markSave() {
+  const s = db_state;
+  if (!s.markMode) return;
+  const save = document.getElementById('db-mark-save'), cancel = document.getElementById('db-mark-cancel');
+  save.disabled = true; cancel.disabled = true;
+  db_markMsg('Saving…', '');
+  try {
+    const res = await db_apiJson('/test-events', { method: 'POST', body: { events: Array.from(s.markDraft) } });
+    s.markMode = false;
+    s.markDraft = null;
+    window.NCBLAST_TESTS.setList(res && res.events ? res.events : []);
+    const n = window.NCBLAST_TESTS.list().length;
+    db_markMsg('Saved · ' + n + ' test event' + (n === 1 ? '' : 's'), 'ok');
+    db_markBar();
+    db_renderEvents();
+  } catch (e) {
+    if (e && e.status === 401) return;   // the lock screen is up
+    db_markMsg(e && e.status === 404
+      ? 'The database Worker does not have the test-event routes yet. Deploy the updated ncblast-db Worker, then try again.'
+      : 'Could not save: ' + ((e && e.message) || 'unknown error'), 'error');
+  } finally {
+    save.disabled = false; cancel.disabled = false;
+  }
+}
+
+// Gets the saved list after the device is unlocked. If the Worker is the old version (no such route)
+// the list simply stays empty and nothing is excluded.
+async function db_loadTests() {
+  try {
+    const d = await db_apiJson('/test-events');
+    window.NCBLAST_TESTS.setList(d && d.events ? d.events : []);
+    if (!db_state.markMode) db_renderEvents();
+  } catch (e) { /* signed out, offline, or an older Worker: leave the list as it is */ }
+}
+
+window.NCBLAST_TESTS.onChange(function () { if (!db_state.markMode) db_renderEvents(); });
 
 // ═══════════════════════════════════════════════════════════════════════════
 // THE GRID — a spreadsheet-style view of the battles.
@@ -11450,6 +11648,7 @@ async function db_submitLogin() {
 // whichever tab is showing, so it is already there when the Database tab is opened.
 function db_afterUnlock() {
   const s = db_state;
+  db_loadTests();
   if (s.loaded) { db_cacheSoon(); db_syncNow(); }
   else db_open();
 }
@@ -12308,8 +12507,14 @@ function db_init() {
 
   document.getElementById('db-event-list').addEventListener('click', function (e) {
     const b = e.target.closest('[data-event]');
-    if (b) db_setEvent(b.getAttribute('data-event'));
+    if (!b) return;
+    // While Mark Tests is open, clicking an event ticks or unticks it instead of opening it
+    if (db_state.markMode && b.getAttribute('data-event')) { db_markToggle(b.getAttribute('data-event'), b); return; }
+    db_setEvent(b.getAttribute('data-event'));
   });
+  document.getElementById('db-mark-btn').addEventListener('click', db_markStart);
+  document.getElementById('db-mark-cancel').addEventListener('click', db_markCancel);
+  document.getElementById('db-mark-save').addEventListener('click', db_markSave);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -12750,6 +12955,7 @@ function ta_buildMatches(lines) {
 //  - match length: Start to Match Complete. Matches with no Match Complete line are left out.
 //  - deck building: Start to Decks Recorded (time spent in a fix is not counted). Matches with no Decks line are left out.
 //  - fix time: the average length of ONE fix, from when the problem began to when it was repaired (notice + repair).
+//    A judge with no fixes in the sample counts as 0 seconds (not blank), and so does the sample itself if it has none.
 // The sample average is pooled over every match (or every fix) in view, not an average of the judges' averages,
 // so a judge who ran 40 matches counts for more than one who ran 2.
 // diff = the judge's average minus the sample average (+ = slower, - = faster). null when either side has no data.
@@ -12784,12 +12990,12 @@ function ta_judgeStats(matches) {
   const sample = {
     total: avg(all.sumTotal, all.nTotal),
     decks: avg(all.sumDecks, all.nDecks),
-    fix: avg(all.sumFix, all.nFix)
+    fix: all.nFix ? all.sumFix / all.nFix : 0
   };
   const gap = function (v, base) { return v === null || base === null ? null : v - base; };
   const rows = order.map(function (k) {
     const j = by[k];
-    const total = avg(j.sumTotal, j.nTotal), decks = avg(j.sumDecks, j.nDecks), fix = avg(j.sumFix, j.nFix);
+    const total = avg(j.sumTotal, j.nTotal), decks = avg(j.sumDecks, j.nDecks), fix = j.nFix ? j.sumFix / j.nFix : 0;
     return {
       name: j.name, matches: j.matches, fixes: j.nFix,
       total: total, decks: decks, fix: fix,
@@ -12921,12 +13127,19 @@ function ta_open(force) {
   ta_load(!!force);
 }
 
-// The matches the tab is looking at right now: every event, or just the one picked in the drop-down.
+// The events the tab is looking at right now: just the one picked in the drop-down (even if it is a test event),
+// or, for "All events", every event except test events while "Exclude Test Events" is ticked.
+function ta_visibleEvents() {
+  const s = ta_state;
+  if (s.event) return s.events.filter(function (e) { return e.tournament === s.event; });
+  return s.events.filter(function (e) { return !window.NCBLAST_TESTS.skip(e.tournament); });
+}
+
+// The matches the tab is looking at right now (see ta_visibleEvents).
 function ta_viewMatches() {
   const s = ta_state;
-  if (s.event) return s.cache[s.event] ? s.cache[s.event].matches : [];
   let all = [];
-  s.events.forEach(function (e) { if (s.cache[e.tournament]) all = all.concat(s.cache[e.tournament].matches); });
+  ta_visibleEvents().forEach(function (e) { if (s.cache[e.tournament]) all = all.concat(s.cache[e.tournament].matches); });
   return all;
 }
 
@@ -12935,11 +13148,12 @@ function ta_renderEvents() {
   const sel = document.getElementById('ta-event');
   if (!sel) return;
   if (!s.events.length) { sel.innerHTML = '<option value="">' + (s.loading ? 'Loading…' : 'No timing data yet') + '</option>'; return; }
-  const total = s.events.reduce(function (t, e) { return t + (e.matches || 0); }, 0);
+  const total = s.events.reduce(function (t, e) { return t + (window.NCBLAST_TESTS.skip(e.tournament) ? 0 : (e.matches || 0)); }, 0);
   sel.innerHTML = '<option value=""' + (s.event === '' ? ' selected' : '') + '>All events · ' + db_fmtNum(total) + ' match' + (total === 1 ? '' : 'es') + '</option>' +
     s.events.map(function (e) {
       return '<option value="' + db_esc(e.tournament) + '"' + (e.tournament === s.event ? ' selected' : '') + '>' +
-        db_esc(e.tournament) + ' · ' + db_fmtNum(e.matches) + ' match' + (e.matches === 1 ? '' : 'es') + '</option>';
+        db_esc(e.tournament) + ' · ' + db_fmtNum(e.matches) + ' match' + (e.matches === 1 ? '' : 'es') +
+        (window.NCBLAST_TESTS.isTest(e.tournament) ? ' · test' : '') + '</option>';
     }).join('');
 }
 
@@ -12959,6 +13173,11 @@ function ta_sortBy(key) {
 function ta_render() {
   const s = ta_state;
   ta_renderEvents();
+  // the "Exclude Test Events" box only matters for "All events"; a single event you pick is always shown
+  const wrapEl = document.getElementById('ta-excl-wrap');
+  if (wrapEl) wrapEl.hidden = !!s.event;
+  const box = document.getElementById('ta-excl-tests');
+  if (box) box.checked = window.NCBLAST_TESTS.exclude;
   document.querySelectorAll('#ta-subnav [data-ta-module]').forEach(function (b) {
     b.classList.toggle('active', b.getAttribute('data-ta-module') === s.module);
   });
@@ -12997,11 +13216,16 @@ function ta_renderJudges() {
     return;
   }
   const matches = ta_viewMatches();
-  if (!matches.length) { wrap.innerHTML = '<div class="ta-msg">No matches in this selection.</div>'; return; }
+  if (!matches.length) {
+    wrap.innerHTML = '<div class="ta-msg">' + (!s.event && window.NCBLAST_TESTS.exclude && s.events.length && !ta_visibleEvents().length
+      ? 'Every event with timing data is marked as a test. Untick “Exclude Test Events” to see them.'
+      : 'No matches in this selection.') + '</div>';
+    return;
+  }
 
   const st = ta_judgeStats(matches);
   const rows = ta_sortRows(st.rows, s.sortKey, s.sortDir);
-  const eventCount = s.event ? 1 : s.events.filter(function (e) { return s.cache[e.tournament] && s.cache[e.tournament].matches.length; }).length;
+  const eventCount = ta_visibleEvents().filter(function (e) { return s.cache[e.tournament] && s.cache[e.tournament].matches.length; }).length;
   count.textContent = db_fmtNum(st.rows.length) + ' judge' + (st.rows.length === 1 ? '' : 's') + ' · ' +
     db_fmtNum(st.matchCount) + ' match' + (st.matchCount === 1 ? '' : 'es') + ' · ' +
     db_fmtNum(eventCount) + ' event' + (eventCount === 1 ? '' : 's');
@@ -13021,7 +13245,7 @@ function ta_renderJudges() {
   rows.forEach(function (r) {
     h += '<tr><td><div class="ta-name">' + db_esc(r.name) + '</div>' +
       '<div class="ta-sub">' + db_fmtNum(r.matches) + ' match' + (r.matches === 1 ? '' : 'es') +
-      (r.fixes ? ' · ' + db_fmtNum(r.fixes) + ' fix' + (r.fixes === 1 ? '' : 'es') : '') + '</div></td>' +
+      ' · ' + db_fmtNum(r.fixes) + ' fix' + (r.fixes === 1 ? '' : 'es') + '</div></td>' +
       ta_valCell(r.total, r.dTotal) + ta_valCell(r.decks, r.dDecks) + ta_valCell(r.fix, r.dFix) + '</tr>';
   });
   h += '</tbody><tfoot><tr><td><div class="ta-name">SAMPLE AVERAGE</div><div class="ta-sub">all judges together</div></td>' +
@@ -13035,7 +13259,7 @@ function ta_renderJudges() {
     (st.noComplete ? ' (' + db_fmtNum(st.noComplete) + ' match' + (st.noComplete === 1 ? ' has' : 'es have') + ' no Match Complete line and ' + (st.noComplete === 1 ? 'is' : 'are') + ' left out)' : '') +
     '. <b>Deck building</b> is Start to Decks Recorded. <b>Fix time</b> is the average length of one fix, from when the problem began until it was repaired (' +
     db_fmtNum(st.totalFixes) + ' fix' + (st.totalFixes === 1 ? '' : 'es') + ' in view).<br>' +
-    'The sample average counts every match (or fix) once, so a judge with more matches pulls it harder. A “—” means that judge has no data for that column.';
+    'The sample average counts every match (or fix) once, so a judge with more matches pulls it harder. A judge with no fixes counts as 0.0s for fix time. A “—” means that judge has no data for that column.';
 }
 
 function ta_init() {
@@ -13045,6 +13269,8 @@ function ta_init() {
     ta_render();
   });
   document.getElementById('ta-reload').addEventListener('click', function () { ta_open(true); });
+  document.getElementById('ta-excl-tests').addEventListener('change', function (e) { window.NCBLAST_TESTS.setExclude(e.target.checked); });
+  window.NCBLAST_TESTS.onChange(function () { ta_render(); });
   document.getElementById('ta-subnav').addEventListener('click', function (e) {
     const b = e.target.closest('[data-ta-module]');
     if (b) ta_setModule(b.getAttribute('data-ta-module'));
