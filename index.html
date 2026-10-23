@@ -3049,6 +3049,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 
       <div class="ta-subnav" id="ta-subnav">
         <button class="ta-subtab active" type="button" data-ta-module="judges">JUDGE COMPARISON</button>
+        <button class="ta-subtab" type="button" data-ta-module="players">PLAYER COMPARISON</button>
       </div>
 
       <!-- MODULE: JUDGE COMPARISON -->
@@ -3056,6 +3057,13 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
         <div class="ta-count" id="ta-judge-count"></div>
         <div class="ta-wrap" id="ta-judge-wrap"></div>
         <div class="ta-note" id="ta-judge-note"></div>
+      </div>
+
+      <!-- MODULE: PLAYER COMPARISON -->
+      <div class="ta-mod" id="ta-mod-players" hidden>
+        <div class="ta-count" id="ta-player-count"></div>
+        <div class="ta-wrap" id="ta-player-wrap"></div>
+        <div class="ta-note" id="ta-player-note"></div>
       </div>
 
     </div>
@@ -12938,7 +12946,7 @@ function dbt_init() {
 // device's key and never writes. It re-uses dbt_analyze() above for the per-match math, so the two
 // places can never disagree. It does not touch db_state's battle data or SHARED_CSV_LISTENERS.
 // Layout: a shared event drop-down (default = all events) and a row of module sub-tabs.
-// Modules so far: JUDGE COMPARISON.
+// Modules so far: JUDGE COMPARISON, PLAYER COMPARISON.
 // ═══════════════════════════════════════════════════════════════════════════
 const TA_NO_JUDGE = '(no judge recorded)';
 
@@ -13046,6 +13054,9 @@ const ta_state = {
   event: '',         // '' = all events
   sortKey: 'total',  // judge table: which column it is sorted by
   sortDir: 'asc',    // 'asc' = fastest first
+  pSortKey: 'total', // player table: which column it is sorted by
+  pSortDir: 'asc',   // 'asc' = lowest first (fastest first for the time columns)
+  pWait: null,       // timer: re-draw the player table once the battle records have finished loading
   loadedAt: 0,       // when timing data was last fetched (quick flips between tabs do not re-download)
   loading: false,
   error: '',
@@ -13068,6 +13079,7 @@ function ta_isActive() {
 function ta_clear() {
   const s = ta_state;
   s.events = []; s.cache = {}; s.event = ''; s.loadedAt = 0; s.loading = false; s.error = ''; s.ticket++;
+  clearTimeout(s.pWait);
   ta_setStatus('', '');
   ta_render();
 }
@@ -13193,6 +13205,7 @@ function ta_render() {
     el.hidden = el.id !== 'ta-mod-' + s.module;
   });
   if (s.module === 'judges') ta_renderJudges();
+  else if (s.module === 'players') ta_renderPlayers();
 }
 
 // ── module: JUDGE COMPARISON ───────────────────────────────────────────────
@@ -13270,6 +13283,251 @@ function ta_renderJudges() {
     'The sample average counts every match (or fix) once, so a judge with more matches pulls it harder. A judge with no fixes counts as 0.0s for fix time. A “—” means that judge has no data for that column.';
 }
 
+// ── module: PLAYER COMPARISON ──────────────────────────────────────────────
+// One row per player. Two kinds of numbers:
+//  - STOPWATCH numbers (average match length, average battle length) come from the timing lines. A match's
+//    stopwatch belongs to both players in it, so both get the same match and its battle times.
+//  - BATTLE-RECORD numbers (launch errors, pick priority in set 1) come from the battles the Database tab
+//    already holds (db_state.rows). The stopwatch does not say WHICH player had priority or made a launch
+//    error, but the battle records do. Each timed match is linked to its battle rows by: same event,
+//    same two players (either order), and a battle time stamp inside the match's own start-to-finish window.
+//    This only READS db_state.rows; it never changes them.
+// A match that finds no battle rows is left out of those two columns (and counted in the note under the table).
+const TA_LINK_BEFORE_MS = 10 * 1000;   // a battle row may be stamped up to 10 s before the stopwatch Start
+const TA_LINK_AFTER_MS = 60 * 1000;    // ... or up to 60 s after the last stopwatch line
+
+// Player and event names compared without caring about capitals or stray spaces ("Leaf" and "leaf" are one player).
+function ta_pKey(n) { return db_canonName(String(n === null || n === undefined ? '' : n).trim()).toLowerCase(); }
+function ta_evKey(e) { return String(e === null || e === undefined ? '' : e).trim().toLowerCase(); }
+function ta_pairKey(ev, a, b) { return ta_evKey(ev) + '\u0001' + (a < b ? a + '\u0001' + b : b + '\u0001' + a); }
+
+// True for a Launch Error row AND for an LER Strike (warning) row. Strikes are worth 0 points but still count here.
+function ta_isLaunchFinish(f) {
+  const k = String(f === null || f === undefined ? '' : f).toUpperCase().replace(/[^A-Z]/g, '');
+  return k === 'LAUNCHERROR' || k === 'LERSTRIKE' || k === 'LER';
+}
+
+// The battle rows grouped by event + the two players, each with its time stamp read as a number.
+function ta_indexBattles(rows) {
+  const idx = {};
+  (Array.isArray(rows) ? rows : []).forEach(function (r) {
+    const ms = Date.parse(r.ts);
+    if (isNaN(ms)) return;
+    const key = ta_pairKey(r.event, ta_pKey(r.p1), ta_pKey(r.p2));
+    (idx[key] = idx[key] || []).push({ r: r, ms: ms });
+  });
+  return idx;
+}
+
+// Pure: matches (from ta_buildMatches) + the battle index (from ta_indexBattles) in, one row per player out.
+//  - match length: Start to Match Complete; matches with no Match Complete line are left out (same as judges).
+//  - battle length: the average of every battle time in the player's matches, pooled (a match with more battles
+//    counts for more). Uses the same battles the Match timing view averages (undone and corrections in, replaced out).
+//  - launch errors: how many the player CAUSED, counting launch errors and LER strikes. On those rows the Winner
+//    is whoever gained the credit, so the player who caused it is the OTHER one. Only matches linked to battle rows count.
+//  - priority: the share of the player's linked matches (that carry a priority marker on set 1) where they had priority.
+// The sample figures count every match once (not once per player).
+function ta_playerStats(matches, index) {
+  const by = {}, order = [];
+  const all = { nTotal: 0, sumTotal: 0, nBattle: 0, sumBattle: 0, launch: 0, linkedSlots: 0 };
+  let noNames = 0, unlinked = 0, unattributed = 0, noComplete = 0, matchCount = 0;
+  matches.forEach(function (m) {
+    const names = [m.p1, m.p2].map(function (n) { return String(n === null || n === undefined ? '' : n).trim(); });
+    const keys = names.map(ta_pKey);
+    if (!names[0] || !names[1] || keys[0] === keys[1]) { noNames++; return; }
+    matchCount++;
+    const used = (m.battles || []).filter(function (b) { return b.inAvg; });
+    let bSum = 0;
+    used.forEach(function (b) { bSum += b.t; });
+    if (m.complete) { all.nTotal++; all.sumTotal += m.total; } else noComplete++;
+    all.nBattle += used.length; all.sumBattle += bSum;
+
+    // link this match to its battle rows
+    const startMs = Date.parse(m.startedAt);
+    const launchBy = {};
+    let linked = false, priKey = null;
+    if (!isNaN(startMs)) {
+      const list = index[ta_pairKey(m.event, keys[0], keys[1])] || [];
+      const lo = startMs - TA_LINK_BEFORE_MS, hi = startMs + (m.total || 0) * 1000 + TA_LINK_AFTER_MS;
+      let priRow = null;
+      list.forEach(function (x) {
+        if (x.ms < lo || x.ms > hi) return;
+        linked = true;
+        const r = x.r;
+        if (parseInt(r.set, 10) === 1 && r.p1Priority !== null && r.p1Priority !== undefined && (!priRow || x.ms < priRow.ms)) priRow = x;
+        if (ta_isLaunchFinish(r.finish)) {
+          const w = ta_pKey(r.winner);
+          if (w === keys[0]) launchBy[keys[1]] = (launchBy[keys[1]] || 0) + 1;
+          else if (w === keys[1]) launchBy[keys[0]] = (launchBy[keys[0]] || 0) + 1;
+          else unattributed++;
+        }
+      });
+      if (priRow) {
+        const pk = priRow.r.p1Priority === true ? ta_pKey(priRow.r.p1) : ta_pKey(priRow.r.p2);
+        if (pk === keys[0] || pk === keys[1]) priKey = pk;
+      }
+    }
+    if (!linked) unlinked++;
+
+    names.forEach(function (name, i) {
+      const k = keys[i];
+      if (!by[k]) {
+        by[k] = { name: name, matches: 0, nTotal: 0, sumTotal: 0, nBattle: 0, sumBattle: 0, linked: 0, launch: 0, priKnown: 0, priHad: 0 };
+        order.push(k);
+      }
+      const p = by[k];
+      p.matches++;
+      if (m.complete) { p.nTotal++; p.sumTotal += m.total; }
+      p.nBattle += used.length; p.sumBattle += bSum;
+      if (linked) {
+        const n = launchBy[k] || 0;
+        p.linked++; p.launch += n;
+        all.launch += n; all.linkedSlots++;
+        if (priKey !== null) { p.priKnown++; if (priKey === k) p.priHad++; }
+      }
+    });
+  });
+  const avg = function (sum, n) { return n ? sum / n : null; };
+  const gap = function (v, base) { return v === null || base === null ? null : v - base; };
+  const sample = {
+    total: avg(all.sumTotal, all.nTotal),
+    battle: avg(all.sumBattle, all.nBattle),
+    launchRate: all.linkedSlots ? all.launch / all.linkedSlots : null
+  };
+  const rows = order.map(function (k) {
+    const p = by[k];
+    const total = avg(p.sumTotal, p.nTotal), battle = avg(p.sumBattle, p.nBattle);
+    return {
+      name: p.name, matches: p.matches, linked: p.linked,
+      total: total, battle: battle,
+      launch: p.linked ? p.launch : null,
+      launchRate: p.linked ? p.launch / p.linked : null,
+      pri: p.priKnown ? p.priHad / p.priKnown * 100 : null,
+      priHad: p.priHad, priKnown: p.priKnown,
+      dTotal: gap(total, sample.total), dBattle: gap(battle, sample.battle)
+    };
+  });
+  return { rows: rows, sample: sample, matchCount: matchCount, noNames: noNames, unlinked: unlinked,
+    unattributed: unattributed, noComplete: noComplete, totalLaunch: all.launch };
+}
+
+function ta_playerSortBy(key) {
+  const s = ta_state;
+  if (s.pSortKey === key) s.pSortDir = s.pSortDir === 'asc' ? 'desc' : 'asc';
+  else { s.pSortKey = key; s.pSortDir = 'asc'; }   // a new column starts lowest / fastest first
+  ta_renderPlayers();
+}
+
+// kind: 'name' | 'time' | 'count' | 'pct' decides the wording of the sort tooltips.
+const TA_PLAYER_COLS = [
+  { key: 'name', label: 'PLAYER', num: false, kind: 'name' },
+  { key: 'total', label: 'AVG MATCH LENGTH', num: true, kind: 'time' },
+  { key: 'battle', label: 'AVG BATTLE LENGTH', num: true, kind: 'time' },
+  { key: 'launch', label: 'LAUNCH ERRORS', num: true, kind: 'count' },
+  { key: 'pri', label: 'PRIORITY IN SET 1', num: true, kind: 'pct' }
+];
+
+function ta_renderPlayers() {
+  const s = ta_state;
+  const wrap = document.getElementById('ta-player-wrap');
+  const count = document.getElementById('ta-player-count');
+  const note = document.getElementById('ta-player-note');
+  if (!wrap) return;
+  note.innerHTML = '';
+  count.textContent = '';
+  clearTimeout(s.pWait);
+  if (s.error) { wrap.innerHTML = '<div class="ta-msg ta-bad">' + db_esc(s.error) + '</div>'; return; }
+  if (s.loading && !s.loadedAt) { wrap.innerHTML = '<div class="ta-msg">Loading timing data…</div>'; return; }
+  if (!s.events.length) {
+    wrap.innerHTML = '<div class="ta-msg">No match timing has been received yet. Once the judging app starts sending it, every player shows up here.</div>';
+    return;
+  }
+  const matches = ta_viewMatches();
+  if (!matches.length) {
+    wrap.innerHTML = '<div class="ta-msg">' + (!s.event && window.NCBLAST_TESTS.exclude && s.events.length && !ta_visibleEvents().length
+      ? 'Every event with timing data is marked as a test. Untick “Exclude Test Events” to see them.'
+      : 'No matches in this selection.') + '</div>';
+    return;
+  }
+
+  // The battle records (Database tab) load by themselves after unlock. Until they are in, the two columns
+  // that need them show "…" and this table quietly draws itself again a moment later.
+  const battlesReady = !!db_state.loaded;
+  if (!battlesReady) {
+    s.pWait = setTimeout(function () { if (s.module === 'players' && ta_isActive()) ta_renderPlayers(); }, 1500);
+  }
+  const st = ta_playerStats(matches, battlesReady ? ta_indexBattles(db_state.rows) : {});
+  if (!st.rows.length) {
+    wrap.innerHTML = '<div class="ta-msg">The matches in this selection have no player names recorded, so there is nobody to list.</div>';
+    return;
+  }
+  const rows = ta_sortRows(st.rows, s.pSortKey, s.pSortDir);
+  const eventCount = ta_visibleEvents().filter(function (e) { return s.cache[e.tournament] && s.cache[e.tournament].matches.length; }).length;
+  count.textContent = db_fmtNum(st.rows.length) + ' player' + (st.rows.length === 1 ? '' : 's') + ' · ' +
+    db_fmtNum(st.matchCount) + ' match' + (st.matchCount === 1 ? '' : 'es') + ' · ' +
+    db_fmtNum(eventCount) + ' event' + (eventCount === 1 ? '' : 's');
+
+  let h = '<table class="ta-table"><thead><tr>';
+  TA_PLAYER_COLS.forEach(function (c) {
+    const on = s.pSortKey === c.key;
+    const arrow = on ? (s.pSortDir === 'asc' ? '▲' : '▼') : '';
+    const lowWord = c.kind === 'time' ? 'fastest' : 'lowest', highWord = c.kind === 'time' ? 'slowest' : 'highest';
+    const tip = c.kind === 'name'
+      ? (on && s.pSortDir === 'asc' ? 'Sorted A to Z. Click for Z to A.' : 'Sort A to Z')
+      : (on && s.pSortDir === 'asc' ? 'Sorted ' + lowWord + ' to ' + highWord + '. Click for ' + highWord + ' to ' + lowWord + '.'
+        : on ? 'Sorted ' + highWord + ' to ' + lowWord + '. Click for ' + lowWord + ' to ' + highWord + '.'
+        : 'Sort ' + lowWord + ' to ' + highWord);
+    h += '<th class="' + (c.num ? 'ta-r' : '') + '" aria-sort="' + (on ? (s.pSortDir === 'asc' ? 'ascending' : 'descending') : 'none') + '">' +
+      '<button type="button" class="ta-th' + (on ? ' sorted' : '') + '" data-ta-psort="' + c.key + '" title="' + tip + '">' +
+      c.label + '<span class="ta-arrow">' + arrow + '</span></button></th>';
+  });
+  h += '</tr></thead><tbody>';
+  const wait = '<td class="ta-r"><span class="ta-none" title="Battle records are still loading">…</span></td>';
+  rows.forEach(function (r) {
+    let launchCell, priCell;
+    if (!battlesReady) { launchCell = wait; priCell = wait; }
+    else {
+      launchCell = r.launch === null
+        ? '<td class="ta-r"><span class="ta-none" title="None of this player\'s matches could be linked to battle records">—</span></td>'
+        : '<td class="ta-r"><span class="ta-val">' + db_fmtNum(r.launch) + '</span>' +
+          '<div class="ta-sub">' + r.launchRate.toFixed(2) + ' per match · ' + db_fmtNum(r.linked) + ' match' + (r.linked === 1 ? '' : 'es') + '</div></td>';
+      priCell = r.pri === null
+        ? '<td class="ta-r"><span class="ta-none" title="No priority marker found on set 1 of this player\'s matches">—</span></td>'
+        : '<td class="ta-r"><span class="ta-val">' + Math.round(r.pri) + '%</span>' +
+          '<div class="ta-sub">' + db_fmtNum(r.priHad) + ' of ' + db_fmtNum(r.priKnown) + ' match' + (r.priKnown === 1 ? '' : 'es') + '</div></td>';
+    }
+    h += '<tr><td><div class="ta-name">' + db_esc(r.name) + '</div>' +
+      '<div class="ta-sub">' + db_fmtNum(r.matches) + ' match' + (r.matches === 1 ? '' : 'es') + '</div></td>' +
+      ta_valCell(r.total, r.dTotal) + ta_valCell(r.battle, r.dBattle) + launchCell + priCell + '</tr>';
+  });
+  const footLaunch = !battlesReady ? wait
+    : st.sample.launchRate === null ? '<td class="ta-r"><span class="ta-none">—</span></td>'
+    : '<td class="ta-r"><span class="ta-val">' + st.sample.launchRate.toFixed(2) + '</span><div class="ta-sub">per match</div></td>';
+  h += '</tbody><tfoot><tr><td><div class="ta-name">SAMPLE AVERAGE</div><div class="ta-sub">all players together</div></td>' +
+    ta_valCell(st.sample.total, null) + ta_valCell(st.sample.battle, null) + footLaunch +
+    '<td class="ta-r"><span class="ta-none" title="Every match has exactly one player with priority, so across everyone it is always 50%">—</span></td></tr></tfoot></table>';
+  wrap.innerHTML = h;
+
+  let n =
+    'The <span class="ta-slow">red +</span> or <span class="ta-fast">green −</span> next to a time is how far that player is from the sample average (the bottom row): ' +
+    '<span class="ta-slow">red = slower</span>, <span class="ta-fast">green = faster</span>.<br>' +
+    '<b>Match length</b> is Start to Match Complete' +
+    (st.noComplete ? ' (' + db_fmtNum(st.noComplete) + ' match' + (st.noComplete === 1 ? ' has' : 'es have') + ' no Match Complete line and ' + (st.noComplete === 1 ? 'is' : 'are') + ' left out)' : '') +
+    '. <b>Battle length</b> is the average time of one battle in the player\'s matches. Both players in a match share the same stopwatch, so a match and its battles count for both of them, ' +
+    'and the sample average counts every match once.<br>' +
+    '<b>Launch errors</b> come from the battle records and include launch errors and LER strikes (warnings). Each one is counted against the player who caused it, ' +
+    'the one who was <i>not</i> credited as the winner of that row. <b>Priority in set 1</b> is the share of the player\'s matches where the battle records show they had pick priority in the first set.<br>';
+  if (!battlesReady) n += 'The battle records are still loading, so those two columns will fill in shortly. ';
+  else {
+    n += 'Those two columns only use matches that could be linked to battle records (same event, same two players, battles stamped during the match).';
+    if (st.unlinked) n += ' ' + db_fmtNum(st.unlinked) + ' match' + (st.unlinked === 1 ? ' has' : 'es have') + ' no battle records yet and ' + (st.unlinked === 1 ? 'is' : 'are') + ' left out of them.';
+    if (st.unattributed) n += ' ' + db_fmtNum(st.unattributed) + ' launch error row' + (st.unattributed === 1 ? '' : 's') + ' had a winner that is neither player and ' + (st.unattributed === 1 ? 'was' : 'were') + ' not counted.';
+    n += ' A “—” means there is nothing to show for that player.';
+  }
+  if (st.noNames) n += '<br>' + db_fmtNum(st.noNames) + ' match' + (st.noNames === 1 ? ' has' : 'es have') + ' no player names recorded and ' + (st.noNames === 1 ? 'is' : 'are') + ' not listed.';
+  note.innerHTML = n;
+}
+
 function ta_init() {
   const s = ta_state;
   document.getElementById('ta-event').addEventListener('change', function (e) {
@@ -13286,6 +13544,10 @@ function ta_init() {
   document.getElementById('ta-judge-wrap').addEventListener('click', function (e) {
     const b = e.target.closest('[data-ta-sort]');
     if (b) ta_sortBy(b.getAttribute('data-ta-sort'));
+  });
+  document.getElementById('ta-player-wrap').addEventListener('click', function (e) {
+    const b = e.target.closest('[data-ta-psort]');
+    if (b) ta_playerSortBy(b.getAttribute('data-ta-psort'));
   });
   document.querySelectorAll('.shell-tab').forEach(function (tab) {
     tab.addEventListener('click', function () {
