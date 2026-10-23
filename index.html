@@ -2496,6 +2496,78 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
       #tool-database .db-m-grid { grid-template-columns: 1fr; }
       #tool-database .db-h-row { flex-direction: column; align-items: flex-start; }
     }
+
+    /* TIMING ANALYSIS — its own tab (prefix ta-). Staff only: the whole site sits behind the password screen.
+       Modules are switched with the sub-tabs, the same way Combo Comparison does it. */
+    #tool-timingstats { --ta-fast: #5fd48a; --ta-slow: #e05a46; }
+    #tool-timingstats .ta-app { max-width: 1100px; margin: 0 auto; padding: 22px 32px 56px; }
+    #tool-timingstats .ta-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+    #tool-timingstats .ta-head h2 { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: 0.04em; color: #fff; line-height: 1; }
+    #tool-timingstats .ta-head p { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: var(--muted); margin-top: 6px; }
+    #tool-timingstats .ta-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    #tool-timingstats .ta-status { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+    #tool-timingstats .ta-status.ok { color: var(--teal); }
+    #tool-timingstats .ta-status.error { color: var(--danger); }
+    #tool-timingstats .ta-evlabel { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: var(--muted); }
+    #tool-timingstats .ta-select {
+      font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text); background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; max-width: 320px; outline: none; cursor: pointer;
+    }
+    #tool-timingstats .ta-select:focus { border-color: var(--teal); }
+    #tool-timingstats .ta-btn {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.06em;
+      color: var(--text); background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 14px; cursor: pointer; transition: border-color .15s, color .15s;
+    }
+    #tool-timingstats .ta-btn:hover:not(:disabled) { border-color: var(--teal); color: #fff; }
+
+    #tool-timingstats .ta-subnav { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+    #tool-timingstats .ta-subtab {
+      padding: 10px 18px; cursor: pointer; background: none; border: none; border-bottom: 3px solid transparent;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.1em;
+      color: var(--muted); transition: all .15s; white-space: nowrap;
+    }
+    #tool-timingstats .ta-subtab:hover { color: var(--text); }
+    #tool-timingstats .ta-subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    #tool-timingstats .ta-mod[hidden] { display: none; }
+
+    #tool-timingstats .ta-count { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 8px; min-height: 14px; }
+    #tool-timingstats .ta-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: auto; }
+    #tool-timingstats .ta-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px; }
+    #tool-timingstats .ta-table th { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 0; text-align: left; }
+    #tool-timingstats .ta-table th.ta-r { text-align: right; }
+    #tool-timingstats .ta-th {
+      display: block; width: 100%; background: none; border: none; cursor: pointer; text-align: inherit;
+      font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.12em; color: var(--muted);
+      padding: 11px 14px; white-space: nowrap; transition: color .15s;
+    }
+    #tool-timingstats .ta-th:hover { color: var(--text); }
+    #tool-timingstats .ta-th.sorted { color: var(--accent); }
+    #tool-timingstats .ta-arrow { display: inline-block; width: 10px; margin-left: 4px; }
+    #tool-timingstats .ta-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    #tool-timingstats .ta-table tbody tr:last-child td { border-bottom: none; }
+    #tool-timingstats .ta-table tbody tr:hover td { background: rgba(255, 255, 255, 0.025); }
+    #tool-timingstats .ta-table td.ta-r { text-align: right; white-space: nowrap; }
+    #tool-timingstats .ta-name { color: #fff; font-weight: 600; font-size: 14px; }
+    #tool-timingstats .ta-sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 3px; font-weight: 400; }
+    #tool-timingstats .ta-val { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #fff; }
+    #tool-timingstats .ta-diff { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; margin-left: 10px; display: inline-block; min-width: 56px; text-align: left; }
+    #tool-timingstats .ta-diff.ta-slow { color: var(--ta-slow); }
+    #tool-timingstats .ta-diff.ta-fast { color: var(--ta-fast); }
+    #tool-timingstats .ta-diff.ta-even { color: var(--muted); }
+    #tool-timingstats .ta-none { font-family: 'IBM Plex Mono', monospace; color: var(--muted); }
+    #tool-timingstats .ta-table tfoot td { background: var(--surface2); border-top: 2px solid var(--border); border-bottom: none; }
+    #tool-timingstats .ta-table tfoot .ta-name { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; }
+    #tool-timingstats .ta-table tfoot .ta-val { color: var(--text); }
+    #tool-timingstats .ta-msg { padding: 40px 16px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    #tool-timingstats .ta-msg.ta-bad { color: var(--danger); }
+    #tool-timingstats .ta-note { margin-top: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; line-height: 1.7; color: var(--muted); }
+    #tool-timingstats .ta-note b { color: var(--text); font-weight: 600; }
+    #tool-timingstats .ta-note .ta-slow { color: var(--ta-slow); font-weight: 600; }
+    #tool-timingstats .ta-note .ta-fast { color: var(--ta-fast); font-weight: 600; }
+    @media (max-width: 900px) {
+      #tool-timingstats .ta-app { padding: 16px 14px 48px; }
+    }
 </style>
 </head>
 <body>
@@ -2515,6 +2587,7 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
   <button class="shell-tab" data-tool="recapper"><span class="shell-tab-icon">🏆</span> Tournament Recap</button>
   <button class="shell-tab" data-tool="playerhub"><span class="shell-tab-icon">⚔️</span> Player Comparison</button>
   <button class="shell-tab" data-tool="combostats"><span class="shell-tab-icon">🔩</span> Combo Comparison</button>
+  <button class="shell-tab" data-tool="timingstats"><span class="shell-tab-icon">⏱️</span> Timing Analysis</button>
   <button class="shell-tab" data-tool="database"><span class="shell-tab-icon">🗄️</span> Database</button>
 </nav>
 
@@ -2920,6 +2993,36 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
 
   </div>
 </div>
+  </div>
+
+  <div class="tool-view" id="tool-timingstats">
+    <div class="ta-app">
+
+      <div class="ta-head">
+        <div>
+          <h2>TIMING ANALYSIS</h2>
+          <p>NCBLAST MATCH STOPWATCH · STAFF ONLY</p>
+        </div>
+        <div class="ta-actions">
+          <span class="ta-status" id="ta-status"></span>
+          <label class="ta-evlabel" for="ta-event">EVENT</label>
+          <select class="ta-select" id="ta-event"><option value="">All events</option></select>
+          <button class="ta-btn" id="ta-reload" type="button" title="Download the timing data again">Reload</button>
+        </div>
+      </div>
+
+      <div class="ta-subnav" id="ta-subnav">
+        <button class="ta-subtab active" type="button" data-ta-module="judges">JUDGE COMPARISON</button>
+      </div>
+
+      <!-- MODULE: JUDGE COMPARISON -->
+      <div class="ta-mod" id="ta-mod-judges">
+        <div class="ta-count" id="ta-judge-count"></div>
+        <div class="ta-wrap" id="ta-judge-wrap"></div>
+        <div class="ta-note" id="ta-judge-note"></div>
+      </div>
+
+    </div>
   </div>
 
   <div class="tool-view" id="tool-database">
@@ -12614,8 +12717,363 @@ function dbt_init() {
   document.getElementById('db-lock-btn').addEventListener('click', dbt_clear);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// TIMING ANALYSIS — its own tab · JS prefix ta_ · element IDs ta- · CSS scoped to #tool-timingstats
+// Analyzes the judging app's per-match stopwatch (the same match_timing data the Database tab's
+// "Match timing" view shows). Staff only: the whole site is behind the password screen.
+// It reads the same two database routes (GET /timing/events and GET /timing?tournament=...) with this
+// device's key and never writes. It re-uses dbt_analyze() above for the per-match math, so the two
+// places can never disagree. It does not touch db_state's battle data or SHARED_CSV_LISTENERS.
+// Layout: a shared event drop-down (default = all events) and a row of module sub-tabs.
+// Modules so far: JUDGE COMPARISON.
+// ═══════════════════════════════════════════════════════════════════════════
+const TA_NO_JUDGE = '(no judge recorded)';
+
+// ── the math (pure: no screen, no network) ─────────────────────────────────
+// Group one event's raw stopwatch lines by match and work each match out with dbt_analyze.
+function ta_buildMatches(lines) {
+  const by = {}, order = [];
+  lines.forEach(function (l) {
+    if (!by[l.matchKey]) { by[l.matchKey] = []; order.push(l.matchKey); }
+    by[l.matchKey].push(l);
+  });
+  return order.map(function (k) {
+    const group = by[k];
+    const m = dbt_analyze(group);
+    // dbt_analyze reports 0 for deck time when a match has no Decks Recorded line; remember whether it really had one
+    m.hasDecks = group.some(function (l) { return l.kind === 'decks'; });
+    return m;
+  });
+}
+
+// One row per judge, plus the sample average everything is compared against.
+//  - match length: Start to Match Complete. Matches with no Match Complete line are left out.
+//  - deck building: Start to Decks Recorded (time spent in a fix is not counted). Matches with no Decks line are left out.
+//  - fix time: the average length of ONE fix, from when the problem began to when it was repaired (notice + repair).
+// The sample average is pooled over every match (or every fix) in view, not an average of the judges' averages,
+// so a judge who ran 40 matches counts for more than one who ran 2.
+// diff = the judge's average minus the sample average (+ = slower, - = faster). null when either side has no data.
+function ta_judgeStats(matches) {
+  const by = {}, order = [];
+  const all = { nTotal: 0, sumTotal: 0, nDecks: 0, sumDecks: 0, nFix: 0, sumFix: 0 };
+  let noComplete = 0;
+  matches.forEach(function (m) {
+    const raw = (m.judge || '').trim();
+    const key = raw.toLowerCase();   // "Leaf" and "leaf" are the same judge
+    if (!by[key]) {
+      by[key] = { name: raw || TA_NO_JUDGE, matches: 0, nTotal: 0, sumTotal: 0, nDecks: 0, sumDecks: 0, nFix: 0, sumFix: 0 };
+      order.push(key);
+    }
+    const j = by[key];
+    j.matches++;
+    if (m.complete) {
+      j.nTotal++; j.sumTotal += m.total;
+      all.nTotal++; all.sumTotal += m.total;
+    } else noComplete++;
+    if (m.hasDecks) {
+      j.nDecks++; j.sumDecks += m.parts.decks;
+      all.nDecks++; all.sumDecks += m.parts.decks;
+    }
+    if (m.fixCount > 0) {
+      const t = (m.notice || 0) + (m.repair || 0);
+      j.nFix += m.fixCount; j.sumFix += t;
+      all.nFix += m.fixCount; all.sumFix += t;
+    }
+  });
+  const avg = function (sum, n) { return n ? sum / n : null; };
+  const sample = {
+    total: avg(all.sumTotal, all.nTotal),
+    decks: avg(all.sumDecks, all.nDecks),
+    fix: avg(all.sumFix, all.nFix)
+  };
+  const gap = function (v, base) { return v === null || base === null ? null : v - base; };
+  const rows = order.map(function (k) {
+    const j = by[k];
+    const total = avg(j.sumTotal, j.nTotal), decks = avg(j.sumDecks, j.nDecks), fix = avg(j.sumFix, j.nFix);
+    return {
+      name: j.name, matches: j.matches, fixes: j.nFix,
+      total: total, decks: decks, fix: fix,
+      dTotal: gap(total, sample.total), dDecks: gap(decks, sample.decks), dFix: gap(fix, sample.fix)
+    };
+  });
+  return { rows: rows, sample: sample, matchCount: matches.length, noComplete: noComplete, totalFixes: all.nFix };
+}
+
+// key: 'name' | 'total' | 'decks' | 'fix'.  dir 'asc' = fastest first (A to Z for names), 'desc' = slowest first.
+// A judge with no data for the chosen column always goes to the bottom, whichever way it is sorted.
+function ta_sortRows(rows, key, dir) {
+  const sign = dir === 'desc' ? -1 : 1;
+  const byName = function (a, b) { return a.name.localeCompare(b.name); };
+  return rows.slice().sort(function (a, b) {
+    if (key === 'name') return sign * byName(a, b);
+    const av = a[key], bv = b[key];
+    if (av === null && bv === null) return byName(a, b);
+    if (av === null) return 1;
+    if (bv === null) return -1;
+    if (av !== bv) return sign * (av - bv);
+    return byName(a, b);
+  });
+}
+
+// "+12.3s" / "−1:05.2" / "±0.0s" for the little difference next to each time.
+function ta_diffHtml(d) {
+  if (d === null || d === undefined || isNaN(d)) return '';
+  const r = Math.round(Math.abs(d) * 10) / 10;
+  if (r === 0) return '<span class="ta-diff ta-even" title="Same as the sample average">±0.0s</span>';
+  return '<span class="ta-diff ' + (d > 0 ? 'ta-slow' : 'ta-fast') + '" title="' + (d > 0 ? 'Slower' : 'Faster') + ' than the sample average">' +
+    (d > 0 ? '+' : '−') + dbt_fmt(r) + '</span>';
+}
+
+// ── the screen ─────────────────────────────────────────────────────────────
+const ta_state = {
+  module: 'judges',  // which sub-tab is showing
+  events: [],        // [{ tournament, matches, lines, latest }] from the database, newest first
+  cache: {},         // event name -> { lines, latest, matchesN, matches } (matches already worked out)
+  event: '',         // '' = all events
+  sortKey: 'total',  // judge table: which column it is sorted by
+  sortDir: 'asc',    // 'asc' = fastest first
+  loadedAt: 0,       // when timing data was last fetched (quick flips between tabs do not re-download)
+  loading: false,
+  error: '',
+  ticket: 0          // bumped on every download so a slow, older one can never overwrite a newer one
+};
+
+function ta_setStatus(text, kind) {
+  const el = document.getElementById('ta-status');
+  if (!el) return;
+  el.textContent = text || '';
+  el.className = 'ta-status' + (kind ? ' ' + kind : '');
+}
+
+function ta_isActive() {
+  const v = document.getElementById('tool-timingstats');
+  return !!(v && v.classList.contains('active'));
+}
+
+// Timing data is private to staff and lives only in memory: forget it when the device is locked or signed out.
+function ta_clear() {
+  const s = ta_state;
+  s.events = []; s.cache = {}; s.event = ''; s.loadedAt = 0; s.loading = false; s.error = ''; s.ticket++;
+  ta_setStatus('', '');
+  ta_render();
+}
+
+async function ta_fetchEventLines(ev, ticket) {
+  let after = 0, all = [];
+  for (let page = 0; page < 80; page++) {
+    const d = await db_apiJson('/timing?tournament=' + encodeURIComponent(ev) + '&after=' + after);
+    if (ticket !== ta_state.ticket) return null;   // a newer download replaced this one
+    all = all.concat(d.lines || []);
+    if (!d.next) break;
+    after = d.next;
+  }
+  return all;
+}
+
+// Downloads the event list, then the stopwatch lines of every event that is new or has changed since last time
+// (the newest event is always re-downloaded, since it is the one still being judged). force = download everything again.
+async function ta_load(force) {
+  const s = ta_state;
+  if (!db_state.unlocked) return;
+  const ticket = ++s.ticket;
+  s.loading = true;
+  s.error = '';
+  ta_setStatus('Loading…', '');
+  ta_render();
+  try {
+    const ev = await db_apiJson('/timing/events');
+    if (ticket !== s.ticket) return;
+    s.events = ev.events || [];
+    Object.keys(s.cache).forEach(function (k) {
+      if (!s.events.some(function (e) { return e.tournament === k; })) delete s.cache[k];
+    });
+    const todo = s.events.filter(function (e, i) {
+      const c = s.cache[e.tournament];
+      return force || i === 0 || !c || c.lines !== e.lines || c.latest !== e.latest || c.matchesN !== e.matches;
+    });
+    for (let i = 0; i < todo.length; i++) {
+      ta_setStatus('Loading ' + (i + 1) + ' of ' + todo.length + '…', '');
+      const lines = await ta_fetchEventLines(todo[i].tournament, ticket);
+      if (lines === null) return;
+      s.cache[todo[i].tournament] = { lines: todo[i].lines, latest: todo[i].latest, matchesN: todo[i].matches, matches: ta_buildMatches(lines) };
+    }
+    if (s.event && !s.events.some(function (e) { return e.tournament === s.event; })) s.event = '';
+    s.loadedAt = Date.now();
+    s.loading = false;
+    ta_setStatus('Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), 'ok');
+  } catch (e) {
+    if (ticket !== s.ticket) return;
+    s.loading = false;
+    if (e && e.status === 401) { ta_clear(); return; }   // the lock screen is up
+    s.error = e && e.status === 404
+      ? 'The database Worker does not have the match-timing routes yet. Deploy the updated ncblast-db Worker, then press Reload.'
+      : ((e && e.message) || 'Could not load match timing.');
+    ta_setStatus('Could not load', 'error');
+  }
+  ta_render();
+}
+
+function ta_open(force) {
+  const s = ta_state;
+  if (!db_state.unlocked) return;
+  if (s.loading && !force) return;
+  if (!force && s.loadedAt && Date.now() - s.loadedAt < 30000) { ta_render(); return; }
+  ta_load(!!force);
+}
+
+// The matches the tab is looking at right now: every event, or just the one picked in the drop-down.
+function ta_viewMatches() {
+  const s = ta_state;
+  if (s.event) return s.cache[s.event] ? s.cache[s.event].matches : [];
+  let all = [];
+  s.events.forEach(function (e) { if (s.cache[e.tournament]) all = all.concat(s.cache[e.tournament].matches); });
+  return all;
+}
+
+function ta_renderEvents() {
+  const s = ta_state;
+  const sel = document.getElementById('ta-event');
+  if (!sel) return;
+  if (!s.events.length) { sel.innerHTML = '<option value="">' + (s.loading ? 'Loading…' : 'No timing data yet') + '</option>'; return; }
+  const total = s.events.reduce(function (t, e) { return t + (e.matches || 0); }, 0);
+  sel.innerHTML = '<option value=""' + (s.event === '' ? ' selected' : '') + '>All events · ' + db_fmtNum(total) + ' match' + (total === 1 ? '' : 'es') + '</option>' +
+    s.events.map(function (e) {
+      return '<option value="' + db_esc(e.tournament) + '"' + (e.tournament === s.event ? ' selected' : '') + '>' +
+        db_esc(e.tournament) + ' · ' + db_fmtNum(e.matches) + ' match' + (e.matches === 1 ? '' : 'es') + '</option>';
+    }).join('');
+}
+
+function ta_setModule(id) {
+  const s = ta_state;
+  s.module = id;
+  ta_render();
+}
+
+function ta_sortBy(key) {
+  const s = ta_state;
+  if (s.sortKey === key) s.sortDir = s.sortDir === 'asc' ? 'desc' : 'asc';
+  else { s.sortKey = key; s.sortDir = 'asc'; }   // a new column starts fastest first
+  ta_renderJudges();
+}
+
+function ta_render() {
+  const s = ta_state;
+  ta_renderEvents();
+  document.querySelectorAll('#ta-subnav [data-ta-module]').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-ta-module') === s.module);
+  });
+  document.querySelectorAll('#tool-timingstats .ta-mod').forEach(function (el) {
+    el.hidden = el.id !== 'ta-mod-' + s.module;
+  });
+  if (s.module === 'judges') ta_renderJudges();
+}
+
+// ── module: JUDGE COMPARISON ───────────────────────────────────────────────
+const TA_JUDGE_COLS = [
+  { key: 'name', label: 'JUDGE', num: false, d: null },
+  { key: 'total', label: 'AVG MATCH LENGTH', num: true, d: 'dTotal' },
+  { key: 'decks', label: 'AVG DECK BUILDING', num: true, d: 'dDecks' },
+  { key: 'fix', label: 'AVG FIX TIME', num: true, d: 'dFix' }
+];
+
+function ta_valCell(v, diff) {
+  return '<td class="ta-r">' + (v === null
+    ? '<span class="ta-none">—</span>'
+    : '<span class="ta-val">' + dbt_fmt(v) + '</span>' + ta_diffHtml(diff)) + '</td>';
+}
+
+function ta_renderJudges() {
+  const s = ta_state;
+  const wrap = document.getElementById('ta-judge-wrap');
+  const count = document.getElementById('ta-judge-count');
+  const note = document.getElementById('ta-judge-note');
+  if (!wrap) return;
+  note.innerHTML = '';
+  count.textContent = '';
+  if (s.error) { wrap.innerHTML = '<div class="ta-msg ta-bad">' + db_esc(s.error) + '</div>'; return; }
+  if (s.loading && !s.loadedAt) { wrap.innerHTML = '<div class="ta-msg">Loading timing data…</div>'; return; }
+  if (!s.events.length) {
+    wrap.innerHTML = '<div class="ta-msg">No match timing has been received yet. Once the judging app starts sending it, every judge shows up here.</div>';
+    return;
+  }
+  const matches = ta_viewMatches();
+  if (!matches.length) { wrap.innerHTML = '<div class="ta-msg">No matches in this selection.</div>'; return; }
+
+  const st = ta_judgeStats(matches);
+  const rows = ta_sortRows(st.rows, s.sortKey, s.sortDir);
+  const eventCount = s.event ? 1 : s.events.filter(function (e) { return s.cache[e.tournament] && s.cache[e.tournament].matches.length; }).length;
+  count.textContent = db_fmtNum(st.rows.length) + ' judge' + (st.rows.length === 1 ? '' : 's') + ' · ' +
+    db_fmtNum(st.matchCount) + ' match' + (st.matchCount === 1 ? '' : 'es') + ' · ' +
+    db_fmtNum(eventCount) + ' event' + (eventCount === 1 ? '' : 's');
+
+  let h = '<table class="ta-table"><thead><tr>';
+  TA_JUDGE_COLS.forEach(function (c) {
+    const on = s.sortKey === c.key;
+    const arrow = on ? (s.sortDir === 'asc' ? '▲' : '▼') : '';
+    const tip = c.key === 'name'
+      ? (on && s.sortDir === 'asc' ? 'Sorted A to Z. Click for Z to A.' : 'Sort A to Z')
+      : (on && s.sortDir === 'asc' ? 'Sorted fastest to slowest. Click for slowest to fastest.' : on ? 'Sorted slowest to fastest. Click for fastest to slowest.' : 'Sort fastest to slowest');
+    h += '<th class="' + (c.num ? 'ta-r' : '') + '" aria-sort="' + (on ? (s.sortDir === 'asc' ? 'ascending' : 'descending') : 'none') + '">' +
+      '<button type="button" class="ta-th' + (on ? ' sorted' : '') + '" data-ta-sort="' + c.key + '" title="' + tip + '">' +
+      c.label + '<span class="ta-arrow">' + arrow + '</span></button></th>';
+  });
+  h += '</tr></thead><tbody>';
+  rows.forEach(function (r) {
+    h += '<tr><td><div class="ta-name">' + db_esc(r.name) + '</div>' +
+      '<div class="ta-sub">' + db_fmtNum(r.matches) + ' match' + (r.matches === 1 ? '' : 'es') +
+      (r.fixes ? ' · ' + db_fmtNum(r.fixes) + ' fix' + (r.fixes === 1 ? '' : 'es') : '') + '</div></td>' +
+      ta_valCell(r.total, r.dTotal) + ta_valCell(r.decks, r.dDecks) + ta_valCell(r.fix, r.dFix) + '</tr>';
+  });
+  h += '</tbody><tfoot><tr><td><div class="ta-name">SAMPLE AVERAGE</div><div class="ta-sub">all judges together</div></td>' +
+    ta_valCell(st.sample.total, null) + ta_valCell(st.sample.decks, null) + ta_valCell(st.sample.fix, null) + '</tr></tfoot></table>';
+  wrap.innerHTML = h;
+
+  note.innerHTML =
+    'The <span class="ta-slow">red +</span> or <span class="ta-fast">green −</span> next to a time is how far that judge is from the sample average (the bottom row): ' +
+    '<span class="ta-slow">red = slower</span>, <span class="ta-fast">green = faster</span>.<br>' +
+    '<b>Match length</b> is Start to Match Complete' +
+    (st.noComplete ? ' (' + db_fmtNum(st.noComplete) + ' match' + (st.noComplete === 1 ? ' has' : 'es have') + ' no Match Complete line and ' + (st.noComplete === 1 ? 'is' : 'are') + ' left out)' : '') +
+    '. <b>Deck building</b> is Start to Decks Recorded. <b>Fix time</b> is the average length of one fix, from when the problem began until it was repaired (' +
+    db_fmtNum(st.totalFixes) + ' fix' + (st.totalFixes === 1 ? '' : 'es') + ' in view).<br>' +
+    'The sample average counts every match (or fix) once, so a judge with more matches pulls it harder. A “—” means that judge has no data for that column.';
+}
+
+function ta_init() {
+  const s = ta_state;
+  document.getElementById('ta-event').addEventListener('change', function (e) {
+    s.event = e.target.value;
+    ta_render();
+  });
+  document.getElementById('ta-reload').addEventListener('click', function () { ta_open(true); });
+  document.getElementById('ta-subnav').addEventListener('click', function (e) {
+    const b = e.target.closest('[data-ta-module]');
+    if (b) ta_setModule(b.getAttribute('data-ta-module'));
+  });
+  document.getElementById('ta-judge-wrap').addEventListener('click', function (e) {
+    const b = e.target.closest('[data-ta-sort]');
+    if (b) ta_sortBy(b.getAttribute('data-ta-sort'));
+  });
+  document.querySelectorAll('.shell-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      if (tab.dataset.tool === 'timingstats') ta_open(false);
+    });
+  });
+  // The password screen puts a "db-locked" class on the page. Locked: forget the timing data.
+  // Unlocked again while this tab is open: load it.
+  let wasLocked = document.documentElement.classList.contains('db-locked');
+  new MutationObserver(function () {
+    const locked = document.documentElement.classList.contains('db-locked');
+    if (locked === wasLocked) return;
+    wasLocked = locked;
+    if (locked) ta_clear();
+    else if (ta_isActive()) ta_open(false);
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  ta_render();
+}
+
 db_init();
 dbt_init();
+ta_init();
 db_startLive();
 db_bootAuth();
 </script>
