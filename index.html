@@ -1312,6 +1312,30 @@
 #tool-playerhub .profile-card{background:var(--sur);border:1px solid var(--bdr);border-radius:8px;padding:16px 18px;}
 #tool-playerhub .profile-card-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid var(--bdr);padding-bottom:8px;}
 
+/* ── COMPACT PROFILE LAYOUT (player profile page) ──
+   The blocks sit side by side when there is room and drop onto a new row when there is not, so one layout serves a wide
+   desktop and a phone (the site shows a phone a 1100px-wide page). Tables are only as wide as their contents (.pf-tbl),
+   rows are tighter, and the two charts are stacked in one narrow column (.pf-visuals) so they can sit beside the tables.
+   To give another table the same tight look later, add class pf-tbl to it (and put it in a .pf-card). */
+#tool-playerhub .profile-header.pf-head{display:flex;align-items:center;justify-content:space-between;gap:10px 24px;flex-wrap:wrap;padding:16px 22px 14px;margin-bottom:14px;}
+#tool-playerhub .pf-head .profile-name{font-size:34px;margin-bottom:0;}
+#tool-playerhub .pf-head .profile-chip{padding:6px 12px;}
+#tool-playerhub .pf-flow{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;margin-bottom:18px;}
+#tool-playerhub .pf-flow .profile-card{padding:12px 14px;}
+#tool-playerhub .pf-flow .profile-card-title{margin-bottom:6px;padding-bottom:6px;}
+#tool-playerhub .pf-card{width:fit-content;max-width:100%;}
+#tool-playerhub .pf-opp{min-width:min(500px,100%);}   /* wide enough that opening an opponent's combo list does not resize the block */
+#tool-playerhub .pf-opp > table.tbl.pf-tbl{width:100%;}
+#tool-playerhub .detail-row table.pf-tbl td{padding:2px 10px!important;}   /* the opened opponent's small combo table: tight but not cramped */
+#tool-playerhub .pf-visuals{display:flex;flex-direction:column;gap:14px;width:250px;flex:0 0 250px;}
+#tool-playerhub .pf-visuals .sides,#tool-playerhub .pf-visuals .finish-cols{grid-template-columns:1fr;}
+#tool-playerhub .pf-visuals .side-card{padding:10px 12px;}
+#tool-playerhub table.tbl.pf-tbl{width:auto;}
+#tool-playerhub table.tbl.pf-tbl > thead > tr > th{padding:6px 10px;text-align:right;}
+#tool-playerhub table.tbl.pf-tbl > tbody > tr > td{padding:4px 10px;white-space:nowrap;}
+#tool-playerhub table.tbl.pf-tbl .detail-row > td{padding:0;white-space:normal;}   /* the opened-opponent row holds a small table of its own */
+#tool-playerhub .pf-tbl .exp-btn{display:block;min-width:26px;height:24px;padding:0;}   /* a bigger tap area for the ▸ arrow, since the rows are tighter */
+
 /* Side split cards */
 #tool-playerhub .sides{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 #tool-playerhub .side-card{border-radius:6px;padding:12px;position:relative;overflow:hidden;}
@@ -5504,7 +5528,7 @@ function ph_renderProfile(name){
         <div class="cmp-val right ${bWins?'winner':''}">${m.b}</div>
       </div>`;
     }).join('');
-    cmpHtml=`<div class="tbl-wrap" style="margin-top:12px">
+    cmpHtml=`<div class="tbl-wrap" style="margin-top:12px;max-width:640px">
       <div class="cmp-header" style="padding:10px 14px;background:var(--sur2);border-bottom:1px solid var(--bdr)">
         <div class="cmp-player" style="text-align:right;color:var(--teal)">${ph_esc(name)}</div>
         <div class="cmp-vs">VS</div>
@@ -5521,7 +5545,7 @@ function ph_renderProfile(name){
   el.innerHTML=`
     <button class="back-btn" onclick="ph_goBack()">← Back to ${ph_PREV_VIEW==='rankings'?'Rankings':'Combo Leaderboard'}</button>
 
-    <div class="profile-header">
+    <div class="profile-header pf-head">
       <div class="profile-name">${ph_esc(name)}</div>
       <div class="profile-chips">
         <div class="profile-chip"><div class="profile-chip-lbl">EVENTS</div><div class="profile-chip-val">${s.tournaments.length}</div></div>
@@ -5532,10 +5556,13 @@ function ph_renderProfile(name){
       </div>
     </div>
 
+    <!-- The profile blocks sit side by side when there is room and drop onto a new row when there is not -->
+    <div class="pf-flow">
+
     <!-- Tournament History -->
-    <div class="section-head"><div class="section-title" style="font-size:16px">Tournament History</div></div>
-    <div class="tbl-wrap" style="margin-bottom:20px">
-      <table class="tbl"><thead><tr>
+    <div class="profile-card pf-card">
+      <div class="profile-card-title">Tournament History</div>
+      <table class="tbl pf-tbl"><thead><tr>
         <th style="text-align:left">TOURNAMENT</th><th>MATCH W–L</th><th>BATTLES</th><th>WIN %</th><th>PPB</th>
       </tr></thead><tbody>
       ${s.tournStats.map(t=>`<tr>
@@ -5548,15 +5575,14 @@ function ph_renderProfile(name){
       </tbody></table>
     </div>
 
-    <!-- Combo Breakdown + Slot + Side in a grid -->
-    <div class="profile-grid">
-      <div class="profile-card" style="grid-column:1/-1">
+    <!-- Combo Breakdown -->
+    <div class="profile-card pf-card">
         <div class="profile-card-title">Combo Breakdown</div>
-        <table class="tbl" style="font-size:12px"><thead><tr>
+        <table class="tbl pf-tbl" style="font-size:12px"><thead><tr>
           <th style="text-align:left">COMBO</th><th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>
         </tr></thead><tbody>
         ${s.combos.map(c=>`<tr>
-          <td style="font-weight:500;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph_esc(c.name)}</td>
+          <td title="${ph_escAttr(c.name)}" style="font-weight:500;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph_esc(c.name)}</td>
           <td class="num">${c.battles}</td><td class="wl">${c.w}–${c.l}</td>
           <td class="wp ${c.winPct>=60?'hi':c.winPct>=40?'mid':'lo'}">${c.winPct.toFixed(1)}%</td>
           <td class="ppb ${c.ppb>0?'pos':c.ppb<0?'neg':'zero'}">${c.ppb>=0?'+':''}${c.ppb.toFixed(2)}</td>
@@ -5564,8 +5590,9 @@ function ph_renderProfile(name){
         </tbody></table>
       </div>
 
-      <!-- Stadium Sides -->
-      <div class="profile-card" style="grid-column:1/-1">
+      <!-- Stadium Sides + Finish Breakdown: stacked in one narrow column so they can sit beside the tables -->
+      <div class="pf-visuals">
+      <div class="profile-card">
         <div class="profile-card-title">Stadium Side Split</div>
         <div class="sides">
           ${[{key:'sideB',lbl:'B',cls:'b'},{key:'sideX',lbl:'X',cls:'x'}].map(({key,lbl,cls})=>{
@@ -5582,7 +5609,7 @@ function ph_renderProfile(name){
       </div>
 
       <!-- Finish Breakdown -->
-      <div class="profile-card" style="grid-column:1/-1">
+      <div class="profile-card">
         <div class="profile-card-title">Finish Type Breakdown</div>
         <div class="finish-cols">
           <div>
@@ -5595,11 +5622,12 @@ function ph_renderProfile(name){
           </div>
         </div>
       </div>
+      </div>
 
       <!-- Opponents (all, expandable for H2H combo breakdown) -->
-      ${s.opponents.length>0?`<div class="profile-card" style="grid-column:1/-1">
+      ${s.opponents.length>0?`<div class="profile-card pf-card pf-opp">
         <div class="profile-card-title">Opponents <span style="font-weight:400;color:var(--muted);font-size:11px">— click ▸ to expand combo breakdown</span></div>
-        <table class="tbl" style="font-size:12px"><thead><tr>
+        <table class="tbl pf-tbl" style="font-size:12px"><thead><tr>
           <th style="width:28px"></th>
           <th style="text-align:left">OPPONENT</th>
           <th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>
@@ -5630,7 +5658,7 @@ function ph_renderProfile(name){
             }).sort((a,b2)=>b2.b-a.b);
             detailHtml=`<tr class="detail-row"><td colspan="6"><div class="detail-inner" style="flex-direction:column;padding:10px 16px 12px 48px">
               <div class="detail-block-lbl" style="margin-bottom:8px">vs ${ph_esc(o.name)} — per combo</div>
-              <table class="tbl" style="font-size:11px;background:transparent">
+              <table class="tbl pf-tbl" style="font-size:11px;background:transparent">
                 <thead><tr>
                   <th style="text-align:left;background:transparent">YOUR COMBO</th>
                   <th style="background:transparent">BATTLES</th>
