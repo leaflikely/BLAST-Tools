@@ -999,6 +999,40 @@
     }
     #tool-combostats .cs-expand-users-btn:hover { border-color: var(--teal); background: rgba(46,168,157,0.08); }
 
+    /* ── Compact combo profile (same layout as the Player Comparison profile) ── */
+    #tool-combostats .cs-profile-header.cs-pf-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px 24px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px;
+    }
+    #tool-combostats .cs-pf-head .cs-profile-name { font-size: 30px; margin-bottom: 0; }
+    #tool-combostats .cs-pf-head .cs-profile-chip { padding: 6px 12px; }
+    #tool-combostats .cs-pf-flow { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; margin-bottom: 18px; }
+    #tool-combostats .cs-pf-stack { display: flex; flex-direction: column; gap: 14px; align-items: stretch; width: fit-content; flex: 0 1 auto; max-width: 100%; }
+    #tool-combostats .cs-pf-stack > .cs-profile-card { width: auto; padding: 12px 14px; }
+    #tool-combostats .cs-pf-flow .cs-card-title { margin-bottom: 6px; padding-bottom: 6px; }
+    #tool-combostats .cs-pf-stack .cs-users-section { margin-top: 0; }
+    #tool-combostats .cs-pf-stack .cs-users-header { margin-bottom: 8px; }
+    #tool-combostats .cs-pf-stack table.cs-matchup-tbl { width: 100%; font-size: 12px; }
+    #tool-combostats .cs-pf-stack table.cs-matchup-tbl th { padding: 6px 10px; }
+    #tool-combostats .cs-pf-stack table.cs-matchup-tbl td { padding: 4px 10px; white-space: nowrap; }
+    /* about 10 matchups show, the rest scroll; header row stays pinned */
+    #tool-combostats .cs-pf-scroll { max-height: 266px; overflow-y: auto; overflow-x: hidden; }
+    #tool-combostats .cs-pf-scroll table.cs-matchup-tbl th { position: sticky; top: 0; z-index: 2; background: var(--surface2); }
+    #tool-combostats .cs-pf-visuals { display: flex; flex-direction: column; gap: 16px; flex: 1 1 340px; min-width: 300px; max-width: 820px; }
+    #tool-combostats .cs-pf-visuals .cs-profile-card { padding: 16px 18px; }
+    #tool-combostats .cs-pf-visuals .cs-card-title { font-size: 13px; }
+    #tool-combostats .cs-pf-visuals .cs-sides,
+    #tool-combostats .cs-pf-visuals .cs-fin-cols { grid-template-columns: 1fr; }
+    #tool-combostats .cs-pf-visuals .cs-side-card { padding: 14px 16px; }
+    #tool-combostats .cs-pf-visuals .cs-side-big { font-size: 34px; }
+    #tool-combostats .cs-pf-visuals .cs-side-small { font-size: 12px; }
+    #tool-combostats .cs-pf-visuals .cs-side-lbl { font-size: 10.5px; }
+    #tool-combostats .cs-pf-visuals .cs-fin-section-lbl { font-size: 11px; margin-bottom: 6px; }
+    #tool-combostats .cs-pf-visuals .cs-fin-bar-row { margin-bottom: 8px; }
+    #tool-combostats .cs-pf-visuals .cs-fin-bar-label { font-size: 12px; width: 36px; }
+    #tool-combostats .cs-pf-visuals .cs-fin-bar-track { height: 9px; }
+    #tool-combostats .cs-pf-visuals .cs-fin-bar-count { font-size: 12px; width: 32px; }
+
     /* clickable combo name in build table */
     #tool-combostats .combo-cell-link {
       cursor: pointer; color: #fff; text-decoration: none;
@@ -4522,7 +4556,7 @@ function cs_renderComboProfile() {
   const matchupHiddenCount = d.matchupList.length - filteredMatchups.length;
 
   const matchupSectionHTML = d.matchupList.length > 0
-    ? '<div class="cs-profile-card full">'
+    ? '<div class="cs-profile-card cs-pf-card">'
       + '<div class="cs-card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
       + '<span>Matchups vs Opponent Combos'
       + (!cs_FILE_HAS_BOTH_COMBOS ? ' — <span style="color:var(--muted);font-weight:400">TSV: limited data</span>' : '')
@@ -4537,7 +4571,7 @@ function cs_renderComboProfile() {
       + '</div>'
       + (filteredMatchups.length === 0
         ? '<div style="font-size:11px;font-family:monospace;color:var(--muted);padding:14px 0">No matchups meet the minimum battles threshold (' + cs_PROFILE_MATCHUP_MIN + ').</div>'
-        : '<div class="cs-matchup-tbl-wrap">'
+        : '<div class="cs-matchup-tbl-wrap cs-pf-scroll">'
           + '<table class="cs-matchup-tbl"><thead><tr>'
           + '<th style="text-align:left">OPPONENT COMBO</th>'
           + '<th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>'
@@ -4586,7 +4620,7 @@ function cs_renderComboProfile() {
   area.innerHTML = `
     <button class="cs-back-btn" onclick="cs_showView(cs_PREV_VIEW||'build')">← Back to ${backLabel}</button>
 
-    <div class="cs-profile-header">
+    <div class="cs-profile-header cs-pf-head">
       <div class="cs-profile-name">${cs_escHTML(name)}</div>
       <div class="cs-profile-chips">
         <div class="cs-profile-chip">
@@ -4612,7 +4646,24 @@ function cs_renderComboProfile() {
       </div>
     </div>
 
-    <div class="cs-profile-grid">
+    <div class="cs-pf-flow">
+      <div class="cs-pf-stack">
+      ${matchupSectionHTML}
+    <div class="cs-profile-card cs-pf-card cs-users-section">
+      <div class="cs-users-header">
+        <div class="cs-users-title">Top Users of ${cs_escHTML(name)} — ranked by PPB</div>
+        <div class="cs-users-controls">
+          <span class="cs-users-min-label">MIN BATTLES</span>
+          <input type="number" class="cs-users-min-input" min="0" step="1"
+            value="${cs_PROFILE_USERS_MIN}"
+            onchange="cs_PROFILE_USERS_MIN=Math.max(0,parseInt(this.value)||0);cs_renderComboProfile()" />
+          ${expandBtnHtml}
+        </div>
+      </div>
+      ${usersSectionHTML}
+    </div>
+      </div>
+      <div class="cs-pf-visuals">
       <div class="cs-profile-card">
         <div class="cs-card-title">Stadium Side Split</div>
         <div class="cs-sides">
@@ -4633,21 +4684,7 @@ function cs_renderComboProfile() {
           </div>
         </div>
       </div>
-      ${matchupSectionHTML}
-    </div>
-
-    <div class="cs-users-section">
-      <div class="cs-users-header">
-        <div class="cs-users-title">Top Users of ${cs_escHTML(name)} — ranked by PPB</div>
-        <div class="cs-users-controls">
-          <span class="cs-users-min-label">MIN BATTLES</span>
-          <input type="number" class="cs-users-min-input" min="0" step="1"
-            value="${cs_PROFILE_USERS_MIN}"
-            onchange="cs_PROFILE_USERS_MIN=Math.max(0,parseInt(this.value)||0);cs_renderComboProfile()" />
-          ${expandBtnHtml}
-        </div>
       </div>
-      ${usersSectionHTML}
     </div>
   `;
 }
