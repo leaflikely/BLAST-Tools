@@ -3279,6 +3279,49 @@ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) }
       onChange: function (fn) { listeners.push(fn); }
     };
   })();
+
+  // ═════════════════════════════════════════════════════════════
+  // EVENT ORDER — shared by every list of events (tournament pickers and event drop-downs).
+  // The NEWEST event is on top and the oldest at the bottom. An event's age is the time stamp of its
+  // FIRST battle. An event whose first-battle time is unknown goes last (A to Z among those).
+  //   note(map, name, ts)                  remembers the earliest time stamp seen for an event (map is a Map)
+  //   sort(list, nameOf, map, fallbackOf)  returns a NEW list, newest first. nameOf(item) = the event's name.
+  //                                        fallbackOf(item) (optional) = a time stamp to use when the map has
+  //                                        nothing for that event.
+  // Names are compared with surrounding spaces removed, like NCBLAST_TESTS.
+  // ═════════════════════════════════════════════════════════════
+  window.NCBLAST_EVENT_ORDER = (function () {
+    const norm = function (s) { return String(s == null ? '' : s).trim(); };
+    const ms = function (ts) {
+      if (ts == null || ts === '') return null;
+      const n = typeof ts === 'number' ? ts : Date.parse(ts);
+      return isNaN(n) ? null : n;
+    };
+    return {
+      ms: ms,
+      note: function (map, name, ts) {
+        const k = norm(name), n = ms(ts);
+        if (!k || n === null) return;
+        if (!map.has(k) || n < map.get(k)) map.set(k, n);
+      },
+      sort: function (list, nameOf, map, fallbackOf) {
+        const keyOf = function (item) {
+          const k = norm(nameOf(item));
+          if (map && map.has(k)) return map.get(k);
+          return fallbackOf ? ms(fallbackOf(item)) : null;
+        };
+        return list
+          .map(function (item) { return { item: item, k: keyOf(item), n: norm(nameOf(item)) }; })
+          .sort(function (a, b) {
+            if (a.k === null && b.k === null) return a.n.localeCompare(b.n);
+            if (a.k === null) return 1;
+            if (b.k === null) return -1;
+            return (b.k - a.k) || a.n.localeCompare(b.n);
+          })
+          .map(function (x) { return x.item; });
+      }
+    };
+  })();
 </script>
 
 <script>
@@ -3372,6 +3415,7 @@ function cs_parseFormatA(lines) {
               : 0;
     rows.push({
       tournament:  get('Tournament'),
+      ts:          get('Timestamp'),
       match:       get('Match'),
       p1, p2, p1Priority,
       p1side:      get('P1Side'),
@@ -3413,6 +3457,7 @@ function cs_parseFormatB(lines) {
     const pts = ft === 'Xtreme Finish' ? 3 : ft === 'Over Finish' ? 2 : ft === 'Burst Finish' ? 2 : ft === 'Own Finish' ? (parseInt(v[14],10) === 3 ? 3 : 2) : ft === 'Spin Finish' ? 1 : 0;
     rows.push({
       tournament:  (v[2]||'').trim(),
+      ts:          (v[0]||'').trim(),
       match:       (v[3]||'').trim(),
       p1, p2, p1Priority,
       p1side:      (v[5]||'').trim(),
@@ -3656,12 +3701,18 @@ function cs_updateComboPreview() {
 }
 function cs_buildTournamentList() {
   const counts = {};
+  const firstMs = new Map();   // event -> time stamp of its first battle
   cs_ALL_ROWS.forEach(r => {
     const t = (r.tournament||'').trim();
-    if (t && !window.NCBLAST_TESTS.skip(t)) counts[t] = (counts[t]||0) + 1;   // test events are left out while "Exclude Test Events" is ticked
+    if (t && !window.NCBLAST_TESTS.skip(t)) {   // test events are left out while "Exclude Test Events" is ticked
+      counts[t] = (counts[t]||0) + 1;
+      window.NCBLAST_EVENT_ORDER.note(firstMs, t, r.ts);
+    }
   });
 
-  cs_ALL_TOURNAMENTS = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([t,n])=>({name:t,battles:n}));
+  // Newest event on top, oldest on the bottom (by the time stamp of each event's first battle)
+  cs_ALL_TOURNAMENTS = window.NCBLAST_EVENT_ORDER.sort(
+    Object.entries(counts).map(([t,n])=>({name:t,battles:n})), t=>t.name, firstMs);
   cs_SELECTED_TOURNAMENTS = new Set(cs_ALL_TOURNAMENTS.map(t=>t.name));
 
   const list = document.getElementById('cs-tourn-list');
@@ -4678,6 +4729,7 @@ function ph_parseTSV(lines){
       wIsP1?wCombo:'',wIsP1?'':wCombo,ft,true,v[14]
     );
     row.p1Priority=pht_p1tag?true:pht_p2tag?false:null;
+    row.evTs=(v[0]||'').trim();   // only used to order the tournament list (row.ts stays blank for this format on purpose)
     rows.push(row);
   }
   return rows;
@@ -4779,8 +4831,11 @@ if (window.SHARED_CSV_LISTENERS) {
 // ═══════════════════════════════════════════════════════════════
 function ph_buildTournamentList(){
   const counts={};
-  ph_ALL_ROWS.forEach(r=>{const t=(r.tournament||'').trim();if(t&&!window.NCBLAST_TESTS.skip(t))counts[t]=(counts[t]||0)+1;});   // test events are left out while "Exclude Test Events" is ticked
-  ph_ALL_TOURNAMENTS=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([n,c])=>({name:n,count:c}));
+  const firstMs=new Map();   // event -> time stamp of its first battle
+  ph_ALL_ROWS.forEach(r=>{const t=(r.tournament||'').trim();if(t&&!window.NCBLAST_TESTS.skip(t)){   // test events are left out while "Exclude Test Events" is ticked
+    counts[t]=(counts[t]||0)+1;window.NCBLAST_EVENT_ORDER.note(firstMs,t,r.ts||r.evTs);}});
+  // Newest event on top, oldest on the bottom (by the time stamp of each event's first battle)
+  ph_ALL_TOURNAMENTS=window.NCBLAST_EVENT_ORDER.sort(Object.entries(counts).map(([n,c])=>({name:n,count:c})),t=>t.name,firstMs);
   ph_SELECTED_TOURNAMENTS=new Set(ph_ALL_TOURNAMENTS.map(t=>t.name));
   const list=document.getElementById('ph-tourn-list');
   list.innerHTML='';
@@ -10111,6 +10166,15 @@ function db_buildEvents(rows) {
   return Object.keys(map).map(k => map[k]).sort((a, b) => (a.first < b.first ? 1 : a.first > b.first ? -1 : 0));
 }
 
+// Newest event first for the Match timing list and the Timing Analysis list. An event's age is the time stamp of its
+// FIRST battle in the battle records (db_state.events already holds that as .first). An event that has timing but no
+// battle records yet falls back to its latest match start from the timing data, so it still lands close to where it belongs.
+function db_sortTimingEvents(list) {
+  const first = new Map();
+  db_state.events.forEach(function (e) { window.NCBLAST_EVENT_ORDER.note(first, e.name, e.first); });
+  return window.NCBLAST_EVENT_ORDER.sort(list, function (e) { return e.tournament; }, first, function (e) { return e.latest; });
+}
+
 function db_setStatus(text, kind) {
   const el = document.getElementById('db-status');
   el.textContent = text;
@@ -12763,7 +12827,7 @@ async function dbt_refresh(reloadEvents) {
   try {
     if (reloadEvents || !s.events.length) {
       const ev = await db_apiJson('/timing/events');
-      s.events = ev.events || [];
+      s.events = db_sortTimingEvents(ev.events || []);   // newest event (by its first battle) first
     }
     if (!s.events.length) {
       s.event = ''; s.matches = []; s.ticket++;
@@ -12786,16 +12850,27 @@ async function dbt_refresh(reloadEvents) {
   dbt_render();
 }
 
+// The order comes from the battle records. If they have not finished loading, draw the list again once they have.
+function dbt_waitForBattles() {
+  const s = dbt_state;
+  clearTimeout(s.evWait);
+  if (db_state.loaded || !s.events.length) return;
+  s.evWait = setTimeout(function () {
+    if (db_state.loaded) dbt_renderEvents(); else dbt_waitForBattles();
+  }, 1500);
+}
+
 function dbt_renderEvents() {
   const s = dbt_state;
   const sel = document.getElementById('dbt-event');
   if (!sel) return;
   sel.innerHTML = s.events.length
-    ? s.events.map(function (e) {
+    ? db_sortTimingEvents(s.events).map(function (e) {
       return '<option value="' + db_esc(e.tournament) + '"' + (e.tournament === s.event ? ' selected' : '') + '>' +
         db_esc(e.tournament) + ' · ' + db_fmtNum(e.matches) + ' match' + (e.matches === 1 ? '' : 'es') + '</option>';
     }).join('')
     : '<option value="">No timing data yet</option>';
+  dbt_waitForBattles();
 }
 
 function dbt_title(m) {
@@ -13057,6 +13132,7 @@ const ta_state = {
   pSortKey: 'total', // player table: which column it is sorted by
   pSortDir: 'asc',   // 'asc' = lowest first (fastest first for the time columns)
   pWait: null,       // timer: re-draw the player table once the battle records have finished loading
+  evWait: null,      // timer: re-draw the event drop-down once the battle records (which set its order) have loaded
   loadedAt: 0,       // when timing data was last fetched (quick flips between tabs do not re-download)
   loading: false,
   error: '',
@@ -13080,6 +13156,7 @@ function ta_clear() {
   const s = ta_state;
   s.events = []; s.cache = {}; s.event = ''; s.loadedAt = 0; s.loading = false; s.error = ''; s.ticket++;
   clearTimeout(s.pWait);
+  clearTimeout(s.evWait);
   ta_setStatus('', '');
   ta_render();
 }
@@ -13109,7 +13186,7 @@ async function ta_load(force) {
   try {
     const ev = await db_apiJson('/timing/events');
     if (ticket !== s.ticket) return;
-    s.events = ev.events || [];
+    s.events = db_sortTimingEvents(ev.events || []);   // newest event (by its first battle) first; the newest is re-downloaded below
     Object.keys(s.cache).forEach(function (k) {
       if (!s.events.some(function (e) { return e.tournament === k; })) delete s.cache[k];
     });
@@ -13163,6 +13240,16 @@ function ta_viewMatches() {
   return all;
 }
 
+// The order comes from the battle records. If they have not finished loading, draw the list again once they have.
+function ta_waitForBattles() {
+  const s = ta_state;
+  clearTimeout(s.evWait);
+  if (db_state.loaded || !s.events.length) return;
+  s.evWait = setTimeout(function () {
+    if (db_state.loaded) { if (ta_isActive()) ta_renderEvents(); } else ta_waitForBattles();
+  }, 1500);
+}
+
 function ta_renderEvents() {
   const s = ta_state;
   const sel = document.getElementById('ta-event');
@@ -13170,11 +13257,12 @@ function ta_renderEvents() {
   if (!s.events.length) { sel.innerHTML = '<option value="">' + (s.loading ? 'Loading…' : 'No timing data yet') + '</option>'; return; }
   const total = s.events.reduce(function (t, e) { return t + (window.NCBLAST_TESTS.skip(e.tournament) ? 0 : (e.matches || 0)); }, 0);
   sel.innerHTML = '<option value=""' + (s.event === '' ? ' selected' : '') + '>All events · ' + db_fmtNum(total) + ' match' + (total === 1 ? '' : 'es') + '</option>' +
-    s.events.map(function (e) {
+    db_sortTimingEvents(s.events).map(function (e) {
       return '<option value="' + db_esc(e.tournament) + '"' + (e.tournament === s.event ? ' selected' : '') + '>' +
         db_esc(e.tournament) + ' · ' + db_fmtNum(e.matches) + ' match' + (e.matches === 1 ? '' : 'es') +
         (window.NCBLAST_TESTS.isTest(e.tournament) ? ' · test' : '') + '</option>';
     }).join('');
+  ta_waitForBattles();
 }
 
 function ta_setModule(id) {
