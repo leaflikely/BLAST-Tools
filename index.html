@@ -1315,7 +1315,7 @@
 /* ── COMPACT PROFILE LAYOUT (player profile page) ──
    The blocks sit side by side when there is room and drop onto a new row when there is not, so one layout serves a wide
    desktop and a phone (the site shows a phone a 1100px-wide page). Tables are only as wide as their contents (.pf-tbl),
-   rows are tighter, and the two charts are stacked in one narrow column (.pf-visuals) so they can sit beside the tables.
+   rows are tighter, and the two charts sit in a wider column (.pf-visuals) to the right of the stacked tables (.pf-stack).
    To give another table the same tight look later, add class pf-tbl to it (and put it in a .pf-card). */
 #tool-playerhub .profile-header.pf-head{display:flex;align-items:center;justify-content:space-between;gap:10px 24px;flex-wrap:wrap;padding:16px 22px 14px;margin-bottom:14px;}
 #tool-playerhub .pf-head .profile-name{font-size:34px;margin-bottom:0;}
@@ -1327,9 +1327,20 @@
 #tool-playerhub .pf-opp{min-width:min(500px,100%);}   /* wide enough that opening an opponent's combo list does not resize the block */
 #tool-playerhub .pf-opp > table.tbl.pf-tbl{width:100%;}
 #tool-playerhub .detail-row table.pf-tbl td{padding:2px 10px!important;}   /* the opened opponent's small combo table: tight but not cramped */
-#tool-playerhub .pf-visuals{display:flex;flex-direction:column;gap:14px;width:250px;flex:0 0 250px;}
-#tool-playerhub .pf-visuals .sides,#tool-playerhub .pf-visuals .finish-cols{grid-template-columns:1fr;}
-#tool-playerhub .pf-visuals .side-card{padding:10px 12px;}
+#tool-playerhub .pf-stack{display:flex;flex-direction:column;gap:14px;align-items:flex-start;flex:0 1 auto;max-width:100%;}
+#tool-playerhub .pf-visuals{display:flex;flex-direction:column;gap:16px;flex:1 1 340px;min-width:300px;max-width:820px;}
+#tool-playerhub .pf-visuals .profile-card{padding:16px 18px;}
+#tool-playerhub .pf-visuals .profile-card-title{font-size:13px;}
+#tool-playerhub .pf-visuals .side-big{font-size:34px;}
+#tool-playerhub .pf-visuals .side-small{font-size:12px;}
+#tool-playerhub .pf-visuals .side-lbl{font-size:10.5px;}
+#tool-playerhub .pf-visuals .side-card{padding:14px 16px;}
+#tool-playerhub .pf-visuals .finish-section-lbl{font-size:11px;margin-bottom:6px;}
+#tool-playerhub .pf-visuals .finish-bar-row{margin-bottom:8px;}
+#tool-playerhub .pf-visuals .finish-bar-lbl{font-size:12px;width:32px;}
+#tool-playerhub .pf-visuals .finish-bar-track{height:9px;}
+#tool-playerhub .pf-visuals .finish-bar-n{font-size:12px;width:28px;}
+#tool-playerhub .pf-visuals .sides,#tool-playerhub .pf-visuals .finish-cols{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
 #tool-playerhub table.tbl.pf-tbl{width:auto;}
 #tool-playerhub table.tbl.pf-tbl > thead > tr > th{padding:6px 10px;text-align:right;}
 #tool-playerhub table.tbl.pf-tbl > tbody > tr > td{padding:4px 10px;white-space:nowrap;}
@@ -5559,6 +5570,23 @@ function ph_renderProfile(name){
     <!-- The profile blocks sit side by side when there is room and drop onto a new row when there is not -->
     <div class="pf-flow">
 
+    <div class="pf-stack">
+    <!-- Combo Breakdown -->
+    <div class="profile-card pf-card">
+        <div class="profile-card-title">Combo Breakdown</div>
+        <table class="tbl pf-tbl" style="font-size:12px"><thead><tr>
+          <th style="text-align:left">COMBO</th><th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>
+        </tr></thead><tbody>
+        ${s.combos.map(c=>`<tr>
+          <td title="${ph_escAttr(c.name)}" style="font-weight:500;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph_esc(c.name)}</td>
+          <td class="num">${c.battles}</td><td class="wl">${c.w}–${c.l}</td>
+          <td class="wp ${c.winPct>=60?'hi':c.winPct>=40?'mid':'lo'}">${c.winPct.toFixed(1)}%</td>
+          <td class="ppb ${c.ppb>0?'pos':c.ppb<0?'neg':'zero'}">${c.ppb>=0?'+':''}${c.ppb.toFixed(2)}</td>
+        </tr>`).join('')}
+        </tbody></table>
+      </div>
+
+
     <!-- Tournament History -->
     <div class="profile-card pf-card">
       <div class="profile-card-title">Tournament History</div>
@@ -5575,54 +5603,6 @@ function ph_renderProfile(name){
       </tbody></table>
     </div>
 
-    <!-- Combo Breakdown -->
-    <div class="profile-card pf-card">
-        <div class="profile-card-title">Combo Breakdown</div>
-        <table class="tbl pf-tbl" style="font-size:12px"><thead><tr>
-          <th style="text-align:left">COMBO</th><th>BATTLES</th><th>W–L</th><th>WIN %</th><th>PPB</th>
-        </tr></thead><tbody>
-        ${s.combos.map(c=>`<tr>
-          <td title="${ph_escAttr(c.name)}" style="font-weight:500;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph_esc(c.name)}</td>
-          <td class="num">${c.battles}</td><td class="wl">${c.w}–${c.l}</td>
-          <td class="wp ${c.winPct>=60?'hi':c.winPct>=40?'mid':'lo'}">${c.winPct.toFixed(1)}%</td>
-          <td class="ppb ${c.ppb>0?'pos':c.ppb<0?'neg':'zero'}">${c.ppb>=0?'+':''}${c.ppb.toFixed(2)}</td>
-        </tr>`).join('')}
-        </tbody></table>
-      </div>
-
-      <!-- Stadium Sides + Finish Breakdown: stacked in one narrow column so they can sit beside the tables -->
-      <div class="pf-visuals">
-      <div class="profile-card">
-        <div class="profile-card-title">Stadium Side Split</div>
-        <div class="sides">
-          ${[{key:'sideB',lbl:'B',cls:'b'},{key:'sideX',lbl:'X',cls:'x'}].map(({key,lbl,cls})=>{
-            const sd=s[key];
-            const wpc=sd.winPct>=60?'var(--win)':sd.winPct>=40?'var(--warn)':'var(--loss)';
-            return`<div class="side-card ${cls}">
-              <div class="side-bg-letter">${lbl}</div>
-              <div class="side-lbl">${lbl} SIDE</div>
-              <div class="side-big" style="color:${wpc}">${sd.winPct.toFixed(1)}%</div>
-              <div class="side-small">${sd.battles} battles · PPB ${sd.ppb>=0?'+':''}${sd.ppb.toFixed(2)}<br>${sd.sw||0}W ${sd.sl||0}L sets</div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>
-
-      <!-- Finish Breakdown -->
-      <div class="profile-card">
-        <div class="profile-card-title">Finish Type Breakdown</div>
-        <div class="finish-cols">
-          <div>
-            <div class="finish-section-lbl">SCORED BY PLAYER</div>
-            ${wFinDefs.map(d=>finBar(d.k,d.c)).join('')}
-          </div>
-          <div>
-            <div class="finish-section-lbl">SCORED ON PLAYER</div>
-            ${lFinDefs.map(d=>finBar(d.k,d.c)).join('')}
-          </div>
-        </div>
-      </div>
-      </div>
 
       <!-- Opponents (all, expandable for H2H combo breakdown) -->
       ${s.opponents.length>0?`<div class="profile-card pf-card pf-opp">
@@ -5690,6 +5670,43 @@ function ph_renderProfile(name){
         }).join('')}
         </tbody></table>
       </div>`:''}
+    </div>
+
+      <!-- Stadium Sides + Finish Breakdown: stacked in one narrow column so they can sit beside the tables -->
+      <div class="pf-visuals">
+      <div class="profile-card">
+        <div class="profile-card-title">Stadium Side Split</div>
+        <div class="sides">
+          ${[{key:'sideB',lbl:'B',cls:'b'},{key:'sideX',lbl:'X',cls:'x'}].map(({key,lbl,cls})=>{
+            const sd=s[key];
+            const wpc=sd.winPct>=60?'var(--win)':sd.winPct>=40?'var(--warn)':'var(--loss)';
+            return`<div class="side-card ${cls}">
+              <div class="side-bg-letter">${lbl}</div>
+              <div class="side-lbl">${lbl} SIDE</div>
+              <div class="side-big" style="color:${wpc}">${sd.winPct.toFixed(1)}%</div>
+              <div class="side-small">${sd.battles} battles · PPB ${sd.ppb>=0?'+':''}${sd.ppb.toFixed(2)}<br>${sd.sw||0}W ${sd.sl||0}L sets</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Finish Breakdown -->
+      <div class="profile-card">
+        <div class="profile-card-title">Finish Type Breakdown</div>
+        <div class="finish-cols">
+          <div>
+            <div class="finish-section-lbl">SCORED BY PLAYER</div>
+            ${wFinDefs.map(d=>finBar(d.k,d.c)).join('')}
+          </div>
+          <div>
+            <div class="finish-section-lbl">SCORED ON PLAYER</div>
+            ${lFinDefs.map(d=>finBar(d.k,d.c)).join('')}
+          </div>
+        </div>
+      </div>
+      </div>
+
+
     </div>
 
     <!-- Player vs Player Comparison -->
