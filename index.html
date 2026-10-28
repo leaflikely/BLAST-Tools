@@ -1325,9 +1325,13 @@
 #tool-playerhub .pf-flow .profile-card-title{margin-bottom:6px;padding-bottom:6px;}
 #tool-playerhub .pf-card{width:fit-content;max-width:100%;}
 #tool-playerhub .pf-opp{min-width:min(500px,100%);}   /* wide enough that opening an opponent's combo list does not resize the block */
-#tool-playerhub .pf-opp > table.tbl.pf-tbl{width:100%;}
+#tool-playerhub .pf-opp .pf-opp-scroll > table.tbl.pf-tbl{width:100%;}
+#tool-playerhub .pf-opp-scroll{max-height:370px;overflow-y:auto;overflow-x:hidden;}   /* about 10 opponents, the rest scroll */
+#tool-playerhub .pf-opp-scroll > table.tbl.pf-tbl > thead > tr > th{position:sticky;top:0;z-index:2;background:var(--surface2,#16201d);}
 #tool-playerhub .detail-row table.pf-tbl td{padding:2px 10px!important;}   /* the opened opponent's small combo table: tight but not cramped */
-#tool-playerhub .pf-stack{display:flex;flex-direction:column;gap:14px;align-items:flex-start;flex:0 1 auto;max-width:100%;}
+#tool-playerhub .pf-stack{display:flex;flex-direction:column;gap:14px;align-items:stretch;width:fit-content;flex:0 1 auto;max-width:100%;}
+#tool-playerhub .pf-stack > .pf-card > table.tbl.pf-tbl{width:100%;}
+#tool-playerhub .pf-stack > .pf-card{width:auto;}   /* all three boxes take the width of the widest one */
 #tool-playerhub .pf-visuals{display:flex;flex-direction:column;gap:16px;flex:1 1 340px;min-width:300px;max-width:820px;}
 #tool-playerhub .pf-visuals .profile-card{padding:16px 18px;}
 #tool-playerhub .pf-visuals .profile-card-title{font-size:13px;}
@@ -1340,7 +1344,7 @@
 #tool-playerhub .pf-visuals .finish-bar-lbl{font-size:12px;width:32px;}
 #tool-playerhub .pf-visuals .finish-bar-track{height:9px;}
 #tool-playerhub .pf-visuals .finish-bar-n{font-size:12px;width:28px;}
-#tool-playerhub .pf-visuals .sides,#tool-playerhub .pf-visuals .finish-cols{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
+#tool-playerhub .pf-visuals .sides,#tool-playerhub .pf-visuals .finish-cols{grid-template-columns:1fr;}
 #tool-playerhub table.tbl.pf-tbl{width:auto;}
 #tool-playerhub table.tbl.pf-tbl > thead > tr > th{padding:6px 10px;text-align:right;}
 #tool-playerhub table.tbl.pf-tbl > tbody > tr > td{padding:4px 10px;white-space:nowrap;}
@@ -5607,6 +5611,7 @@ function ph_renderProfile(name){
       <!-- Opponents (all, expandable for H2H combo breakdown) -->
       ${s.opponents.length>0?`<div class="profile-card pf-card pf-opp">
         <div class="profile-card-title">Opponents <span style="font-weight:400;color:var(--muted);font-size:11px">— click ▸ to expand combo breakdown</span></div>
+        <div class="pf-opp-scroll">
         <table class="tbl pf-tbl" style="font-size:12px"><thead><tr>
           <th style="width:28px"></th>
           <th style="text-align:left">OPPONENT</th>
@@ -5669,6 +5674,7 @@ function ph_renderProfile(name){
           </tr>${detailHtml}`;
         }).join('')}
         </tbody></table>
+        </div>
       </div>`:''}
     </div>
 
