@@ -6914,11 +6914,22 @@ function rg_renderChallongeBox() {
     const swissNote = (typeof rec.swissRounds === 'number')
       ? ', ' + rec.swissRounds + ' Swiss round' + (rec.swissRounds === 1 ? '' : 's') + ' detected'
       : ' (Swiss round count not detected \u2014 set the toggle above manually)';
+    // Byes: undefined/null = this event was linked before bye detection existed
+    // (or Challonge couldn't tell) -> nudge to re-link; an object = checked.
+    let byeNote = '';
+    if (rec.byes && typeof rec.byes === 'object') {
+      const byeCount = Object.keys(rec.byes).length;
+      byeNote = byeCount > 0
+        ? ', ' + byeCount + ' bye' + (byeCount === 1 ? '' : 's') + ' found'
+        : ', no byes found';
+    } else if (typeof rec.swissRounds === 'number') {
+      byeNote = ' (byes not checked \u2014 use Change link and Save & Fetch again to add them)';
+    }
     box.innerHTML =
       '<div class="rg-challonge-linked">' +
         '<span class="rg-challonge-check">\u2713</span>' +
         '<span class="rg-challonge-linked-text">Linked to Challonge \u2014 ' + rec.placements.length +
-          ' placement' + (rec.placements.length === 1 ? '' : 's') + ' on file' + swissNote + '</span>' +
+          ' placement' + (rec.placements.length === 1 ? '' : 's') + ' on file' + swissNote + byeNote + '</span>' +
         '<button class="btn btn-ghost pl-challonge-btn" onclick="rg_showChallongeInput()">Change link</button>' +
       '</div>' + debugHTML;
     return;
@@ -6987,6 +6998,9 @@ async function rg_saveAndFetchChallongeLink() {
     const placements = Array.isArray(data.placements) ? data.placements : [];
     const rankedCount = placements.filter(p => p.finalRank !== null && p.finalRank !== undefined).length;
     const swissRounds = (typeof data.swissRounds === 'number' && data.swissRounds > 0) ? data.swissRounds : null;
+    // Who had a bye in which Swiss round: an object keyed by lowercase player
+    // name, {} if nobody did, or null if the Worker couldn't tell.
+    const byes = (data.byes && typeof data.byes === 'object' && !Array.isArray(data.byes)) ? data.byes : null;
 
     if (rankedCount === 0) {
       statusEl.textContent = 'Found that bracket, but it hasn\u2019t been finalized on Challonge yet \u2014 no placements available. Finalize it there, then try again.';
@@ -6997,7 +7011,7 @@ async function rg_saveAndFetchChallongeLink() {
     // Save it — in memory now, and on the shared server in the background —
     // so every future visit (this browser or anyone else's) reads it back
     // instantly with no further calls to Challonge for this event.
-    rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] = { link, placements, swissRounds, fetchedAt: new Date().toISOString() };
+    rg_CHALLONGE_LINKS[rg_SELECTED_TOURNAMENT] = { link, placements, swissRounds, byes, fetchedAt: new Date().toISOString() };
     rg_CHALLONGE_BOX_EDITING = false;
 
     // TEMPORARY DEBUG — store the raw Challonge data so rg_renderChallongeBox
@@ -7009,7 +7023,7 @@ async function rg_saveAndFetchChallongeLink() {
     fetch(WORKER_URL + '/challonge-links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tournament: rg_SELECTED_TOURNAMENT, link, placements, swissRounds }),
+      body: JSON.stringify({ tournament: rg_SELECTED_TOURNAMENT, link, placements, swissRounds, byes }),
     }).catch(() => { /* best-effort — this browser's cache already has it either way */ });
 
     rg_renderChallongeBox();
@@ -7305,7 +7319,7 @@ function rg_searchGenerateReport(playerName, tournament) {
   }
 
   // Compute stats then go straight to step 3
-  rg_COMPUTED_STATS[playerName] = rg_computeStats(rg_ALL_ROWS, rg_SELECTED_TOURNAMENT, playerName, rg_PLACEMENTS, rg_SWISS_ROUNDS);
+  rg_COMPUTED_STATS[playerName] = rg_applyByes(rg_computeStats(rg_ALL_ROWS, rg_SELECTED_TOURNAMENT, playerName, rg_PLACEMENTS, rg_SWISS_ROUNDS), playerName, rg_SELECTED_TOURNAMENT, rg_SWISS_ROUNDS);
   const archetypeProfiles = rg_computeAllArchetypes(rg_ALL_ROWS, rg_SELECTED_TOURNAMENT, rg_COMPUTED_STATS);
   Object.keys(rg_COMPUTED_STATS).forEach(p => {
     rg_COMPUTED_STATS[p]._archetype = archetypeProfiles[p] || null;
@@ -7372,7 +7386,7 @@ function rg_populateReviewStep() {
   const count = players.length;
   document.getElementById('rg-step4-sub').textContent = count+' player'+(count>1?'s':'')+' selected at '+rg_SELECTED_TOURNAMENT+'. Click any card to preview their report, then export when ready.';
   rg_COMPUTED_STATS = {};
-  players.forEach(p => { rg_COMPUTED_STATS[p] = rg_computeStats(rg_ALL_ROWS, rg_SELECTED_TOURNAMENT, p, rg_PLACEMENTS, rg_SWISS_ROUNDS); });
+  players.forEach(p => { rg_COMPUTED_STATS[p] = rg_applyByes(rg_computeStats(rg_ALL_ROWS, rg_SELECTED_TOURNAMENT, p, rg_PLACEMENTS, rg_SWISS_ROUNDS), p, rg_SELECTED_TOURNAMENT, rg_SWISS_ROUNDS); });
   // Archetype scoring needs all players in the tournament, not just selected ones
   const archetypeProfiles = rg_computeAllArchetypes(rg_ALL_ROWS, rg_SELECTED_TOURNAMENT, rg_COMPUTED_STATS);
   players.forEach(p => { if(rg_COMPUTED_STATS[p]) rg_COMPUTED_STATS[p].profile = archetypeProfiles[p] || null; });
@@ -8102,6 +8116,67 @@ function rg_buildMatchKeyMap(tRows) {
 function rg_getMatchKey(r, keyMap) {
   const mname = (r.Match||'').trim();
   return keyMap.get((r.Timestamp||'') + '||' + mname) || mname;
+}
+
+// ── BYES ──────────────────────────────────────────────────────────────────────
+// A bye leaves no battles in the CSV, so rg_computeStats (which is built only
+// from battles) can't see it. This is a separate step that runs on a player's
+// finished stats, using the bye rounds the Worker saved from Challonge
+// (rg_CHALLONGE_LINKS[tournament].byes). It leaves rg_computeStats untouched.
+//
+// What it does for a player who had a bye:
+//  1. Puts a BYE entry into the Swiss part of the match strip and the Match
+//     Recap list, in the round it happened (the player's real matches fill
+//     the other Swiss rounds in the order they were played).
+//  2. Fixes the Swiss / Top Cut split. rg_computeStats assumes the first N
+//     matches are Swiss, but a player with a bye has only N minus byes Swiss
+//     matches, so their first Top Cut match was being filed under Swiss.
+//  3. Counts the bye as a win in the record.
+// If there is no bye info for the player, the stats come back exactly as they
+// were. Same if anything looks inconsistent.
+function rg_applyByes(stats, player, tournament, swissRoundsSetting) {
+  if (!stats || !stats.matchResultStrip || !Array.isArray(stats.matchRecap)) return stats;
+  const rec = rg_CHALLONGE_LINKS[tournament];
+  const byeMap = rec && rec.byes && typeof rec.byes === 'object' ? rec.byes : null;
+  const mine = byeMap ? byeMap[String(player).trim().toLowerCase()] : null;
+  if (!Array.isArray(mine) || mine.length === 0) return stats;
+
+  const swissRounds = stats.matchResultStrip.swissRounds || swissRoundsSetting || 5;
+  const byeRounds = Array.from(new Set(mine.filter(n => Number.isInteger(n) && n >= 1 && n <= swissRounds))).sort((a, b) => a - b);
+  if (byeRounds.length === 0) return stats;
+
+  const allStrip = (stats.matchResultStrip.swiss || []).concat(stats.matchResultStrip.topCut || []);
+  const allRecap = stats.matchRecap;
+  if (allStrip.length !== allRecap.length) return stats; // lists don't line up — don't guess
+
+  const byeSet = new Set(byeRounds);
+  const swissPlayedSlots = swissRounds - byeRounds.length;
+  const newSwiss = [];
+  const newRecap = [];
+  let idx = 0;
+  for (let r = 1; r <= swissRounds; r++) {
+    if (byeSet.has(r)) {
+      newSwiss.push({ match: 'BYE', w: null, l: null, result: 'win', bye: true, round: r });
+      newRecap.push({ match: 'BYE', bye: true, round: r, result: 'WIN' });
+    } else if (idx < swissPlayedSlots && idx < allStrip.length) {
+      newSwiss.push(allStrip[idx]);
+      newRecap.push(allRecap[idx]);
+      idx++;
+    }
+  }
+
+  stats.matchResultStrip = {
+    swiss: newSwiss,
+    topCut: allStrip.slice(idx),
+    swissRounds: stats.matchResultStrip.swissRounds,
+  };
+  stats.matchRecap = newRecap.concat(allRecap.slice(idx));
+  stats.summary.swissRecord = {
+    wins: stats.summary.swissRecord.wins + byeRounds.length,
+    losses: stats.summary.swissRecord.losses,
+  };
+  stats.byeRounds = byeRounds;
+  return stats;
 }
 
 // ── STAT ENGINE ───────────────────────────────────────────────────────────────
@@ -8917,6 +8992,7 @@ function RgCoverPage({data,accent,logoSrc}){
   const swissRounds = matchResultStrip ? matchResultStrip.swissRounds : 5;
 
   function MatchPill({m}){
+    if(m.bye) return <div style={{padding:'5px 10px',borderRadius:5,background:'rgba(255,255,255,.22)',color:'rgba(255,255,255,.92)',fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:700,letterSpacing:'0.04em',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>BYE</div>;
     return <div style={{padding:'5px 10px',borderRadius:5,background:m.result==='win'?accent:'#c23a2a',color:m.result==='win'?'#0e1512':'white',fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:700,letterSpacing:'0.04em',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>{m.w}-{m.l}</div>;
   }
 
@@ -9470,6 +9546,17 @@ function RgMatchRecapPages({data,accent,startPageNum}){
           const globalIdx=pageStartIdx+i;
           const isWin=m.result==='WIN';
           const isFirstTopCut=globalIdx===swissRounds;
+          if(m.bye){
+            return(<React.Fragment key={i}>
+              <div style={{border:'1px solid var(--rule)',borderRadius:5,overflow:'hidden'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,padding:'7px 12px',background:'var(--paper-soft)'}}>
+                  <div style={{padding:'3px 8px',borderRadius:3,background:'#8a948f',color:'white',fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,fontWeight:700,letterSpacing:'0.1em',flexShrink:0,WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>BYE</div>
+                  <div style={{fontFamily:"'Space Grotesk',system-ui",fontSize:13,fontWeight:700,color:'#14241f'}}>Round {m.round} &middot; Bye</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9.5,color:'#14241f',marginLeft:'auto'}}>Counted as a win &middot; no battles played</div>
+                </div>
+              </div>
+            </React.Fragment>);
+          }
           return(<React.Fragment key={i}>
             {isFirstTopCut&&<div style={{display:'flex',alignItems:'center',gap:10,margin:'4px 0 2px'}}>
               <div style={{flex:1,height:1,background:'var(--teal-deep)'}}/>
