@@ -10994,13 +10994,13 @@ function db_allCols() {
     { l: 'SLOT', w: 52, c: 'db-num', compact: true, v: r => r.slot },
     { l: 'WINNER', w: 120, c: 'db-win', compact: true, v: r => r.winner },
     { l: 'WINNING COMBO', w: 250, compact: true, v: r => r.winnerCombo },
+    { l: 'P1 COMBO', w: 250, compact: true, v: r => r.p1Combo },
+    { l: 'P2 COMBO', w: 250, compact: true, v: r => r.p2Combo },
     { l: 'FINISH', w: 110, compact: true, v: r => r.finish },
     { l: 'PTS', w: 48, c: 'db-num', compact: true, v: r => r.points },
     { l: 'PENALTY', w: 70, c: 'db-num', v: r => r.penalty },
     { l: 'P1 SCORE', w: 76, c: 'db-num', v: r => r.p1Score },
-    { l: 'P2 SCORE', w: 76, c: 'db-num', v: r => r.p2Score },
-    { l: 'P1 COMBO', w: 250, v: r => r.p1Combo },
-    { l: 'P2 COMBO', w: 250, v: r => r.p2Combo }
+    { l: 'P2 SCORE', w: 76, c: 'db-num', v: r => r.p2Score }
   ];
 }
 function db_cols() {
