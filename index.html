@@ -13228,12 +13228,41 @@ function ta_buildMatches(lines) {
     if (!by[l.matchKey]) { by[l.matchKey] = []; order.push(l.matchKey); }
     by[l.matchKey].push(l);
   });
-  return order.map(function (k) {
+  const out = order.map(function (k) {
     const group = by[k];
     const m = dbt_analyze(group);
     // dbt_analyze reports 0 for deck time when a match has no Decks Recorded line; remember whether it really had one
     m.hasDecks = group.some(function (l) { return l.kind === 'decks'; });
     return m;
+  });
+  ta_tagRound1(out);
+  return out;
+}
+
+// Marks each match of ONE event as Round 1 or a later round (m.isRound1 = true / false / null).
+// The stopwatch lines do not say which round a match belongs to, so it is worked out from who played:
+// a match is Round 1 when it is the FIRST timed match for BOTH of its players. Going through the matches
+// oldest first, anyone already seen in an earlier match is no longer new. This also handles a player with a
+// Round 1 bye (their first match is Round 2, but their opponent has already played, so it is not counted as
+// Round 1) and top cut rematches (everyone has already played).
+// null = unknown: a match with a missing player name is left out of the Round 1 / Other Rounds columns.
+function ta_tagRound1(matches) {
+  const nameKey = function (s) { return String(s || '').trim().toLowerCase(); };
+  const sorted = matches.slice().sort(function (a, b) {
+    return String(a.startedAt || '').localeCompare(String(b.startedAt || ''));
+  });
+  const seen = {};
+  sorted.forEach(function (m) {
+    const a = nameKey(m.p1), b = nameKey(m.p2);
+    if (!a || !b) {
+      m.isRound1 = null;
+      if (a) seen[a] = true;
+      if (b) seen[b] = true;
+      return;
+    }
+    m.isRound1 = !seen[a] && !seen[b];
+    seen[a] = true;
+    seen[b] = true;
   });
 }
 
@@ -13247,13 +13276,13 @@ function ta_buildMatches(lines) {
 // diff = the judge's average minus the sample average (+ = slower, - = faster). null when either side has no data.
 function ta_judgeStats(matches) {
   const by = {}, order = [];
-  const all = { nTotal: 0, sumTotal: 0, nDecks: 0, sumDecks: 0, nFix: 0, sumFix: 0 };
+  const all = { nTotal: 0, sumTotal: 0, nDecks: 0, sumDecks: 0, nDecks1: 0, sumDecks1: 0, nDecksO: 0, sumDecksO: 0, nFix: 0, sumFix: 0 };
   let noComplete = 0;
   matches.forEach(function (m) {
     const raw = (m.judge || '').trim();
     const key = raw.toLowerCase();   // "Leaf" and "leaf" are the same judge
     if (!by[key]) {
-      by[key] = { name: raw || TA_NO_JUDGE, matches: 0, nTotal: 0, sumTotal: 0, nDecks: 0, sumDecks: 0, nFix: 0, sumFix: 0 };
+      by[key] = { name: raw || TA_NO_JUDGE, matches: 0, nTotal: 0, sumTotal: 0, nDecks: 0, sumDecks: 0, nDecks1: 0, sumDecks1: 0, nDecksO: 0, sumDecksO: 0, nFix: 0, sumFix: 0 };
       order.push(key);
     }
     const j = by[key];
@@ -13265,6 +13294,14 @@ function ta_judgeStats(matches) {
     if (m.hasDecks) {
       j.nDecks++; j.sumDecks += m.parts.decks;
       all.nDecks++; all.sumDecks += m.parts.decks;
+      // the same deck time, split by Round 1 vs every later round (m.isRound1 null = unknown, in neither)
+      if (m.isRound1 === true) {
+        j.nDecks1++; j.sumDecks1 += m.parts.decks;
+        all.nDecks1++; all.sumDecks1 += m.parts.decks;
+      } else if (m.isRound1 === false) {
+        j.nDecksO++; j.sumDecksO += m.parts.decks;
+        all.nDecksO++; all.sumDecksO += m.parts.decks;
+      }
     }
     if (m.fixCount > 0) {
       const t = (m.notice || 0) + (m.repair || 0);
@@ -13276,16 +13313,20 @@ function ta_judgeStats(matches) {
   const sample = {
     total: avg(all.sumTotal, all.nTotal),
     decks: avg(all.sumDecks, all.nDecks),
+    decks1: avg(all.sumDecks1, all.nDecks1),
+    decksO: avg(all.sumDecksO, all.nDecksO),
     fix: all.nFix ? all.sumFix / all.nFix : 0
   };
   const gap = function (v, base) { return v === null || base === null ? null : v - base; };
   const rows = order.map(function (k) {
     const j = by[k];
     const total = avg(j.sumTotal, j.nTotal), decks = avg(j.sumDecks, j.nDecks), fix = j.nFix ? j.sumFix / j.nFix : 0;
+    const decks1 = avg(j.sumDecks1, j.nDecks1), decksO = avg(j.sumDecksO, j.nDecksO);
     return {
       name: j.name, matches: j.matches, fixes: j.nFix,
-      total: total, decks: decks, fix: fix,
-      dTotal: gap(total, sample.total), dDecks: gap(decks, sample.decks), dFix: gap(fix, sample.fix)
+      total: total, decks: decks, decks1: decks1, decksO: decksO, fix: fix,
+      dTotal: gap(total, sample.total), dDecks: gap(decks, sample.decks),
+      dDecks1: gap(decks1, sample.decks1), dDecksO: gap(decksO, sample.decksO), dFix: gap(fix, sample.fix)
     };
   });
   return { rows: rows, sample: sample, matchCount: matches.length, noComplete: noComplete, totalFixes: all.nFix };
@@ -13496,6 +13537,8 @@ const TA_JUDGE_COLS = [
   { key: 'name', label: 'JUDGE', num: false, d: null },
   { key: 'total', label: 'AVG MATCH LENGTH', num: true, d: 'dTotal' },
   { key: 'decks', label: 'AVG DECK BUILDING', num: true, d: 'dDecks' },
+  { key: 'decks1', label: 'AVG BUILD · ROUND 1', num: true, d: 'dDecks1' },
+  { key: 'decksO', label: 'AVG BUILD · OTHER ROUNDS', num: true, d: 'dDecksO' },
   { key: 'fix', label: 'AVG FIX TIME', num: true, d: 'dFix' }
 ];
 
@@ -13550,10 +13593,12 @@ function ta_renderJudges() {
     h += '<tr><td><div class="ta-name">' + db_esc(r.name) + '</div>' +
       '<div class="ta-sub">' + db_fmtNum(r.matches) + ' match' + (r.matches === 1 ? '' : 'es') +
       ' · ' + db_fmtNum(r.fixes) + ' fix' + (r.fixes === 1 ? '' : 'es') + '</div></td>' +
-      ta_valCell(r.total, r.dTotal) + ta_valCell(r.decks, r.dDecks) + ta_valCell(r.fix, r.dFix) + '</tr>';
+      ta_valCell(r.total, r.dTotal) + ta_valCell(r.decks, r.dDecks) +
+      ta_valCell(r.decks1, r.dDecks1) + ta_valCell(r.decksO, r.dDecksO) + ta_valCell(r.fix, r.dFix) + '</tr>';
   });
   h += '</tbody><tfoot><tr><td><div class="ta-name">SAMPLE AVERAGE</div><div class="ta-sub">all judges together</div></td>' +
-    ta_valCell(st.sample.total, null) + ta_valCell(st.sample.decks, null) + ta_valCell(st.sample.fix, null) + '</tr></tfoot></table>';
+    ta_valCell(st.sample.total, null) + ta_valCell(st.sample.decks, null) +
+    ta_valCell(st.sample.decks1, null) + ta_valCell(st.sample.decksO, null) + ta_valCell(st.sample.fix, null) + '</tr></tfoot></table>';
   wrap.innerHTML = h;
 
   note.innerHTML =
@@ -13561,7 +13606,7 @@ function ta_renderJudges() {
     '<span class="ta-slow">red = slower</span>, <span class="ta-fast">green = faster</span>.<br>' +
     '<b>Match length</b> is Start to Match Complete' +
     (st.noComplete ? ' (' + db_fmtNum(st.noComplete) + ' match' + (st.noComplete === 1 ? ' has' : 'es have') + ' no Match Complete line and ' + (st.noComplete === 1 ? 'is' : 'are') + ' left out)' : '') +
-    '. <b>Deck building</b> is Start to Decks Recorded. <b>Fix time</b> is the average length of one fix, from when the problem began until it was repaired (' +
+    '. <b>Deck building</b> is Start to Decks Recorded. <b>Round 1</b> is a match where both players are playing their first timed match of the event (the stopwatch does not record round numbers, so this is worked out from who has already played); <b>Other Rounds</b> is every match after that. A match with a missing player name is left out of those two columns. <b>Fix time</b> is the average length of one fix, from when the problem began until it was repaired (' +
     db_fmtNum(st.totalFixes) + ' fix' + (st.totalFixes === 1 ? '' : 'es') + ' in view).<br>' +
     'The sample average counts every match (or fix) once, so a judge with more matches pulls it harder. A judge with no fixes counts as 0.0s for fix time. A “—” means that judge has no data for that column.';
 }
