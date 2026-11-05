@@ -13271,8 +13271,10 @@ function ta_tagRound1(matches) {
 //  - deck building: Start to Decks Recorded (time spent in a fix is not counted). Matches with no Decks line are left out.
 //  - fix time: the average length of ONE fix, from when the problem began to when it was repaired (notice + repair).
 //    A judge with no fixes in the sample counts as 0 seconds (not blank), and so does the sample itself if it has none.
-// The sample average is pooled over every match (or every fix) in view, not an average of the judges' averages,
-// so a judge who ran 40 matches counts for more than one who ran 2.
+//    CHANGED: fix time is now each judge's TOTAL fix time (all their fixes added up). The bottom row for it is the
+//    average of the judges' totals (every judge counts once, no-fix judges as 0).
+// For match length and deck building the bottom row is pooled over every match in view, not an average of the judges'
+// averages, so a judge who ran 40 matches counts for more than one who ran 2.
 // diff = the judge's average minus the sample average (+ = slower, - = faster). null when either side has no data.
 function ta_judgeStats(matches) {
   const by = {}, order = [];
@@ -13310,17 +13312,19 @@ function ta_judgeStats(matches) {
     }
   });
   const avg = function (sum, n) { return n ? sum / n : null; };
+  // fix time is each judge's TOTAL fix time; its bottom-row figure is the average of those totals across all judges
+  // (a judge with no fixes counts as 0 and is included)
   const sample = {
     total: avg(all.sumTotal, all.nTotal),
     decks: avg(all.sumDecks, all.nDecks),
     decks1: avg(all.sumDecks1, all.nDecks1),
     decksO: avg(all.sumDecksO, all.nDecksO),
-    fix: all.nFix ? all.sumFix / all.nFix : 0
+    fix: order.length ? all.sumFix / order.length : 0
   };
   const gap = function (v, base) { return v === null || base === null ? null : v - base; };
   const rows = order.map(function (k) {
     const j = by[k];
-    const total = avg(j.sumTotal, j.nTotal), decks = avg(j.sumDecks, j.nDecks), fix = j.nFix ? j.sumFix / j.nFix : 0;
+    const total = avg(j.sumTotal, j.nTotal), decks = avg(j.sumDecks, j.nDecks), fix = j.sumFix;
     const decks1 = avg(j.sumDecks1, j.nDecks1), decksO = avg(j.sumDecksO, j.nDecksO);
     return {
       name: j.name, matches: j.matches, fixes: j.nFix,
@@ -13539,7 +13543,7 @@ const TA_JUDGE_COLS = [
   { key: 'decks', label: 'AVG DECK BUILDING', num: true, d: 'dDecks' },
   { key: 'decks1', label: 'AVG BUILD · ROUND 1', num: true, d: 'dDecks1' },
   { key: 'decksO', label: 'AVG BUILD · OTHER ROUNDS', num: true, d: 'dDecksO' },
-  { key: 'fix', label: 'AVG FIX TIME', num: true, d: 'dFix' }
+  { key: 'fix', label: 'TOTAL FIX TIME', num: true, d: 'dFix' }
 ];
 
 function ta_valCell(v, diff) {
@@ -13596,7 +13600,7 @@ function ta_renderJudges() {
       ta_valCell(r.total, r.dTotal) + ta_valCell(r.decks, r.dDecks) +
       ta_valCell(r.decks1, r.dDecks1) + ta_valCell(r.decksO, r.dDecksO) + ta_valCell(r.fix, r.dFix) + '</tr>';
   });
-  h += '</tbody><tfoot><tr><td><div class="ta-name">SAMPLE AVERAGE</div><div class="ta-sub">all judges together</div></td>' +
+  h += '</tbody><tfoot><tr><td><div class="ta-name">POPULATION AVERAGE</div><div class="ta-sub">all judges together</div></td>' +
     ta_valCell(st.sample.total, null) + ta_valCell(st.sample.decks, null) +
     ta_valCell(st.sample.decks1, null) + ta_valCell(st.sample.decksO, null) + ta_valCell(st.sample.fix, null) + '</tr></tfoot></table>';
   wrap.innerHTML = h;
@@ -13606,9 +13610,9 @@ function ta_renderJudges() {
     '<span class="ta-slow">red = slower</span>, <span class="ta-fast">green = faster</span>.<br>' +
     '<b>Match length</b> is Start to Match Complete' +
     (st.noComplete ? ' (' + db_fmtNum(st.noComplete) + ' match' + (st.noComplete === 1 ? ' has' : 'es have') + ' no Match Complete line and ' + (st.noComplete === 1 ? 'is' : 'are') + ' left out)' : '') +
-    '. <b>Deck building</b> is Start to Decks Recorded. <b>Round 1</b> is a match where both players are playing their first timed match of the event (the stopwatch does not record round numbers, so this is worked out from who has already played); <b>Other Rounds</b> is every match after that. A match with a missing player name is left out of those two columns. <b>Fix time</b> is the average length of one fix, from when the problem began until it was repaired (' +
+    '. <b>Deck building</b> is Start to Decks Recorded. <b>Round 1</b> is a match where both players are playing their first timed match of the event (the stopwatch does not record round numbers, so this is worked out from who has already played); <b>Other Rounds</b> is every match after that. A match with a missing player name is left out of those two columns. <b>Total fix time</b> is all of that judge\'s fix time added up (each fix runs from when the problem began until it was repaired), so a judge who ran more matches will usually have more. The bottom row is the population average: the average of every judge\'s total (' +
     db_fmtNum(st.totalFixes) + ' fix' + (st.totalFixes === 1 ? '' : 'es') + ' in view).<br>' +
-    'The sample average counts every match (or fix) once, so a judge with more matches pulls it harder. A judge with no fixes counts as 0.0s for fix time. A “—” means that judge has no data for that column.';
+    'For match length and the deck building columns, the bottom row counts every match once, so a judge with more matches pulls it harder. For total fix time, the bottom row averages the judges instead, and a judge with no fixes counts as 0.0s. A “—” means that judge has no data for that column.';
 }
 
 // ── module: PLAYER COMPARISON ──────────────────────────────────────────────
