@@ -10258,7 +10258,7 @@ const db_state = {
   syncTimer: null,
   syncFails: 0,      // checks in a row that could not reach the database
   lastCheck: 0,      // when the last successful check finished
-  lastVerify: 0,     // when the exact battle count was last compared
+  total: 0,          // how many battles the database holds, counted here: the full download's size, then +new −gone
   catchingUp: false, // showing the saved copy and waiting for the first check
   cacheTimer: null,
   markMode: false,   // "Mark Tests" is open: the events list shows a checkbox for each event
@@ -10386,7 +10386,6 @@ function db_setStatus(text, kind) {
 // ═══════════════════════════════════════════════════════════════════════════
 const DB_POLL_MS = 5000;                      // how often the open tab asks "anything new?"
 const DB_POLL_SLOW_MS = 20000;                // the same, after several failed tries in a row
-const DB_VERIFY_EVERY_MS = 30 * 60 * 1000;    // how often the exact battle count is double-checked
 const DB_CACHE_DB = 'ncblast-db-cache';
 const DB_CACHE_STORE = 'snapshot';
 const DB_CACHE_KEY = 'main';
@@ -10517,7 +10516,7 @@ async function db_load() {
     rows.sort(db_rowOrder);
     s.rows = rows;
     s.cursor = cur !== null && /^\d+$/.test(cur) ? parseInt(cur, 10) : null;
-    s.lastVerify = Date.now();
+    s.total = rows.length;
     s.lastCheck = Date.now();
     s.syncFails = 0;
     s.catchingUp = false;
@@ -10552,12 +10551,12 @@ async function db_open() {
     if (saved && saved.rows.length) {
       s.rows = saved.rows;
       s.cursor = saved.cursor;
-      s.lastVerify = 0;
+      s.total = saved.rows.length;
       s.catchingUp = true;
       db_dataReady();
       db_setLive('saved');
       db_setStatus('Showing the copy saved on this device · checking for new data…', '');
-      await db_sync({ verify: true });
+      await db_sync();
     } else {
       await db_load();
     }
@@ -10651,8 +10650,7 @@ async function db_sync(opts) {
   try {
     let hi = 0;
     for (let i = 0; i < s.rows.length; i++) if (s.rows[i].id > hi) hi = s.rows[i].id;
-    const wantCount = !!opts.verify || Date.now() - s.lastVerify > DB_VERIFY_EVERY_MS;
-    const res = await db_api('/sync?c=' + s.cursor + '&hi=' + hi + (wantCount ? '&count=1' : ''));
+    const res = await db_api('/sync?c=' + s.cursor + '&hi=' + hi);
     if (res.status === 404) { s.cursor = null; db_setLive('nolive'); return false; }
     if (!res.ok) throw new Error('The database answered with an error (' + res.status + ').');
     const data = await res.json();
@@ -10664,6 +10662,7 @@ async function db_sync(opts) {
       let out;
       try {
         out = db_applyDelta(data);
+        s.total += out.added - out.removed;
       } catch (err) {
         reset = true;   // the answer made no sense; start over from a full download
         return false;
@@ -10681,10 +10680,6 @@ async function db_sync(opts) {
       }
     }
     if (typeof data.c === 'number') s.cursor = data.c;
-    if (wantCount) {
-      s.lastVerify = Date.now();
-      if (typeof data.count === 'number' && data.count !== s.rows.length) { reset = true; return false; }
-    }
     if (msg) db_setStatus(msg, 'ok');
     else if (s.catchingUp) db_setStatus('✓ Up to date · ' + db_fmtNum(s.rows.length) + ' battles', 'ok');
     s.catchingUp = false;
@@ -12382,6 +12377,7 @@ async function db_deleteRows(rows, title, bodyHtml, needTyping) {
     }
     // drop the rows that really went away
     const gone = new Set(ids.slice(0, deleted));
+    s.total -= gone.size;
     s.rows = s.rows.filter(function (r) { return !gone.has(r.id); });
     s.events = db_buildEvents(s.rows);
     if (s.event && !s.events.some(function (e) { return e.name === s.event; })) { s.event = ''; document.getElementById('db-filter-event').value = ''; }
