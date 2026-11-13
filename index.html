@@ -6281,6 +6281,89 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
     };
   });
 
+  // ── PICK PRIORITY & DIE ROLL (set 1 only) ───────────────────────────────────
+  // The die roll decides who has pick priority. Priority is recorded for set 1 only (the ~P~
+  // marker, read at parse time into P1Priority), so every number here covers set 1 of each match
+  // that has it. Matches with no marker are left out, never guessed. "Match winner" = the player
+  // who won more sets in that match (a set is won by reaching 4 points). A match with no clear
+  // winner (tied or unfinished sets) is left out of the match numbers only.
+  const priority = (() => {
+    const byMatch = {};
+    battleRows.forEach(r => {
+      const mk = tr_getMatchKey(r, mkMap);
+      (byMatch[mk] = byMatch[mk] || []).push(r);
+    });
+    const out = {
+      matchesTotal: Object.keys(byMatch).length,
+      matchesWithPriority: 0,
+      pickB: 0, pickX: 0,
+      decided: 0, matchWins: 0,
+      set1Decided: 0, set1Wins: 0,
+    };
+    Object.values(byMatch).forEach(mRows => {
+      const marked = mRows.find(r => r.P1Priority === true || r.P1Priority === false);
+      if (!marked) return;
+      out.matchesWithPriority++;
+      const holder = ((marked.P1Priority ? marked.P1 : marked.P2) || '').trim().toLowerCase();
+      if (!holder) return;
+      const sideOf = r => (((r.P1||'').trim().toLowerCase() === holder) ? r.P1Side : r.P2Side) || '';
+
+      // Which side the priority holder took in set 1
+      const set1Rows = mRows.filter(r => parseInt(r.Set, 10) === 1);
+      const sideRow = set1Rows.find(r => ['B','X'].includes((sideOf(r)||'').trim().toUpperCase()));
+      if (sideRow) {
+        if ((sideOf(sideRow)||'').trim().toUpperCase() === 'B') out.pickB++; else out.pickX++;
+      }
+
+      // Who won each set: add up points per winner in time order; first to 4 takes the set
+      const bySet = {};
+      mRows.forEach(r => { const k = String(parseInt(r.Set, 10)); (bySet[k] = bySet[k] || []).push(r); });
+      const setWinners = {};
+      Object.entries(bySet).forEach(([k, sRows]) => {
+        if (k === 'NaN') return;
+        sRows.sort((a,b) => {
+          const ta = a.Timestamp||'', tb = b.Timestamp||'';
+          return ta < tb ? -1 : ta > tb ? 1 : (parseInt(a.Slot||'0',10) - parseInt(b.Slot||'0',10));
+        });
+        const score = {};
+        let prevSig = '';
+        for (const r of sRows) {
+          const ts = r.Timestamp||'';
+          const sig = ts+'|'+(r.Slot||'')+'|'+(r.Winner||'')+'|'+(r.FinishType||'');
+          if (ts && sig === prevSig) continue;
+          prevSig = sig;
+          const w = (r.Winner||'').trim().toLowerCase();
+          if (!w) continue;
+          score[w] = (score[w]||0) + tr_rebuiltPts(r);
+          if (score[w] >= 4) { setWinners[k] = w; break; }
+        }
+      });
+      if (setWinners['1']) {
+        out.set1Decided++;
+        if (setWinners['1'] === holder) out.set1Wins++;
+      }
+      const tally = {};
+      Object.values(setWinners).forEach(w => { tally[w] = (tally[w]||0) + 1; });
+      const names = Object.keys(tally);
+      if (names.length) {
+        const sorted = names.sort((a,b) => tally[b] - tally[a]);
+        const top = sorted[0];
+        const tied = sorted.length > 1 && tally[sorted[1]] === tally[top];
+        if (!tied) {
+          out.decided++;
+          if (top === holder) out.matchWins++;
+        }
+      }
+    });
+    out.pickTotal = out.pickB + out.pickX;
+    out.pickBPct = out.pickTotal > 0 ? tr_round1(out.pickB / out.pickTotal * 100) : 0;
+    out.pickXPct = out.pickTotal > 0 ? tr_round1(out.pickX / out.pickTotal * 100) : 0;
+    out.matchWinPct = out.decided > 0 ? tr_round1(out.matchWins / out.decided * 100) : 0;
+    out.set1WinPct  = out.set1Decided > 0 ? tr_round1(out.set1Wins / out.set1Decided * 100) : 0;
+    return out;
+  })();
+  const hasPriority = priority.matchesWithPriority > 0;
+
   const comboMap = {};
   battleRows.forEach(r => {
     ['P1Combo','P2Combo'].forEach((field,idx) => {
@@ -6344,6 +6427,7 @@ function tr_computeTournamentStats(allRows, tournament, winnerName) {
     medWinPct, medPPB,
     finishData, finishTotal, metaTag,
     sides,
+    priority, hasPriority,
     combos,
     comboTableRows,
   };
@@ -6420,6 +6504,62 @@ function TrTile({label, val, sub, teal}) {
 }
 
 // ── PAGE 1: COVER ─────────────────────────────────────────────────────────────
+// Side cards (B-side / X-side win rate, PPB, set win %, battles). Shown on the cover for events
+// with no pick-priority data, and on the Side & Priority page for events that have it.
+function TrSideCards({sideB, sideX}) {
+  return (
+          <div>
+            <TrSectionHead num="§03" title="Stadium Side Performance" sub="B-SIDE VS X-SIDE · EVENT-WIDE ACROSS ALL SETS"/>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+              {/* B-SIDE — light card */}
+              <div style={{borderRadius:6,padding:'16px 18px',background:'#f3efde',border:'1.5px solid #c8d5d0',position:'relative',overflow:'hidden'}}>
+                <div style={{position:'absolute',right:-8,top:-14,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:88,lineHeight:1,color:'rgba(0,0,0,0.05)',pointerEvents:'none',userSelect:'none'}}>B</div>
+                <div style={{position:'relative'}}>
+                  <div style={{display:'inline-block',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.16em',fontWeight:600,padding:'2px 7px',borderRadius:3,marginBottom:10,background:'rgba(15,107,103,0.15)',color:'#0a4a46',border:'1px solid rgba(15,107,103,0.25)'}}>B-SIDE</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:42,lineHeight:1,marginBottom:2,color:'#0f6b67'}}>{sideB.battleWinPct.toFixed(1)}%</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#3c4f4a',marginBottom:12}}>battle win rate</div>
+                  <div style={{height:1,background:'#c8d5d0',marginBottom:10}}/>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+                    {[
+                      {l:'PPB',      v:(sideB.ppb>=0?'+':'')+sideB.ppb.toFixed(2)},
+                      {l:'SET WIN%', v:sideB.setWinPct.toFixed(1)+'%'},
+                      {l:'BATTLES',  v:sideB.battles},
+                    ].map((s,i)=>(
+                      <div key={i}>
+                        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.12em',color:'#3c4f4a',marginBottom:3}}>{s.l}</div>
+                        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:600,color:'#0f6b67'}}>{s.v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* X-SIDE — dark card */}
+              <div style={{borderRadius:6,padding:'16px 18px',background:'#14241f',border:'1.5px solid #2a3d35',position:'relative',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
+                <div style={{position:'absolute',right:-8,top:-14,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:88,lineHeight:1,color:'rgba(255,255,255,0.05)',pointerEvents:'none',userSelect:'none'}}>X</div>
+                <div style={{position:'relative'}}>
+                  <div style={{display:'inline-block',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.16em',fontWeight:600,padding:'2px 7px',borderRadius:3,marginBottom:10,background:'rgba(246,211,53,0.12)',color:'#f6d335',border:'1px solid rgba(246,211,53,0.2)'}}>X-SIDE</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:42,lineHeight:1,marginBottom:2,color:'#f6d335'}}>{sideX.battleWinPct.toFixed(1)}%</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#5a7a72',marginBottom:12}}>battle win rate</div>
+                  <div style={{height:1,background:'rgba(255,255,255,0.08)',marginBottom:10}}/>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+                    {[
+                      {l:'PPB',      v:(sideX.ppb>=0?'+':'')+sideX.ppb.toFixed(2), neg:sideX.ppb<0},
+                      {l:'SET WIN%', v:sideX.setWinPct.toFixed(1)+'%'},
+                      {l:'BATTLES',  v:sideX.battles},
+                    ].map((s,i)=>(
+                      <div key={i}>
+                        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.12em',color:'#4a6a62',marginBottom:3}}>{s.l}</div>
+                        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:600,color:s.neg?'#e05a46':'#d4e8e0'}}>{s.v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  );
+}
+
 function TrCoverPage({data}) {
   const {tournament, winner, players, totalBattles, totalSets, uniqueCombos,
          avgBattles, minBattles, maxBattles, medWinPct, medPPB,
@@ -6519,62 +6659,16 @@ function TrCoverPage({data}) {
           </div>
         </div>
 
-        <TrRule/>
-
-        {/* §03 Stadium Side Performance */}
-        <div>
-          <TrSectionHead num="§03" title="Stadium Side Performance" sub="B-SIDE VS X-SIDE · EVENT-WIDE ACROSS ALL SETS"/>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-            {/* B-SIDE — light card */}
-            <div style={{borderRadius:6,padding:'16px 18px',background:'#f3efde',border:'1.5px solid #c8d5d0',position:'relative',overflow:'hidden'}}>
-              <div style={{position:'absolute',right:-8,top:-14,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:88,lineHeight:1,color:'rgba(0,0,0,0.05)',pointerEvents:'none',userSelect:'none'}}>B</div>
-              <div style={{position:'relative'}}>
-                <div style={{display:'inline-block',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.16em',fontWeight:600,padding:'2px 7px',borderRadius:3,marginBottom:10,background:'rgba(15,107,103,0.15)',color:'#0a4a46',border:'1px solid rgba(15,107,103,0.25)'}}>B-SIDE</div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:42,lineHeight:1,marginBottom:2,color:'#0f6b67'}}>{sideB.battleWinPct.toFixed(1)}%</div>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#3c4f4a',marginBottom:12}}>battle win rate</div>
-                <div style={{height:1,background:'#c8d5d0',marginBottom:10}}/>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
-                  {[
-                    {l:'PPB',      v:(sideB.ppb>=0?'+':'')+sideB.ppb.toFixed(2)},
-                    {l:'SET WIN%', v:sideB.setWinPct.toFixed(1)+'%'},
-                    {l:'BATTLES',  v:sideB.battles},
-                  ].map((s,i)=>(
-                    <div key={i}>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.12em',color:'#3c4f4a',marginBottom:3}}>{s.l}</div>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:600,color:'#0f6b67'}}>{s.v}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            {/* X-SIDE — dark card */}
-            <div style={{borderRadius:6,padding:'16px 18px',background:'#14241f',border:'1.5px solid #2a3d35',position:'relative',overflow:'hidden',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
-              <div style={{position:'absolute',right:-8,top:-14,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:88,lineHeight:1,color:'rgba(255,255,255,0.05)',pointerEvents:'none',userSelect:'none'}}>X</div>
-              <div style={{position:'relative'}}>
-                <div style={{display:'inline-block',fontFamily:"'IBM Plex Mono',monospace",fontSize:8,letterSpacing:'0.16em',fontWeight:600,padding:'2px 7px',borderRadius:3,marginBottom:10,background:'rgba(246,211,53,0.12)',color:'#f6d335',border:'1px solid rgba(246,211,53,0.2)'}}>X-SIDE</div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:42,lineHeight:1,marginBottom:2,color:'#f6d335'}}>{sideX.battleWinPct.toFixed(1)}%</div>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:'#5a7a72',marginBottom:12}}>battle win rate</div>
-                <div style={{height:1,background:'rgba(255,255,255,0.08)',marginBottom:10}}/>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
-                  {[
-                    {l:'PPB',      v:(sideX.ppb>=0?'+':'')+sideX.ppb.toFixed(2), neg:sideX.ppb<0},
-                    {l:'SET WIN%', v:sideX.setWinPct.toFixed(1)+'%'},
-                    {l:'BATTLES',  v:sideX.battles},
-                  ].map((s,i)=>(
-                    <div key={i}>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7.5,letterSpacing:'0.12em',color:'#4a6a62',marginBottom:3}}>{s.l}</div>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:600,color:s.neg?'#e05a46':'#d4e8e0'}}>{s.v}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {!data.hasPriority && (
+          <>
+            <TrRule/>
+            <TrSideCards sideB={sideB} sideX={sideX}/>
+          </>
+        )}
 
       </div>
 
-      <TrPageFooter pageNum={1} total={3}/>
+      <TrPageFooter pageNum={1} total={data.hasPriority ? 4 : 3}/>
     </TrPage>
   );
 }
@@ -6602,7 +6696,7 @@ function TrComboCardsPage({data}) {
       <TrPageHeader
         title={`${tournament} — META BREAKDOWN`}
         subtitle="NORCAL BEYBLADE LEAGUE"
-        pageNum="PAGE 2 OF 3"
+        pageNum={`PAGE ${data.hasPriority ? 3 : 2} OF ${data.hasPriority ? 4 : 3}`}
       />
       <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:16}}>
         <TrSectionHead num="§04" title="Most-Used Combos — Event Meta" sub="RANKED BY USAGE · FIELD STATS ACROSS ALL PLAYERS · TOP PILOTS (10 BATTLES MIN)"/>
@@ -6615,7 +6709,7 @@ function TrComboCardsPage({data}) {
           )}
         </div>
       </div>
-      <TrPageFooter pageNum={2} total={3}/>
+      <TrPageFooter pageNum={data.hasPriority ? 3 : 2} total={data.hasPriority ? 4 : 3}/>
     </TrPage>
   );
 }
@@ -6629,7 +6723,7 @@ function TrComboTablePage({data}) {
       <TrPageHeader
         title={`${tournament} — COMBO USAGE`}
         subtitle="NORCAL BEYBLADE LEAGUE"
-        pageNum="PAGE 3 OF 3"
+        pageNum={`PAGE ${data.hasPriority ? 4 : 3} OF ${data.hasPriority ? 4 : 3}`}
       />
       <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:16}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
@@ -6677,7 +6771,7 @@ function TrComboTablePage({data}) {
           </tbody>
         </table>
       </div>
-      <TrPageFooter pageNum={3} total={3}/>
+      <TrPageFooter pageNum={data.hasPriority ? 4 : 3} total={data.hasPriority ? 4 : 3}/>
     </TrPage>
   );
 }
@@ -6737,10 +6831,105 @@ function TrComboCard({combo, rank, accent, barColor}) {
 }
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
+// ── SIDE & PRIORITY PAGE (only for events that recorded pick priority) ──────────
+function TrSidePage({data}) {
+  const {tournament, sides, priority} = data;
+  const sideB = sides.find(s=>s.side==='B')||{battleWinPct:0,ppb:0,setWinPct:0,battles:0};
+  const sideX = sides.find(s=>s.side==='X')||{battleWinPct:0,ppb:0,setWinPct:0,battles:0};
+  const mono = "'IBM Plex Mono',monospace";
+  const cond = "'Barlow Condensed',sans-serif";
+  const pr = priority;
+  const lowSample = pr.decided < 20;
+  // How far from a coin flip (50%) the die-roll winner's match win rate is
+  const gap = Math.abs(pr.matchWinPct - 50);
+  const reading = pr.decided === 0 ? 'NO FINISHED MATCHES YET'
+    : gap < 5 ? 'CLOSE TO A COIN FLIP'
+    : pr.matchWinPct > 50 ? 'ROLL WINNERS HAD AN EDGE' : 'ROLL WINNERS WERE AT A DISADVANTAGE';
+  const pickLeader = pr.pickB === pr.pickX ? 'EVEN SPLIT' : (pr.pickB > pr.pickX ? 'B-SIDE FAVORED' : 'X-SIDE FAVORED');
+
+  return (
+    <TrPage>
+      <TrPageHeader
+        title={`${tournament} — SIDE & PRIORITY`}
+        subtitle="NORCAL BEYBLADE LEAGUE"
+        pageNum={`PAGE 2 OF 4`}
+      />
+      <div style={{flex:1,padding:'22px 40px 24px',display:'flex',flexDirection:'column',gap:18}}>
+
+        {/* §03 Side performance */}
+        <TrSideCards sideB={sideB} sideX={sideX}/>
+
+        <TrRule/>
+
+        {/* §03A Which side priority holders picked */}
+        <div>
+          <TrSectionHead num="§03A" title="Side Picks With Priority" sub="WHICH SIDE THE PRIORITY HOLDER TOOK IN SET 1"/>
+          {pr.pickTotal === 0 ? (
+            <div style={{fontFamily:mono,fontSize:10,color:'#6b7d78'}}>No set-1 side picks were recorded.</div>
+          ) : (
+            <div style={{background:'#f3efde',border:'1px solid #c8d5d0',borderRadius:6,padding:'16px 18px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:8}}>
+                <div>
+                  <div style={{fontFamily:cond,fontWeight:800,fontSize:36,lineHeight:1,color:'#0f6b67'}}>{pr.pickBPct.toFixed(1)}%</div>
+                  <div style={{fontFamily:mono,fontSize:8,letterSpacing:'0.12em',color:'#3c4f4a',marginTop:3}}>PICKED B-SIDE · {pr.pickB} OF {pr.pickTotal}</div>
+                </div>
+                <div style={{fontFamily:mono,fontSize:8.5,letterSpacing:'0.1em',color:'#2ea89d',fontWeight:600,paddingBottom:4}}>{pickLeader}</div>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontFamily:cond,fontWeight:800,fontSize:36,lineHeight:1,color:'#14241f'}}>{pr.pickXPct.toFixed(1)}%</div>
+                  <div style={{fontFamily:mono,fontSize:8,letterSpacing:'0.12em',color:'#3c4f4a',marginTop:3}}>PICKED X-SIDE · {pr.pickX} OF {pr.pickTotal}</div>
+                </div>
+              </div>
+              <div style={{height:18,borderRadius:3,overflow:'hidden',display:'flex',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
+                <div style={{width:pr.pickBPct+'%',background:'#0f6b67'}}/>
+                <div style={{width:pr.pickXPct+'%',background:'#14241f'}}/>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <TrRule/>
+
+        {/* §03B Die roll influence */}
+        <div>
+          <TrSectionHead num="§03B" title="Die Roll Influence" sub="DID WINNING THE ROLL (PICK PRIORITY) HELP WIN THE MATCH?"/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12,marginBottom:12}}>
+            <TrTile label="ROLL WINNER WON THE MATCH" val={pr.decided>0 ? pr.matchWinPct.toFixed(1)+'%' : '—'} sub={`${pr.matchWins} of ${pr.decided} finished matches`} teal/>
+            <TrTile label="ROLL WINNER WON SET 1" val={pr.set1Decided>0 ? pr.set1WinPct.toFixed(1)+'%' : '—'} sub={`${pr.set1Wins} of ${pr.set1Decided} first sets`}/>
+            <TrTile label="MATCHES WITH PRIORITY" val={pr.matchesWithPriority} sub={`of ${pr.matchesTotal} matches this event`}/>
+          </div>
+          <div style={{background:'#f3efde',border:'1px solid #c8d5d0',borderRadius:6,padding:'14px 18px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',fontFamily:mono,fontSize:8,letterSpacing:'0.12em',color:'#3c4f4a',marginBottom:6}}>
+              <span>ROLL WINNER · {pr.matchWinPct.toFixed(1)}%</span>
+              <span>THE OTHER PLAYER · {pr.decided>0 ? (100-pr.matchWinPct).toFixed(1) : '0.0'}%</span>
+            </div>
+            <div style={{position:'relative',height:18,borderRadius:3,overflow:'hidden',display:'flex',WebkitPrintColorAdjust:'exact',printColorAdjust:'exact'}}>
+              <div style={{width:(pr.decided>0?pr.matchWinPct:50)+'%',background:'#f6d335'}}/>
+              <div style={{flex:1,background:'#a2b0ab'}}/>
+              <div style={{position:'absolute',left:'50%',top:0,bottom:0,width:2,background:'#14241f'}}/>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
+              <div style={{fontFamily:mono,fontSize:8.5,letterSpacing:'0.1em',color:'#0f6b67',fontWeight:600}}>{reading}</div>
+              <div style={{fontFamily:mono,fontSize:7.5,color:'#6b7d78'}}>BLACK LINE = 50% (THE ROLL HAS NO EFFECT)</div>
+            </div>
+          </div>
+          {lowSample && pr.decided > 0 && (
+            <div style={{fontFamily:mono,fontSize:8,color:'#c23a2a',letterSpacing:'0.08em',marginTop:8}}>SMALL SAMPLE · FEWER THAN 20 FINISHED MATCHES, SO TREAT THIS AS A HINT, NOT A VERDICT</div>
+          )}
+          <div style={{fontFamily:mono,fontSize:7.5,color:'#6b7d78',letterSpacing:'0.06em',marginTop:8,lineHeight:1.6}}>
+            PRIORITY IS RECORDED FOR SET 1 ONLY. MATCHES WITHOUT A PRIORITY RECORD ARE LEFT OUT. THE MATCH WINNER IS WHOEVER WON MORE SETS.
+          </div>
+        </div>
+      </div>
+      <TrPageFooter pageNum={2} total={4}/>
+    </TrPage>
+  );
+}
+
 function TrTournamentBreakdown({data}) {
   return (
     <>
       <TrCoverPage data={data}/>
+      {data.hasPriority && <TrSidePage data={data}/>}
       <TrComboCardsPage data={data}/>
       <TrComboTablePage data={data}/>
     </>
