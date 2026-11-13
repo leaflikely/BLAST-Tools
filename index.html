@@ -7521,6 +7521,14 @@ function rg_backToTournament() {
   document.getElementById('rg-generator').style.display = 'flex';
   document.getElementById('rg-report-output').style.display = 'none';
   document.getElementById('rg-toolbar').style.display = 'none';
+  // Tell React to let go of the report area BEFORE the next batch. Wiping the area with
+  // innerHTML = '' left React holding a stale picture of it, so the next report batch
+  // drew into nothing (blank page, needed a refresh). Dropping the old root makes the
+  // next export build a fresh one.
+  if (window.__reportRoot) {
+    try { window.__reportRoot.unmount(); } catch (e) { /* already gone */ }
+    window.__reportRoot = null;
+  }
   document.getElementById('rg-report-pages').innerHTML = '';
   rg_goStep(1);
 }
